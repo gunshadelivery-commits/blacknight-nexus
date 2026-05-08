@@ -487,35 +487,41 @@ async function deleteFullProduct(name) {
 
 async function deleteAllProducts() {
     if(!(await customConfirm("ลบสินค้าทั้งหมด", "คุณแน่ใจใช่ไหมที่จะลบสินค้า 'ทุกรายการ' ออกจากระบบถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้!", "⚠️"))) return;
+    
     showToast("กำลังเริ่มการลบสินค้าทั้งหมด...", "success");
-    
-    // ดึงรายการชื่อสินค้าทั้งหมดที่ไม่ซ้ำกัน
-    const uniqueNames = [...new Set(rawProducts.map(p => p.name))];
-    
-    for(let name of uniqueNames) {
-        const variants = rawProducts.filter(p => p.name === name);
-        for(let v of variants) {
-            await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) });
+    try {
+        const res = await fetch(GAS_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: "clearProducts" }) 
+        });
+        const result = await res.json();
+        if (result.result === "success") {
+            showToast("ลบสินค้าทั้งหมดเรียบร้อยแล้ว", "success");
+            loadProducts();
+        } else {
+            throw new Error(result.error || "Unknown error");
         }
+    } catch (err) {
+        console.error("Delete all failed:", err);
+        showToast("ล้มเหลว: " + err.message, "error");
     }
-    
-    showToast("ลบสินค้าทั้งหมดเรียบร้อยแล้ว", "success");
-    loadProducts();
 }
 
 async function saveProduct() {
     const btn = document.getElementById('saveProductBtn');
     const fileInput = document.getElementById('pImage');
-    const name = document.getElementById('pName').value;
+    const name = document.getElementById('pName').value.trim();
     const category = document.getElementById('pCategory').value;
-    const note = document.getElementById('pNote').value;
-    const tags = document.getElementById('pTags').value;
+    const note = document.getElementById('pNote').value.trim();
+    const tags = document.getElementById('pTags').value.trim();
     const variantRows = document.querySelectorAll('.variant-row');
-    const variants = Array.from(variantRows).map(row => {
-        let sizeVal = row.querySelector('.v-size').value;
-        if (!sizeVal) sizeVal = "Standard";
-        return { size: sizeVal, price: row.querySelector('.v-price').value, stock: row.querySelector('.v-stock').value || 0, sold: row.querySelector('.v-sold').value || 0 };
-    }).filter(v => v.size && v.price);
+    
+    const variants = Array.from(variantRows).map(row => ({
+        size: row.querySelector('.v-size').value.trim() || "Standard",
+        price: parseFloat(row.querySelector('.v-price').value) || 0,
+        stock: parseInt(row.querySelector('.v-stock').value) || 0,
+        sold: parseInt(row.querySelector('.v-sold').value) || 0
+    })).filter(v => v.size && v.price >= 0);
 
     if(!name || variants.length === 0) return alert("กรุณากรอกข้อมูลที่สำคัญให้ครบ");
 
@@ -524,44 +530,67 @@ async function saveProduct() {
 
     let imageUrl = document.getElementById('productForm').dataset.existingImage || "";
     const imgbbUrl = getImgbbUploadUrl();
+    
     if (fileInput.files.length > 0 && imgbbUrl) {
         try {
             btn.innerHTML = "กำลังบีบอัดรูปภาพ...";
             const optimizedImg = await compressImage(fileInput.files[0]);
             btn.innerHTML = "กำลังอัปโหลดรูปภาพ...";
-            const formData = new FormData(); formData.append('image', optimizedImg);
+            const formData = new FormData(); 
+            formData.append('image', optimizedImg);
             const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
             const imgData = await imgRes.json();
             if (imgData.success) imageUrl = imgData.data.url;
-        } catch(e) { console.error("Img Upload Fail", e); showToast("อัปโหลดรูปภาพล้มเหลว", "error"); }
+        } catch(e) { 
+            console.error("Img Upload Fail", e); 
+            showToast("อัปโหลดรูปภาพล้มเหลว", "error"); 
+        }
     }
 
     try {
         if(isEditMode) {
-            const toUpdate = [], toAdd = [];
-            variants.forEach((v, idx) => { if (idx < originalVariants.length) toUpdate.push({ variant: v, oldSize: originalVariants[idx].size }); else toAdd.push(v); });
-            const toDelete = originalVariants.slice(variants.length);
-            for (let item of toUpdate) { 
-                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: "updateProduct", oldName: oldProductName.trim(), oldSize: item.oldSize.toString().trim(), name: name.trim(), category, note, tags, image: imageUrl, size: item.variant.size.toString().trim(), price: item.variant.price, stock: item.variant.stock, sold_count: item.variant.sold, status: parseInt(item.variant.stock) > 0 ? "มีของ" : "หมด" }) });
-            }
-            for (let v of toAdd) { 
-                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: "addProduct", name: name.trim(), category, note, tags, image: imageUrl, size: v.size.toString().trim(), price: v.price, stock: v.stock, sold_count: v.sold, status: parseInt(v.stock) > 0 ? "มีของ" : "หมด" }) });
-            }
-            for (let oldV of toDelete) { 
-                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: "deleteProduct", name: oldProductName.trim(), size: oldV.size.toString().trim() }) });
-            }
-        } else {
-            for(let variant of variants) { 
-                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: "addProduct", name: name.trim(), category, note, tags, image: imageUrl, size: variant.size.toString().trim(), price: variant.price, stock: variant.stock, sold_count: variant.sold, status: parseInt(variant.stock) > 0 ? "มีของ" : "หมด" }) });
+            // สำหรับ Edit Mode: ลบของเก่าออกก่อนแล้วแอดใหม่ (วิธีที่ง่ายและชัวร์ที่สุด)
+            // หรือส่งไปจัดการที่ GAS ทีเดียว
+            showToast("กำลังอัปเดตข้อมูล...", "success");
+            
+            // ลบของเดิมก่อน
+            const oldVariants = rawProducts.filter(p => p.name === oldProductName);
+            for(let v of oldVariants) {
+                await fetch(GAS_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: "deleteProduct", name: oldProductName.trim(), size: v.size.toString().trim() }) 
+                });
             }
         }
-        showToast(isEditMode ? "แก้ไขข้อมูลสำเร็จ!" : "เพิ่มสินค้าสำเร็จ!", "success");
-        toggleProductModal(false); 
-        setTimeout(loadProducts, 2000); // รอ 2 วินาทีเพื่อให้ CSV อัปเดตฝั่ง Google
+
+        // ส่งข้อมูลเข้า GAS แบบ Bundle
+        const response = await fetch(GAS_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                action: "addProduct", 
+                name: name, 
+                category: category, 
+                note: note, 
+                tags: tags, 
+                image: imageUrl, 
+                variants: variants 
+            }) 
+        });
+
+        const result = await response.json();
+        if (result.result === "success") {
+            showToast(isEditMode ? "แก้ไขข้อมูลสำเร็จ!" : "เพิ่มสินค้าสำเร็จ!", "success");
+            toggleProductModal(false); 
+            setTimeout(loadProducts, 1500); 
+        } else {
+            throw new Error(result.error || "GAS Error");
+        }
     } catch (err) { 
-        console.error("Save error:", err);        showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
+        console.error("Save error:", err);
+        showToast("เกิดข้อผิดพลาดในการบันทึก: " + err.message, "error");
     } finally { 
-        btn.disabled = false; btn.innerHTML = isEditMode ? "บันทึกการแก้ไข" : "บันทึกและขึ้นขายทันที"; 
+        btn.disabled = false; 
+        btn.innerHTML = isEditMode ? "บันทึกการแก้ไข" : "บันทึกและขึ้นขายทันที"; 
     }
 }
 

@@ -3,8 +3,10 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({ "error": "No parameters" })).setMimeType(ContentService.MimeType.JSON);
   }
   var action = e.parameter.action;
-  var sheetOrders = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Orders");
-  var sheetProducts = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Product List");
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetOrders = ss.getSheetByName("Orders");
+  var sheetProducts = ss.getSheetByName("Blacknight69 - Product List");
+  var sheetSettings = ss.getSheetByName("Settings");
 
   if (action === "getOrders") {
     var data = sheetOrders.getDataRange().getValues();
@@ -15,6 +17,11 @@ function doGet(e) {
     var data = sheetProducts.getDataRange().getValues();
     return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
   }
+  
+  if (action === "getSettings") {
+    var data = sheetSettings.getDataRange().getValues();
+    return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+  }
 
   return ContentService.createTextOutput(JSON.stringify({ "error": "Invalid action" })).setMimeType(ContentService.MimeType.JSON);
 }
@@ -23,7 +30,76 @@ function doPost(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheetOrders = ss.getSheetByName("Orders");
-    var sheetProducts = ss.getSheetByName("Product List");
+    var sheetProducts = ss.getSheetByName("Blacknight69 - Product List");
+    var data = JSON.parse(e.postData.contents);
+    
+    // CASE 1: บันทึกออเดอร์ใหม่
+    if (data.action === "log") {
+      sheetOrders.appendRow([
+        new Date(),
+        data.name || "-",
+        data.phone || "-",
+        data.address || "-",
+        data.mapUrl || "-",
+        data.items || "-",
+        data.total || 0,
+        data.slipUrl || "-",
+        "รอดำเนินการ"
+      ]);
+      SpreadsheetApp.flush();
+      return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // CASE 2: เพิ่มสินค้าใหม่
+    if (data.action === "addProduct") {
+      if (data.variants && data.variants.length > 0) {
+        data.variants.forEach(function(v) {
+          sheetProducts.appendRow([
+            data.name, 
+            v.size || "1G", 
+            v.price || 0, 
+            data.note || "", 
+            data.image || "", 
+            data.tags || "", 
+            "มีของ", 
+            v.stock || 0, 
+            0 // sold_count
+          ]);
+        });
+      }
+      SpreadsheetApp.flush();
+      return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // CASE 3: ลบสินค้าทั้งหมด
+    if (data.action === "clearProducts") {
+      var lastRow = sheetProducts.getLastRow();
+      if (lastRow > 1) {
+        sheetProducts.deleteRows(2, lastRow - 1);
+      }
+      SpreadsheetApp.flush();
+      return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // CASE 4: อัปเดตสถานะออเดอร์
+    if (data.action === "updateStatus") {
+      var range = sheetOrders.getDataRange();
+      var values = range.getValues();
+      for (var i = 1; i < values.length; i++) {
+        if (values[i][0].toString() === data.id.toString()) {
+          sheetOrders.getRange(i + 1, 9).setValue(data.status);
+          SpreadsheetApp.flush();
+          return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Action not found" })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
     var contents = JSON.parse(e.postData.contents);
     var action = contents.action;
     // --- CASE 1: Log new order ---

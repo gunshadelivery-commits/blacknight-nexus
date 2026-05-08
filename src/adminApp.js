@@ -366,6 +366,8 @@ async function updateConfirm(btn, name, slip) {
     
     await fetch(GAS_URL, { 
         method: 'POST', 
+        mode: 'no-cors', // วิธีที่ชัวร์ที่สุดสำหรับส่งอย่างเดียวไม่ต้องรอผลบนมือถือ
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "ชำระเงินแล้ว" }) 
     });
     
@@ -479,7 +481,12 @@ async function deleteFullProduct(name) {
     showToast("กำลังลบข้อมูล...", "success");
     const variants = rawProducts.filter(p => p.name === name);
     for(let v of variants) {
-        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) });
+        await fetch(GAS_URL, { 
+            method: 'POST', 
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) 
+        });
     }
     showToast("ลบสินค้าเรียบร้อยแล้ว", "success");
     loadProducts();
@@ -492,6 +499,8 @@ async function deleteAllProducts() {
     try {
         const res = await fetch(GAS_URL, { 
             method: 'POST', 
+            // สำหรับลบทั้งหมด เราต้องรอผล (success/error) จึงใช้ mode: 'cors' แต่ต้องเป็น text/plain
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ action: "clearProducts" }) 
         });
         const result = await res.json();
@@ -558,6 +567,8 @@ async function saveProduct() {
             for(let v of oldVariants) {
                 await fetch(GAS_URL, { 
                     method: 'POST', 
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({ action: "deleteProduct", name: oldProductName.trim(), size: v.size.toString().trim() }) 
                 });
             }
@@ -566,6 +577,7 @@ async function saveProduct() {
         // ส่งข้อมูลเข้า GAS แบบ Bundle
         const response = await fetch(GAS_URL, { 
             method: 'POST', 
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
                 action: "addProduct", 
                 name: name, 

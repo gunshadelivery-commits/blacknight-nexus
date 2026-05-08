@@ -441,132 +441,6 @@ function previewSlip(input) {
     }
 }
 
-// --- Geolocation Helper ---
-function getCurrentLocation(event) {
-    const btn = event.currentTarget;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-
-    if (!navigator.geolocation) {
-        showToast("เบราว์เซอร์ของคุณไม่รองรับการระบุพิกัด", "error");
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-            document.getElementById('custMap').value = mapUrl;
-            btn.disabled = false;
-            btn.innerHTML = "✅ สำเร็จ!";
-            showToast("ดึงพิกัดปัจจุบันเรียบร้อย!");
-            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
-        },
-        (err) => {
-            let msg = "ไม่สามารถดึงพิกัดได้ กรุณากดอนุญาตการเข้าถึงตำแหน่ง";
-            if (err.code === 1) msg = "กรุณาอนุญาตการเข้าถึงตำแหน่ง (Permission Denied)";
-            else if (err.code === 2) msg = "ไม่พบสัญญาณตำแหน่ง (Position Unavailable)";
-            else if (err.code === 3) msg = "การค้นหาพิกัดใช้เวลานานเกินไป (Timeout)";
-
-            showToast(msg, "error");
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // Increased timeout to 10s
-    );
-}
-
-// --- MAP MODAL MANAGEMENT ---
-let mapInstance = null;
-let selectedLat = null;
-let selectedLng = null;
-let mapMarker = null;
-
-function openMapModal() {
-    const modal = document.getElementById('mapModal');
-    modal.classList.remove('hidden');
-    
-    // Initialize map after modal is visible
-    setTimeout(() => {
-        if (!mapInstance) {
-            initializeMap();
-        } else {
-            mapInstance.invalidateSize();
-        }
-    }, 100);
-}
-
-function closeMapModal() {
-    const modal = document.getElementById('mapModal');
-    modal.classList.add('hidden');
-    document.getElementById('confirmMapBtn').disabled = true;
-}
-
-function initializeMap() {
-    const container = document.getElementById('mapContainer');
-    const custMapInput = document.getElementById('custMap');
-    
-    // Try to get initial location from current GPS or use Bangkok as default
-    let initialLat = 13.7563, initialLng = 100.5018; // Bangkok
-    
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            initialLat = pos.coords.latitude;
-            initialLng = pos.coords.longitude;
-            createMap(initialLat, initialLng);
-        }, () => {
-            createMap(initialLat, initialLng);
-        }, { timeout: 5000 });
-    } else {
-        createMap(initialLat, initialLng);
-    }
-    
-    function createMap(lat, lng) {
-        if (mapInstance) mapInstance.remove();
-        
-        mapInstance = L.map('mapContainer').setView([lat, lng], 13);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(mapInstance);
-        
-        // Click handler for map
-        mapInstance.on('click', (e) => {
-            selectedLat = e.latlng.lat;
-            selectedLng = e.latlng.lng;
-            
-            // Remove old marker
-            if (mapMarker) mapInstance.removeLayer(mapMarker);
-            
-            // Add new marker
-            mapMarker = L.marker([selectedLat, selectedLng]).addTo(mapInstance)
-                .bindPopup(`📍 พิกัด: ${selectedLat.toFixed(5)}, ${selectedLng.toFixed(5)}`)
-                .openPopup();
-            
-            // Enable confirm button
-            document.getElementById('confirmMapBtn').disabled = false;
-        });
-    }
-}
-
-function confirmMapLocation() {
-    if (!selectedLat || !selectedLng) {
-        showToast("กรุณาเลือกตำแหน่งบนแผนที่", "error");
-        return;
-    }
-    
-    // Create Google Maps URL
-    const mapUrl = `https://www.google.com/maps?q=${selectedLat},${selectedLng}`;
-    document.getElementById('custMap').value = mapUrl;
-    
-    showToast("✓ บันทึกตำแหน่งเรียบร้อย!", "success");
-    closeMapModal();
-}
 
 async function submitOrder() {
     const btn = document.getElementById('confirmBtn');
@@ -579,13 +453,12 @@ async function submitOrder() {
         name: document.getElementById('custName').value.trim(),
         phone: document.getElementById('custPhone').value.trim(),
         address: document.getElementById('custAddress').value.trim(),
-        map: document.getElementById('custMap').value.trim(),
         slip: document.getElementById('slipInput').files[0],
         paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'
     };
 
     // Validation
-    if (!data.name || !data.phone || !data.address || !data.map) return showToast("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง", "error");
+    if (!data.name || !data.phone || !data.address) return showToast("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง", "error");
     if (selectedPaymentMethod === 'transfer' && !data.slip) return showToast("กรุณาแนบสลิปโอนเงิน", "error");
 
     btn.disabled = true;
@@ -618,7 +491,7 @@ async function submitOrder() {
                 name: data.name, 
                 phone: data.phone, 
                 address: data.address,
-                mapUrl: data.map, 
+                mapUrl: "-", 
                 items: orderItems, 
                 itemsArray: itemsArray, 
                 total: finalTotal, 
@@ -635,7 +508,6 @@ async function submitOrder() {
 👤 ผู้รับ: ${data.name}
 📞 เบอร์: ${data.phone}
 🏠 ที่อยู่: ${data.address}
-📍 พิกัด: ${data.map}
 
 🛒 รายการ:
 ${itemsDetail}
@@ -680,10 +552,6 @@ window.goToCheckout = goToCheckout;
 window.closeCheckout = closeCheckout;
 window.previewSlip = previewSlip;
 window.previewPaymentQR = previewPaymentQR;
-window.getCurrentLocation = getCurrentLocation;
-window.openMapModal = openMapModal;
-window.closeMapModal = closeMapModal;
-window.confirmMapLocation = confirmMapLocation;
 window.updatePaymentMethod = updatePaymentMethod;
 window.submitOrder = submitOrder;
 window.redirectToLine = () => {

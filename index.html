@@ -40,8 +40,6 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
     <style>
         body { font-family: 'Kanit', sans-serif; -webkit-tap-highlight-color: transparent; }
         .cart-open { transform: translateX(0); }
@@ -270,13 +268,6 @@
                         <textarea id="custAddress" rows="3" class="w-full bg-white/5 border-2 border-white/10 rounded-2xl px-4 py-3 text-white focus:border-white/30 outline-none transition text-sm" placeholder="บ้านเลขที่, ซอย, ถนน, ตำบล, อำเภอ, จังหวัด, รหัสไปรษณีย์"></textarea>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">ตำแหน่งจัดส่ง *</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="custMap" class="flex-1 bg-white/5 border-2 border-white/10 rounded-2xl px-4 py-3 text-white focus:border-white/30 outline-none transition text-sm" placeholder="เลือกจากแผนที่ด้านขวา">
-                            <button onclick="openMapModal()" class="bg-white/10 text-white px-4 rounded-2xl hover:bg-white/20 transition flex items-center justify-center font-bold text-xs">🗺️ แผนที่</button>
-                        </div>
-                    </div>
-                    <div>
                         <label class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">แนบหลักฐานการโอนเงิน *</label>
                         <div class="bg-white/5 border-2 border-dashed border-white/10 rounded-3xl p-8 text-center cursor-pointer hover:bg-white/10 transition group" onclick="document.getElementById('slipInput').click()">
                             <input type="file" id="slipInput" accept="image/*" class="hidden" onchange="previewSlip(this)">
@@ -294,25 +285,6 @@
         </div>
     </div>
 
-    <!-- MAP MODAL -->
-    <div id="mapModal" class="fixed inset-0 z-[80] bg-black/80 hidden backdrop-blur-md flex items-center justify-center p-4">
-        <div class="glass-card w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300 border border-white/10">
-            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 text-white">
-                <h3 class="text-lg font-bold">📍 เลือกตำแหน่งจัดส่ง</h3>
-                <button onclick="closeMapModal()" class="p-2 hover:bg-white/10 rounded-full transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div id="mapContainer" class="flex-1 bg-black/20" style="min-height: 400px;"></div>
-            <div class="p-6 border-t border-white/10 bg-black/40 text-center">
-                <p class="mb-4 text-xs text-white/40 uppercase tracking-widest">💡 คลิกบนแผนที่เพื่อปักหมุด</p>
-                <div class="flex gap-3">
-                    <button onclick="closeMapModal()" class="flex-1 px-4 py-3 bg-white/10 text-white rounded-2xl font-bold hover:bg-white/20 transition">ยกเลิก</button>
-                    <button onclick="confirmMapLocation()" class="flex-1 px-4 py-3 bg-white text-black rounded-2xl font-black hover:bg-white/90 transition disabled:opacity-10" id="confirmMapBtn" disabled>✓ ยืนยัน</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- BOTTOM NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 glass-card border-t border-white/5 flex justify-around items-center py-3 z-50 shadow-2xl backdrop-blur-xl">

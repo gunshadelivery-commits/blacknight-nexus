@@ -293,7 +293,6 @@ function renderOrdersTable() {
         const phone = getVal(["เบอร์โทร", "phone"]);
         const custName = getVal(["ชื่อลูกค้า", "name"]);
         const displayIdentity = (custName && custName !== "N/A") ? custName : (phone || "N/A");
-        const mapLink = getVal(["ลิงก์แผนที่", "mapUrl", "map"]) || "";
         const addressText = getVal(["ที่อยู่", "address"]) || "";
         const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
         const dateStr = dateRaw ? dateRaw.toString().split('GMT')[0].trim() : "N/A";
@@ -308,7 +307,6 @@ function renderOrdersTable() {
                         <span class="font-bold text-slate-700 text-sm">${displayIdentity}</span>
                         <div class="flex items-center gap-1">
                             <span class="text-[10px] text-slate-400 truncate max-w-[200px]">${addressText}</span>
-                            ${mapLink ? `<a href="${mapLink}" target="_blank" class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 hover:bg-white transition flex items-center gap-0.5">แผนที่</a>` : ''}
                         </div>
                     </div>
                 </td>

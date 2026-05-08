@@ -43,6 +43,17 @@ function doPost(e) {
     const action = data.action;
     const sheetProducts = ss.getSheetByName(SHEET_PRODUCTS);
     const sheetOrders = ss.getSheetByName(SHEET_ORDERS);
+    const sheetSettings = ss.getSheetByName(SHEET_SETTINGS) || ss.insertSheet(SHEET_SETTINGS);
+
+    // --- 0. บันทึก Settings ---
+    if (action === "saveSettings") {
+      sheetSettings.clear();
+      if (data.settings && data.settings.length > 0) {
+        data.settings.forEach(row => sheetSettings.appendRow(row));
+      }
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success" });
+    }
 
     // --- 1. บันทึกออเดอร์ใหม่ + ตัดสต็อก ---
     if (action === "log") {

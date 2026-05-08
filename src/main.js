@@ -319,51 +319,62 @@ function updateQty(idx, change) {
 }
 
 // --- CHECKOUT ---
-function loadAndDisplayPaymentMethods() {
+async function loadAndDisplayPaymentMethods() {
     const container = document.getElementById('paymentMethodsContainer');
-    const stored = localStorage.getItem('promptpayData');
-    const promptpayList = stored ? JSON.parse(stored) : [];
-    const normalizedPromptpay = promptpayList.map(pp => ({ status: pp.status || 'active', ...pp }));
-    const activePromptpay = normalizedPromptpay.filter(pp => pp.status === 'active');
+    container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm animate-pulse">กำลังโหลดข้อมูลชำระเงิน...</div>`;
+    
+    try {
+        const res = await fetch(`${GAS_URL}?action=getSettings`);
+        const data = await res.json();
+        
+        // Convert 2D array to objects
+        const promptpayList = data.length > 0 ? data.slice(1).map(row => ({
+            name: row[0],
+            bank: row[1],
+            number: row[2],
+            qrImage: row[3],
+            status: row[4] || 'active'
+        })) : [];
 
-    if (activePromptpay.length === 0) {
-        const message = normalizedPromptpay.length > 0
-            ? 'ยังไม่มีช่องทาง Promptpay ที่เปิดใช้งาน'
-            : 'ยังไม่มีข้อมูลการชำระเงิน';
-        container.innerHTML = `<div class="text-center py-4 text-slate-500 text-sm">
-            <p>${message}</p>
-        </div>`;
-        return;
-    }
+        const activePromptpay = promptpayList.filter(pp => pp.status === 'active');
 
-    container.innerHTML = activePromptpay.map((pp, idx) => `
-        <div class="bg-white border border-blue-100 rounded-xl p-4 shadow-sm hover:shadow-md transition">
-            <div class="flex gap-4">
-                ${pp.qrImage ? `
-                    <div class="flex-shrink-0">
-                        <img src="${pp.qrImage}" class="w-20 h-20 object-cover rounded-lg border border-slate-200 shadow-sm">
+        if (activePromptpay.length === 0) {
+            container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm">ยังไม่มีข้อมูลการชำระเงิน</div>`;
+            return;
+        }
+
+        container.innerHTML = activePromptpay.map((pp, idx) => `
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-sm hover:bg-white/10 transition group">
+                <div class="flex gap-4">
+                    ${pp.qrImage ? `
+                        <div class="flex-shrink-0">
+                            <img src="${pp.qrImage}" class="w-20 h-20 object-cover rounded-xl border border-white/10 shadow-lg">
+                        </div>
+                    ` : ''}
+                    <div class="flex-1">
+                        <h5 class="font-bold text-white text-sm mb-1">${pp.name}</h5>
+                        <p class="text-[11px] text-white/60 mb-1">
+                            <span class="font-semibold text-white/80">${pp.bank}</span>
+                        </p>
+                        <p class="text-[11px] text-white font-mono bg-white/10 px-2 py-1 rounded inline-block">
+                            ${pp.number}
+                        </p>
+                        <p class="text-[10px] text-white/40 mt-2">โปรดโอนเงินไปยังบัญชีนี้</p>
                     </div>
-                ` : ''}
-                <div class="flex-1">
-                    <h5 class="font-bold text-slate-800 text-sm mb-1">${pp.name}</h5>
-                    <p class="text-[11px] text-slate-600 mb-1">
-                        <span class="font-semibold text-slate-700">${pp.bank}</span>
-                    </p>
-                    <p class="text-[11px] text-slate-600 font-mono bg-slate-50 px-2 py-1 rounded inline-block">
-                        ${pp.number}
-                    </p>
-                    <p class="text-[10px] text-slate-400 mt-2">โปรดโอนเงินไปยังบัญชีนี้</p>
+                    ${pp.qrImage ? `
+                        <div class="flex-shrink-0">
+                            <button onclick="previewPaymentQR('${pp.qrImage}')" class="px-3 py-1 text-[10px] font-bold bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
+                                ดู QR
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
-                ${pp.qrImage ? `
-                    <div class="flex-shrink-0">
-                        <button onclick="previewPaymentQR('${pp.qrImage}')" class="px-3 py-1 text-[10px] font-bold bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">
-                            ดู QR
-                        </button>
-                    </div>
-                ` : ''}
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (err) {
+        console.error("Load Settings Error:", err);
+        container.innerHTML = `<div class="text-center py-4 text-red-400 text-sm">โหลดข้อมูลล้มเหลว</div>`;
+    }
 }
 
 function previewPaymentQR(qrUrl) {

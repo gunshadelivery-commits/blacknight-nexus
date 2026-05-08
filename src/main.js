@@ -565,16 +565,16 @@ async function submitOrder() {
     const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
 
     const data = {
-        name: "Customer (" + document.getElementById('custPhone').value + ")",
-        phone: document.getElementById('custPhone').value,
-        address: "Google Maps Pin: " + document.getElementById('custMap').value,
-        map: document.getElementById('custMap').value,
+        name: document.getElementById('custName').value.trim(),
+        phone: document.getElementById('custPhone').value.trim(),
+        address: document.getElementById('custAddress').value.trim(),
+        map: document.getElementById('custMap').value.trim(),
         slip: document.getElementById('slipInput').files[0],
         paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'
     };
 
     // Validation
-    if (!data.phone || !data.map) return showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+    if (!data.name || !data.phone || !data.address || !data.map) return showToast("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง", "error");
     if (selectedPaymentMethod === 'transfer' && !data.slip) return showToast("กรุณาแนบสลิปโอนเงิน", "error");
 
     btn.disabled = true;
@@ -621,8 +621,10 @@ async function submitOrder() {
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} [${i.size}] x${i.qty}`).join('\n');
         const lineMsg = `✨ ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
 💰 วิธีชำระ: ${data.paymentMethod}
+👤 ผู้รับ: ${data.name}
 📞 เบอร์: ${data.phone}
-📍 พิกัดจัดส่ง: ${data.map}
+🏠 ที่อยู่: ${data.address}
+📍 พิกัด: ${data.map}
 
 🛒 รายการ:
 ${itemsDetail}

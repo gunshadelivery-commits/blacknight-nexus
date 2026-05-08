@@ -323,8 +323,12 @@ function renderOrdersTable() {
                         </span>
                     </div>
                 </td>
-                <td class="px-6 py-4 w-[160px] text-right">
+                <td class="px-6 py-4 w-[180px] text-right">
                     <div class="flex justify-end gap-2">
+                        <button onclick="window.printLabel(${rawOrders.indexOf(order)})" 
+                                class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg hover:bg-slate-900 transition active:scale-95 shadow-md">
+                            🖨️ ปริ้น
+                        </button>
                         <a href="${slip}" target="_blank" 
                            class="flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
                             ดูสลิป
@@ -392,6 +396,94 @@ async function updateConfirm(btn, name, slip) {
     
     // หน่วงเวลาโหลดข้อมูลใหม่เพื่อให้ Google Sheets มีเวลาอัปเดต CSV
     setTimeout(loadData, 5000);
+}
+
+window.printLabel = function(idx) {
+    const order = rawOrders[idx];
+    const keys = Object.keys(order);
+    const getVal = (targets) => {
+        for (let t of targets) { if (order[t] !== undefined) return order[t]; }
+        const foundK = keys.find(k => targets.some(t => k.toLowerCase().includes(t.toLowerCase())));
+        if (foundK) return order[foundK];
+        // Fallbacks based on typical column positions
+        if (targets.includes("ชื่อ")) return order[keys[1]];
+        if (targets.includes("เบอร์")) return order[keys[2]];
+        if (targets.includes("ที่อยู่")) return order[keys[3]];
+        if (targets.includes("รายการ")) return order[keys[5]];
+        if (targets.includes("ยอด")) return order[keys[6]];
+        if (targets.includes("วิธีชำระ")) return order[keys[8]];
+        return "";
+    };
+
+    const name = getVal(["ชื่อลูกค้า", "ชื่อ", "name"]);
+    const phone = getVal(["เบอร์โทรศัพท์", "เบอร์โทร", "phone"]);
+    const address = getVal(["ที่อยู่จัดส่ง", "ที่อยู่", "address"]);
+    const items = getVal(["รายการสินค้า", "items", "รายการ"]);
+    const total = getVal(["ยอดรวม", "total", "ราคา"]);
+    const payMethod = getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "โอนเงิน";
+    const isCOD = payMethod === "เก็บเงินปลายทาง";
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Shipping Label - ${name}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap');
+                body { font-family: 'Kanit', sans-serif; padding: 20px; color: #333; }
+                .label-container { border: 2px solid #000; padding: 20px; width: 400px; margin: 0 auto; position: relative; }
+                .shop-name { font-size: 24px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+                .recipient-section { margin-bottom: 20px; }
+                .recipient-title { font-size: 14px; text-decoration: underline; margin-bottom: 5px; }
+                .recipient-name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+                .recipient-address { font-size: 16px; line-height: 1.4; }
+                .items-section { border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 15px; font-size: 12px; color: #666; }
+                .cod-badge { border: 4px solid #000; padding: 10px; text-align: center; margin-top: 15px; font-size: 20px; font-weight: bold; }
+                .footer { margin-top: 20px; font-size: 10px; text-align: center; opacity: 0.5; }
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body onload="window.print()">
+            <div class="label-container">
+                <div class="shop-name">
+                    <span>BlackNight69</span>
+                    <span style="font-size: 12px;">Order #${idx + 1}</span>
+                </div>
+                
+                <div class="recipient-section">
+                    <div class="recipient-title">ผู้รับ (To):</div>
+                    <div class="recipient-name">${name}</div>
+                    <div class="recipient-name">${phone}</div>
+                    <div class="recipient-address">${address}</div>
+                </div>
+
+                <div class="items-section">
+                    <strong>รายการสินค้า:</strong><br>
+                    ${items.split(',').join('<br>')}
+                </div>
+
+                ${isCOD ? `
+                <div class="cod-badge">
+                    เก็บเงินปลายทาง (COD)<br>
+                    ยอดเงิน: ${parseFloat(total).toLocaleString()} ฿
+                </div>
+                ` : `
+                <div style="margin-top: 15px; font-weight: bold; text-align: center; border: 1px solid #ccc; padding: 5px;">
+                    ชำระเงินแล้ว (PAID)
+                </div>
+                `}
+
+                <div class="footer">
+                    ขอบคุณที่ใช้บริการ BlackNight69 - Evolution of Space Retail
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;" class="no-print">
+                <button onclick="window.print()" style="padding: 10px 20px; font-weight: bold;">สั่งพิมพ์อีกครั้ง</button>
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 // --- PRODUCT MANAGEMENT ---
@@ -790,3 +882,4 @@ window.deletePromptpay = deletePromptpay;
 window.savePromptpay = savePromptpay;
 window.previewQRCode = previewQRCode;
 window.deleteAllProducts = deleteAllProducts;
+window.printLabel = window.printLabel;

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,46 +9,117 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Kanit', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .tab-active { border-color: #10b981; color: #059669; background-color: #ecfdf5; }
-        
+        body {
+            font-family: 'Kanit', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-active {
+            border-color: #6366f1;
+            color: #4f46e5;
+            background-color: #eef2ff;
+        }
+
         /* Toast Styles */
-        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px; }
-        .toast { pointer-events: auto; padding: 12px 20px; border-radius: 20px; color: white; font-weight: 600; font-size: 14px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
-        @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .toast.success { background: #10b981; border: 1px solid #059669; }
-        .toast.error { background: #ef4444; border: 1px solid #dc2626; }
-        .toast.hide { animation: slideOut 0.3s forwards; }
-        @keyframes slideOut { to { transform: translateY(-20px); opacity: 0; } }
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .toast {
+            pointer-events: auto;
+            padding: 12px 20px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background: #10b981;
+            border: 1px solid #059669;
+        }
+
+        .toast.error {
+            background: #ef4444;
+            border: 1px solid #dc2626;
+        }
+
+        .toast.hide {
+            animation: slideOut 0.3s forwards;
+        }
+
+        @keyframes slideOut {
+            to {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
+
 <body class="bg-slate-100 min-h-screen">
 
     <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
 
     <!-- CUSTOM CONFIRM MODAL -->
-    <div id="confirmModal" class="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-[2.5rem] shadow-2xl w-full max-w-xs text-center animate-in zoom-in duration-300">
+    <div id="confirmModal"
+        class="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white p-6 rounded-[2.5rem] shadow-2xl w-full max-w-xs text-center animate-in zoom-in duration-300">
             <div class="text-4xl mb-4 text-emerald-600" id="confirmIcon"></div>
             <h3 class="text-xl font-bold text-slate-800 mb-2" id="confirmTitle">ยืนยันการทำรายการ</h3>
             <p class="text-slate-500 text-sm mb-6" id="confirmMsg">คุณแน่ใจใช่ไหมที่จะดำเนินการต่อ?</p>
             <div class="flex gap-3">
-                <button id="confirmCancel" class="flex-1 py-3 px-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition">ยกเลิก</button>
-                <button id="confirmOk" class="flex-1 py-3 px-4 rounded-2xl font-bold bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition">ตกลง</button>
+                <button id="confirmCancel"
+                    class="flex-1 py-3 px-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition">ยกเลิก</button>
+                <button id="confirmOk"
+                    class="flex-1 py-3 px-4 rounded-2xl font-bold bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition">ตกลง</button>
             </div>
         </div>
     </div>
 
     <!-- LOGIN OVERLAY -->
-    <div id="loginOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/40 backdrop-blur-md">
+    <div id="loginOverlay"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/40 backdrop-blur-md">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
             <div class="text-4xl mb-4 text-emerald-600 font-bold">LOGIN</div>
             <h2 class="text-2xl font-bold mb-6 text-slate-800">เข้าสู่ระบบหลังบ้าน</h2>
-            <input type="password" id="passInput" placeholder="รหัสผ่าน..." 
+            <input type="password" id="passInput" placeholder="รหัสผ่าน..."
                 class="w-full px-4 py-3 border rounded-xl mb-4 focus:ring-2 focus:ring-emerald-500 outline-none text-center text-lg">
-            <button onclick="checkPass()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg">ยืนยัน</button>
+            <button onclick="checkPass()"
+                class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg">ยืนยัน</button>
             <p id="errorMsg" class="text-red-500 text-sm mt-3 hidden">รหัสผ่านไม่ถูกต้อง!</p>
         </div>
     </div>
@@ -58,19 +130,25 @@
         <header class="bg-white border-b sticky top-0 z-40">
             <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <span class="text-2xl font-bold text-emerald-600 cursor-pointer" onclick="location.href='index.html'">GS</span>
+                    <span class="text-2xl font-bold text-emerald-600 cursor-pointer"
+                        onclick="location.href='index.html'">GS</span>
                     <div class="flex flex-col">
                         <h1 class="text-xl font-bold text-slate-800 leading-none">Admin Panel</h1>
                         <span id="appVersion" class="text-[10px] text-slate-400 font-bold">v2.1.0</span>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
-                    <button onclick="switchTab('overview')" id="tab-overview" class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">สรุปยอดขาย</button>
-                    <button onclick="switchTab('products')" id="tab-products" class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">จัดการสินค้า</button>
-                    <button onclick="switchTab('promptpay')" id="tab-promptpay" class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">⚡ Promptpay</button>
+                    <button onclick="switchTab('overview')" id="tab-overview"
+                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">สรุปยอดขาย</button>
+                    <button onclick="switchTab('products')" id="tab-products"
+                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">จัดการสินค้า</button>
+                    <button onclick="switchTab('promptpay')" id="tab-promptpay"
+                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">⚡
+                        Promptpay</button>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button onclick="logout()" class="text-slate-400 hover:text-red-500 transition text-sm">Logout</button>
+                    <button onclick="logout()"
+                        class="text-slate-400 hover:text-red-500 transition text-sm">Logout</button>
                 </div>
             </div>
         </header>
@@ -115,7 +193,8 @@
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                 <div class="p-6 border-b flex justify-between items-center bg-slate-50/50">
                     <h3 class="font-bold text-slate-800">ออเดอร์ล่าสุด</h3>
-                    <button onclick="loadData()" class="text-xs font-bold text-emerald-600 hover:underline">รีเฟรช</button>
+                    <button onclick="loadData()"
+                        class="text-xs font-bold text-emerald-600 hover:underline">รีเฟรช</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
@@ -132,28 +211,38 @@
                     </table>
                 </div>
                 <!-- PAGINATION CONTROLS -->
-                <div id="orderPagination" class="p-4 border-t bg-slate-50/30 flex justify-center items-center gap-2"></div>
+                <div id="orderPagination" class="p-4 border-t bg-slate-50/30 flex justify-center items-center gap-2">
+                </div>
             </div>
         </main>
 
         <!-- PRODUCTS TAB -->
         <main id="view-products" class="hidden max-w-6xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span class="w-2 h-8 bg-emerald-500 rounded-full"></span>
-                        รายการสินค้าทั้งหมด
-                    </h2>
-                    <div class="flex gap-2">
-                        <button onclick="toggleProductModal(true, 'add', 'herb')" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition active:scale-95 flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            เพิ่มสมุนไพร
-                        </button>
-                        <button onclick="toggleProductModal(true, 'add', 'accessory')" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-900 transition active:scale-95 flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            เพิ่มอุปกรณ์
-                        </button>
-                    </div>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2 h-8 bg-emerald-500 rounded-full"></span>
+                    รายการสินค้าทั้งหมด
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="deleteAllProducts()"
+                        class="px-4 py-2 bg-red-100 text-red-600 rounded-xl text-sm font-bold hover:bg-red-200 transition active:scale-95 flex items-center gap-2 border border-red-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
+                        </svg>
+                        ลบสินค้าทั้งหมด
+                    </button>
+                    <button onclick="toggleProductModal(true, 'add', 'item')"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition active:scale-95 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        เพิ่มสินค้าใหม่
+                    </button>
                 </div>
+            </div>
 
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -184,8 +273,12 @@
                     <span class="w-2 h-8 bg-blue-500 rounded-full"></span>
                     จัดการช่องทาง Promptpay
                 </h2>
-                <button onclick="togglePromptpayModal(true)" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition active:scale-95 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                <button onclick="togglePromptpayModal(true)"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition active:scale-95 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
                     เพิ่ม Promptpay ใหม่
                 </button>
             </div>
@@ -211,23 +304,30 @@
     </div>
 
     <!-- ADD/EDIT PROMPTPAY MODAL -->
-    <div id="promptpayModal" class="fixed inset-0 z-[110] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="promptpayModal"
+        class="fixed inset-0 z-[110] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-6 border-b flex justify-between items-center bg-slate-50">
                 <h3 id="promptpayModalTitle" class="font-bold text-lg">เพิ่ม Promptpay ใหม่</h3>
                 <button onclick="togglePromptpayModal(false)" class="p-2 hover:bg-slate-200 rounded-full">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
                 </button>
             </div>
             <div class="p-6 overflow-y-auto space-y-5">
                 <form id="promptpayForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อบัญชี *</label>
-                        <input type="text" id="ppName" required class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="เช่น สมชาย จันทร์เสมา">
+                        <input type="text" id="ppName" required
+                            class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="เช่น สมชาย จันทร์เสมา">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">ธนาคาร *</label>
-                        <select id="ppBank" required class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <select id="ppBank" required
+                            class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                             <option value="">-- เลือกธนาคาร --</option>
                             <option value="ธนาคารกรุงเทพ (BBL)">ธนาคารกรุงเทพ (BBL)</option>
                             <option value="ธนาคารกสิกรไทย (KBANK)">ธนาคารกสิกรไทย (KBANK)</option>
@@ -240,19 +340,29 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์บัญชี / หมายเลขโทรศัพท์ *</label>
-                        <input type="text" id="ppNumber" required class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="เช่น 0812345678 หรือ 123-4-5678-9">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">เบอร์บัญชี / หมายเลขโทรศัพท์
+                            *</label>
+                        <input type="text" id="ppNumber" required
+                            class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="เช่น 0812345678 หรือ 123-4-5678-9">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">QR Code รูปภาพ *</label>
-                        <div id="qrPreview" class="mb-4 w-32 h-32 mx-auto border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center bg-slate-50 overflow-hidden">
-                            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <div id="qrPreview"
+                            class="mb-4 w-32 h-32 mx-auto border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center bg-slate-50 overflow-hidden">
+                            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                         </div>
-                        <input type="file" id="ppImage" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" onchange="previewQRCode(this)">
+                        <input type="file" id="ppImage" accept="image/*"
+                            class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            onchange="previewQRCode(this)">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">สถานะ</label>
-                        <select id="ppStatus" class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <select id="ppStatus"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                             <option value="active">ใช้งาน</option>
                             <option value="inactive">ไม่ใช้งาน</option>
                         </select>
@@ -260,7 +370,8 @@
                 </form>
             </div>
             <div class="p-6 border-t bg-slate-50">
-                <button id="savePromptpayBtn" onclick="savePromptpay()" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                <button id="savePromptpayBtn" onclick="savePromptpay()"
+                    class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
                     บันทึก
                 </button>
             </div>
@@ -268,86 +379,112 @@
     </div>
 
     <script type="module" src="./src/adminApp.js"></script>
-    <div id="productModal" class="fixed inset-0 z-[110] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="productModal"
+        class="fixed inset-0 z-[110] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-6 border-b flex justify-between items-center bg-slate-50">
                 <h3 id="modalTitle" class="font-bold text-lg">เพิ่มสินค้าใหม่</h3>
                 <button onclick="toggleProductModal(false)" class="p-2 hover:bg-slate-200 rounded-full">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
                 </button>
             </div>
             <div class="p-6 overflow-y-auto space-y-5">
                 <form id="productForm" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อสินค้า / สายพันธุ์ *</label>
-                            <input type="text" id="pName" required class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="เช่น Ice Cream Cake">
+                            <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อสินค้า *</label>
+                            <input type="text" id="pName" required
+                                class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                placeholder="เช่น กระเป๋าเป้, โทรศัพท์มือถือ">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1">หมวดหมู่ *</label>
-                            <select id="pCategory" class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
-                                <option value="Indica">Indica</option>
-                                <option value="Sativa">Sativa</option>
-                                <option value="Hybrid">Hybrid</option>
-                                <option value="Accessories">อุปกรณ์/บ้อง</option>
-                                <option value="Rolling">กระดาษ/มวน</option>
+                            <select id="pCategory"
+                                class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                                <option value="Electronics">Electronics</option>
+                                <option value="Fashion">Fashion</option>
+                                <option value="Home">Home & Living</option>
+                                <option value="Beauty">Beauty</option>
+                                <option value="Sports">Sports</option>
                                 <option value="Other">อื่นๆ</option>
                             </select>
                         </div>
                     </div>
-                    
+
                     <!-- VARIANT CONTAINER -->
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">ตัวเลือกขนาด ราคา และสต็อก *</label>
                         <div id="variantContainer" class="space-y-3">
                             <!-- Variant Row Template -->
-                            <div class="variant-row flex items-center gap-2 animate-in fade-in slide-in-from-top-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                            <div
+                                class="variant-row flex items-center gap-2 animate-in fade-in slide-in-from-top-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                                 <div class="w-20">
-                                    <label class="text-[10px] text-slate-400 font-bold uppercase">ขนาด</label>
+                                    <label class="text-[10px] text-slate-400 font-bold uppercase">รุ่น/ขนาด</label>
                                     <div class="relative mt-1">
-                                        <input type="number" step="0.1" placeholder="G" class="v-size w-full border rounded-lg pl-2 pr-5 py-1.5 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
-                                        <span class="absolute right-1.5 top-1.5 text-slate-400 text-[10px] font-bold">G</span>
+                                        <input type="text" placeholder="เช่น XL, Pro"
+                                            class="v-size w-full border rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
                                     </div>
                                 </div>
                                 <div class="w-16">
                                     <label class="text-[10px] text-slate-400 font-bold uppercase">ราคา</label>
-                                    <input type="number" placeholder="฿" class="v-price w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+                                    <input type="number" placeholder="฿"
+                                        class="v-price w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
                                 </div>
                                 <div class="w-16">
                                     <label class="text-[10px] text-slate-400 font-bold uppercase">คลัง</label>
-                                    <input type="number" placeholder="ชิ้น" class="v-stock w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+                                    <input type="number" placeholder="ชิ้น"
+                                        class="v-stock w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
                                 </div>
                                 <div class="w-16">
                                     <label class="text-[10px] text-slate-400 font-bold uppercase">ขายแล้ว</label>
-                                    <input type="number" placeholder="ชิ้น" class="v-sold w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+                                    <input type="number" placeholder="ชิ้น"
+                                        class="v-sold w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
                                 </div>
-                                <button type="button" onclick="removeVariant(this)" class="mt-4 p-1 text-red-300 hover:text-red-500">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                                <button type="button" onclick="removeVariant(this)"
+                                    class="mt-4 p-1 text-red-300 hover:text-red-500">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                            clip-rule="evenodd"></path>
+                                    </svg>
                                 </button>
                             </div>
                         </div>
-                        <button type="button" onclick="addVariant()" class="mt-3 text-xs font-bold text-emerald-600 flex items-center gap-1 hover:text-emerald-700">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            เพิ่มตัวเลือกราคา/ขนาด
+                        <button type="button" onclick="addVariant()"
+                            class="mt-3 text-xs font-bold text-indigo-600 flex items-center gap-1 hover:text-indigo-700">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            เพิ่มตัวเลือกราคา/รุ่น
                         </button>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1">คำอธิบายสั้นๆ</label>
-                        <input type="text" id="pNote" class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="เช่น Indica 60% กลิ่นหวาน...">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">คำอธิบาย</label>
+                        <input type="text" id="pNote"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="รายละเอียดสินค้า...">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">แท็ก (คั่นด้วยคอมม่า)</label>
-                        <input type="text" id="pTags" class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="เมา, หวาน, ง่วง">
+                        <input type="text" id="pTags"
+                            class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="โปรโมชั่น, ขายดี">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1">รูปภาพสินค้า</label>
-                        <input type="file" id="pImage" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                        <input type="file" id="pImage" accept="image/*"
+                            class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
                     </div>
                 </form>
             </div>
             <div class="p-6 border-t bg-slate-50">
-                <button id="saveProductBtn" onclick="saveProduct()" class="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+                <button id="saveProductBtn" onclick="saveProduct()"
+                    class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
                     บันทึกและขึ้นขายทันที
                 </button>
             </div>
@@ -356,4 +493,5 @@
 
     <script type="module" src="./src/adminApp.js"></script>
 </body>
+
 </html>

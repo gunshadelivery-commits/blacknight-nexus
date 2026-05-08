@@ -8,24 +8,13 @@ let cart = [];
 let currentCategory = "All";
 let currentLineUrl = "";
 
-// --- AI: SMART STRAIN CLASSIFIER ---
-const STRAIN_DB = {
-    sativa: ["haze", "sour diesel", "durban", "jack herer", "green crack", "ghost train", "strawberry cough", "thai", "acapulco", "amnesia", "clem", "tangie"],
-    indica: ["kush", "cake", "cookie", "northern lights", "purple", "berry", "grape", "afghan", "bubba", "granddaddy", "godfather", "white widow", "gorb", "runtz"],
-    hybrid: ["gorilla", "glue", "wedding", "sherbert", "gelato", "z-", "lemon cherry", "skunk", "cheese", "blue dream", "mac", "ak-47", "girl scout"],
-    accessories: ["bong", "grinder", "blender", "lighter", "บ้อง", "เครื่องบด", "เครื่องปั่น", "ไกเดอร์", "ไฟแช็ค", "หลุม"],
-    rolling: ["paper", "roll", "raw", "ocb", "filter", "tips", "กระดาษ", "มวน", "ก้นกรอง", "พันลำ"]
-};
-
-function classifyStrain(name) {
+// --- GENERIC CATEGORY CLASSIFIER ---
+function classifyItem(name) {
     const n = name.toLowerCase();
-    if (STRAIN_DB.sativa.some(s => n.includes(s))) return "Sativa";
-    if (STRAIN_DB.indica.some(i => n.includes(i))) return "Indica";
-    if (STRAIN_DB.hybrid.some(h => n.includes(h))) return "Hybrid";
-    if (STRAIN_DB.accessories.some(a => n.includes(a))) return "Accessories";
-    if (STRAIN_DB.rolling.some(r => n.includes(r))) return "Rolling";
-
-    return "Other"; // Default for unknown strains
+    if (["phone", "laptop", "watch", "tech", "gadget"].some(s => n.includes(s))) return "Electronics";
+    if (["shirt", "pants", "dress", "bag", "shoe"].some(i => n.includes(i))) return "Fashion";
+    if (["chair", "table", "lamp", "sofa", "bed"].some(h => n.includes(h))) return "Home";
+    return "Other";
 }
 
 // --- CUSTOM UI: TOAST ---
@@ -33,7 +22,7 @@ function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    const icon = type === 'success' ? '✅' : '❌';
+    const icon = type === 'success' ? '✨' : '❌';
     toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
     container.appendChild(toast);
     setTimeout(() => {
@@ -99,7 +88,7 @@ function loadProductsFromSheet(callback) {
                         variants: [],
                         selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: item["หมวดหมู่"] || classifyStrain(item.name) // Use manual category if available, otherwise AI
+                        aiType: item["หมวดหมู่"] || classifyItem(item.name) // Use manual category if available, otherwise generic
                     };
                 }
 
@@ -107,7 +96,7 @@ function loadProductsFromSheet(callback) {
                 const sold = parseInt(item.sold_count) || 0;
 
                 grouped[item.name].variants.push({
-                    size: item.size || '1G',
+                    size: item.size || 'Standard',
                     price: parseFloat(item.price) || 0,
                     stock: stock,
                     sold: sold
@@ -133,11 +122,7 @@ function renderProducts(filter = "") {
     const filtered = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q);
         const matchesCategory = currentCategory === "All" || p.aiType === currentCategory;
-
-        // Main page ONLY shows Herbs (Indica, Sativa, Hybrid) + Other (if it doesn't match Accessories/Rolling)
-        const isAccessory = ["Accessories", "Rolling"].includes(p.aiType);
-
-        return matchesSearch && matchesCategory && !isAccessory;
+        return matchesSearch && matchesCategory;
     });
 
     if (filtered.length === 0) {
@@ -182,7 +167,7 @@ function renderProducts(filter = "") {
                 <!-- VARIANT SELECTOR -->
                 <div class="mt-3 flex flex-wrap gap-1">
                     ${p.variants.map((v, vIdx) => `
-                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 text-slate-500 border-slate-100'} ${v.stock <= 0 ? 'opacity-40' : ''}">
+                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 text-slate-500 border-slate-100'} ${v.stock <= 0 ? 'opacity-40' : ''}">
                             ${v.size}
                         </button>
                     `).join('')}
@@ -191,8 +176,8 @@ function renderProducts(filter = "") {
                 ${variant.stock > 0 && variant.stock <= 5 ? `<p class="text-[9px] text-red-500 font-bold mt-2">🔥 เหลือเพียง ${variant.stock} ชิ้น!</p>` : ''}
 
                 <div class="mt-3 flex items-center justify-between">
-                    <p class="font-bold text-emerald-600 text-sm">${variant.price.toLocaleString()} ฿</p>
-                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-emerald-100 text-emerald-700 p-2 rounded-lg hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-30">
+                    <p class="font-bold text-indigo-600 text-sm">${variant.price.toLocaleString()} ฿</p>
+                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-indigo-100 text-indigo-700 p-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-30">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </button>
                 </div>
@@ -206,10 +191,14 @@ function switchCategory(cat) {
     currentCategory = cat;
     // Update UI
     document.querySelectorAll('.category-tab').forEach(t => {
-        t.classList.replace('category-tab-active', 'category-tab-inactive');
+        t.classList.remove('category-tab-active');
+        t.classList.add('category-tab-inactive');
     });
     const tabEl = document.getElementById('tab-' + cat);
-    if (tabEl) tabEl.classList.replace('category-tab-inactive', 'category-tab-active');
+    if (tabEl) {
+        tabEl.classList.remove('category-tab-inactive');
+        tabEl.classList.add('category-tab-active');
+    }
 
     // Check if search input exists
     const searchInput = document.getElementById('searchInput');
@@ -269,12 +258,12 @@ function updateCartUI() {
             subtotal += item.price * item.qty;
             return `
                 <div class="flex gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <img src="${item.image}" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='🌿';">
+                    <img src="${item.image}" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='📦';">
                     <div class="flex-1">
                         <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${item.size}</p>
                         <div class="flex justify-between items-center mt-2">
-                            <p class="text-emerald-600 font-bold text-sm">${(item.price * item.qty).toLocaleString()} ฿</p>
+                            <p class="text-indigo-600 font-bold text-sm">${(item.price * item.qty).toLocaleString()} ฿</p>
                             <div class="flex items-center gap-3">
                                 <button onclick="window.updateQty(${idx}, -1)" class="w-6 h-6 border flex items-center justify-center p-1 rounded-full">-</button>
                                 <span class="text-sm font-bold">${item.qty}</span>
@@ -371,7 +360,7 @@ function previewSlip(input) {
     if (input.files[0]) {
         const reader = new FileReader();
         reader.onload = e => {
-            document.getElementById('slipPreview').innerHTML = `<img src="${e.target.result}" class="h-32 w-auto mx-auto rounded-xl shadow-md"><p class="mt-2 text-xs text-emerald-600 font-bold">✓ เลือกสลิปแล้ว</p>`;
+            document.getElementById('slipPreview').innerHTML = `<img src="${e.target.result}" class="h-32 w-auto mx-auto rounded-xl shadow-md"><p class="mt-2 text-xs text-indigo-600 font-bold">✓ เลือกสลิปแล้ว</p>`;
         };
         reader.readAsDataURL(input.files[0]);
     }
@@ -543,7 +532,7 @@ async function submitOrder() {
 
         // 3. Premium LINE Message
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} [${i.size}] x${i.qty}`).join('\n');
-        const lineMsg = `🌿 ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
+        const lineMsg = `✨ ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
 📞 เบอร์: ${data.phone}
 📍 พิกัดจัดส่ง: ${data.map}
 
@@ -564,7 +553,7 @@ ${itemsDetail}
             particleCount: 150,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#10b981', '#ffffff', '#fbbf24', '#ef4444']
+            colors: ['#6366f1', '#ffffff', '#fbbf24', '#ef4444']
         });
 
         // Wait 3 seconds before auto redirect
@@ -600,7 +589,177 @@ window.redirectToLine = () => {
     else window.location.reload();
 };
 
+// --- THREE.JS 3D ANIMATION (POV SPACE FLIGHT) ---
+function initHero3D() {
+    const container = document.getElementById('three-canvas-container');
+    if (!container || !window.THREE) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    // 1. DEBRIS FIELD (Varied Shapes & Colors)
+    const debris = [];
+    const debrisCount = 60;
+    const geometries = [
+        new THREE.IcosahedronGeometry(1, 0),
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.TorusGeometry(0.5, 0.2, 8, 16),
+        new THREE.OctahedronGeometry(1, 0)
+    ];
+
+    const colors = [0x6366f1, 0xec4899, 0xf59e0b, 0x10b981, 0x3b82f6, 0x8b5cf6, 0xf43f5e];
+
+    for (let i = 0; i < debrisCount; i++) {
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const material = new THREE.MeshPhongMaterial({ 
+            color: randomColor, 
+            flatShading: true,
+            shininess: 50,
+            emissive: randomColor,
+            emissiveIntensity: 0.3
+        });
+
+        const geo = geometries[Math.floor(Math.random() * geometries.length)];
+        const mesh = new THREE.Mesh(geo, material);
+        resetAsteroid(mesh);
+        mesh.position.z = Math.random() * -150;
+        scene.add(mesh);
+        debris.push({
+            mesh,
+            rotSpeedX: (Math.random() - 0.5) * 0.04,
+            rotSpeedY: (Math.random() - 0.5) * 0.04,
+            speed: Math.random() * 0.3 + 0.2
+        });
+    }
+
+    function resetAsteroid(mesh) {
+        mesh.position.x = (Math.random() - 0.5) * 60;
+        mesh.position.y = (Math.random() - 0.5) * 30;
+        mesh.position.z = -150;
+        const scale = Math.random() * 1.2 + 0.2;
+        mesh.scale.set(scale, scale, scale);
+    }
+
+    // 2. STARFIELD (Increased Density & Movement)
+    const starGeometry = new THREE.BufferGeometry();
+    const starMaterial = new THREE.PointsMaterial({ 
+        color: 0xffffff, 
+        size: 0.15,
+        transparent: true,
+        opacity: 0.8
+    });
+    const starVertices = [];
+    for (let i = 0; i < 4000; i++) {
+        starVertices.push((Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000, (Math.random() - 0.5) * 2000);
+    }
+    starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
+
+    // 3. NEBULA CLOUDS (Procedural)
+    const nebulaColors = [0x4f46e5, 0x7c3aed, 0xdb2777];
+    const nebulae = [];
+    for (let i = 0; i < 5; i++) {
+        const geo = new THREE.SphereGeometry(20, 32, 32);
+        const mat = new THREE.MeshBasicMaterial({
+            color: nebulaColors[i % nebulaColors.length],
+            transparent: true,
+            opacity: 0.05,
+            side: THREE.BackSide
+        });
+        const nebula = new THREE.Mesh(geo, mat);
+        nebula.position.set((Math.random() - 0.5) * 200, (Math.random() - 0.5) * 200, -300 - Math.random() * 200);
+        nebula.scale.set(5, 5, 5);
+        scene.add(nebula);
+        nebulae.push(nebula);
+    }
+
+    // LIGHTING
+    const mainLight = new THREE.PointLight(0xffffff, 2.5, 150);
+    mainLight.position.set(0, 0, 10);
+    scene.add(mainLight);
+    
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    scene.add(ambientLight);
+
+    camera.position.z = 5;
+
+    let mouseX = 0;
+    let mouseY = 0;
+    document.addEventListener('mousemove', (e) => {
+        mouseX = (e.clientX - window.innerWidth / 2) / 150;
+        mouseY = (e.clientY - window.innerHeight / 2) / 150;
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const time = Date.now() * 0.001;
+
+        debris.forEach(d => {
+            d.mesh.position.z += d.speed;
+            d.mesh.rotation.x += d.rotSpeedX;
+            d.mesh.rotation.y += d.rotSpeedY;
+            if (d.mesh.position.z > 15) resetAsteroid(d.mesh);
+        });
+
+        // Dynamic Camera movement
+        camera.position.x += (mouseX - camera.position.x) * 0.03;
+        camera.position.y += (-mouseY - camera.position.y) * 0.03;
+        camera.rotation.z = -camera.position.x * 0.1; // Bank on turn
+        camera.lookAt(0, 0, -50);
+
+        // Stars & Nebula movement
+        stars.rotation.z += 0.0003;
+        nebulae.forEach((n, i) => {
+            n.rotation.y += 0.001 * (i + 1);
+            n.position.z += 0.1;
+            if (n.position.z > 100) n.position.z = -500;
+        });
+
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    animate();
+}
+
+// --- DYNAMIC HERO BACKGROUND ---
+function updateHeroBackground() {
+    const bg = document.getElementById('hero-bg');
+    if (!bg) return;
+    
+    // Using Unsplash source for high-quality landscape photos
+    const keywords = ['landscape', 'nature', 'mountains', 'night', 'galaxy', 'abstract'];
+    const randomKeyword = keywords[Math.floor(Math.random() * keywords.length)];
+    const imageUrl = `https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80`; // Default placeholder
+    
+    // Instead of fixed URL, let's use the dynamic source
+    const dynamicUrl = `https://source.unsplash.com/random/1600x900/?${randomKeyword}`;
+    
+    // Smooth transition
+    const tempImg = new Image();
+    tempImg.src = dynamicUrl;
+    tempImg.onload = () => {
+        bg.style.backgroundImage = `url('${dynamicUrl}')`;
+    };
+}
+
 // Setup input listeners to avoid parameter passing issues
 document.addEventListener('DOMContentLoaded', () => {
     loadProductsFromSheet(renderProducts);
+    initHero3D();
+    updateHeroBackground();
+    
+    // Change background every 30 seconds
+    setInterval(updateHeroBackground, 30000);
 });

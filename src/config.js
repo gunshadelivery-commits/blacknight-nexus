@@ -5,9 +5,9 @@
 // ============================================================
 
 // --- ข้อมูลร้าน (Shop Branding) ---
-export const SHOP_NAME = "GUNSHA Delivery";
-export const SHOP_VERSION = "2.0.0";
-export const SHOP_TAGLINE = "สดใหม่ ส่งไว ถึงมือ 🌿";
+export const SHOP_NAME = "BlackNight69";
+export const SHOP_VERSION = "3.0.0";
+export const SHOP_TAGLINE = "พรีเมียมทุกระดับ ประทับใจทุกชิ้น 🚀";
 
 // --- Google Sheets CSV URL ---
 export const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1rczsaPil58aAm_kw1FdhopdJA0U6v6x2ELROaupP09g/gviz/tq?tqx=out:csv";

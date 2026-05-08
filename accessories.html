@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gunsha Accessories - ร้านอุปกรณ์</title>
+    <title>BlackNight69 - สินค้าทั้งหมด</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,7 +17,7 @@
             white-space: nowrap;
             transition: all 0.2s;
         }
-        .category-tab-active { background-color: #10b981; color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+        .category-tab-active { background-color: #6366f1; color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
         .category-tab-inactive { background-color: white; color: #64748b; border: 1px solid #f1f5f9; }
         .animate-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -26,7 +26,7 @@
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px; }
         .toast { pointer-events: auto; padding: 12px 20px; border-radius: 20px; color: white; font-weight: 600; font-size: 14px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
         @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .toast.success { background: #10b981; border: 1px solid #059669; }
+        .toast.success { background: #6366f1; border: 1px solid #4f46e5; }
         .toast.error { background: #ef4444; border: 1px solid #dc2626; }
         .toast.hide { animation: slideOut 0.3s forwards; }
         @keyframes slideOut { to { transform: translateY(-20px); opacity: 0; } }
@@ -39,10 +39,10 @@
     <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
         <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
-                <span class="text-xl">🏺</span>
+                <span class="text-xl">📦</span>
                 <div class="flex flex-col">
-                    <h1 class="text-lg font-bold leading-none text-slate-800">GUNSHA Accessories</h1>
-                    <span class="text-[10px] opacity-60 font-bold uppercase tracking-wider text-slate-400">Premium Gear v2.0.0</span>
+                    <h1 class="text-lg font-bold leading-none text-slate-800">BlackNight69</h1>
+                    <span class="text-[10px] opacity-60 font-bold uppercase tracking-wider text-slate-400">Quality Items v3.0.0</span>
                 </div>
             </div>
             <button onclick="toggleCart()" class="relative p-2 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
@@ -54,21 +54,21 @@
 
     <!-- BANNER -->
     <div class="max-w-md mx-auto px-4 mt-4">
-        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-slate-200">
+        <div class="bg-gradient-to-br from-indigo-800 to-indigo-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-indigo-100">
             <div class="relative z-10">
-                <h2 class="text-2xl font-bold mb-1">อุปกรณ์ครบมือ ✨</h2>
-                <p class="text-slate-400 text-xs">บ้อง เครื่องบด และกระดาษพรีเมียม</p>
+                <h2 class="text-2xl font-bold mb-1">คอลเลกชันใหม่ ✨</h2>
+                <p class="text-indigo-400 text-xs">สินค้าคุณภาพพรีเมียม เลือกสรรมาเพื่อคุณ</p>
             </div>
-            <span class="absolute -right-4 -bottom-4 text-8xl opacity-10 rotate-12">🏺</span>
+            <span class="absolute -right-4 -bottom-4 text-8xl opacity-10 rotate-12">📦</span>
         </div>
     </div>
 
     <!-- CATEGORY TABS -->
     <div class="max-w-md mx-auto px-4 mt-6 overflow-x-auto no-scrollbar flex gap-2" id="categoryTabs">
         <button onclick="switchCategory('All')" class="category-tab category-tab-active" id="tab-All">ทั้งหมด</button>
-        <button onclick="switchCategory('Accessories')" class="category-tab category-tab-inactive" id="tab-Accessories">🏺 อุปกรณ์/บ้อง</button>
-        <button onclick="switchCategory('Rolling')" class="category-tab category-tab-inactive" id="tab-Rolling">📝 กระดาษ/มวน</button>
-        <button onclick="switchCategory('Other')" class="category-tab category-tab-inactive" id="tab-Other">✨ อื่นๆ</button>
+        <button onclick="switchCategory('Electronics')" class="category-tab category-tab-inactive" id="tab-Electronics">💻 Electronics</button>
+        <button onclick="switchCategory('Fashion')" class="category-tab category-tab-inactive" id="tab-Fashion">👕 Fashion</button>
+        <button onclick="switchCategory('Home')" class="category-tab category-tab-inactive" id="tab-Home">🏠 Home</button>
     </div>
 
     <!-- PRODUCT LIST -->
@@ -187,12 +187,12 @@
     <!-- BOTTOM NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center py-2 z-50 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.05)]">
         <a href="index.html" class="flex flex-col items-center gap-1 group">
-            <span class="text-xl opacity-40 group-[.active]:opacity-100 transition-opacity">🌿</span>
-            <span class="text-[10px] font-bold text-slate-400 group-[.active]:text-emerald-600 transition-colors">ร้านสมุนไพร</span>
+            <span class="text-xl opacity-40 group-[.active]:opacity-100 transition-opacity">🏠</span>
+            <span class="text-[10px] font-bold text-slate-400 group-[.active]:text-indigo-600 transition-colors">หน้าแรก</span>
         </a>
         <a href="accessories.html" class="flex flex-col items-center gap-1 active group">
-            <span class="text-xl opacity-40 group-[.active]:opacity-100 transition-opacity">🏺</span>
-            <span class="text-[10px] font-bold text-slate-400 group-[.active]:text-emerald-600 transition-colors">ร้านอุปกรณ์</span>
+            <span class="text-xl opacity-40 group-[.active]:opacity-100 transition-opacity">📦</span>
+            <span class="text-[10px] font-bold text-slate-400 group-[.active]:text-indigo-600 transition-colors">สินค้าทั้งหมด</span>
         </a>
     </nav>
 

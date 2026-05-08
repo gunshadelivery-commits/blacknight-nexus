@@ -52,32 +52,26 @@ function customConfirm(title, message, icon = '') {
 
 // --- VARIANT MANAGEMENT ---
 function addVariant(size="", price="", stock=0, sold=0) {
-    const category = document.getElementById('pCategory').value;
-    const isAccessory = ["Accessories", "Rolling", "Other"].includes(category);
-    const unitLabel = isAccessory ? "ชิ้น" : "G";
-    const cleanSize = size.toString().replace('G', '').replace('ชิ้น', '');
-    
     const row = document.createElement('div');
     row.className = 'variant-row flex items-center gap-2 animate-in fade-in slide-in-from-top-1 bg-slate-50 p-3 rounded-2xl border border-slate-100';
     row.innerHTML = `
         <div class="w-20">
-            <label class="text-[10px] text-slate-400 font-bold uppercase">${isAccessory ? "ประเภท/รุ่น" : "ขนาด"}</label>
+            <label class="text-[10px] text-slate-400 font-bold uppercase">รุ่น/ขนาด</label>
             <div class="relative mt-1">
-                <input type="${isAccessory ? 'text' : 'number'}" step="0.1" placeholder="${unitLabel}" value="${cleanSize}" class="v-size w-full border rounded-lg pl-2 pr-7 py-1.5 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
-                <span class="absolute right-1.5 top-1.5 text-slate-400 text-[10px] font-bold">${unitLabel}</span>
+                <input type="text" placeholder="เช่น XL" value="${size}" class="v-size w-full border rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
             </div>
         </div>
         <div class="w-16">
             <label class="text-[10px] text-slate-400 font-bold uppercase">ราคา</label>
-            <input type="number" placeholder="฿" value="${price}" class="v-price w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+            <input type="number" placeholder="฿" value="${price}" class="v-price w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
         </div>
         <div class="w-16">
             <label class="text-[10px] text-slate-400 font-bold uppercase">คลัง</label>
-            <input type="number" placeholder="ชิ้น" value="${stock}" class="v-stock w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+            <input type="number" placeholder="ชิ้น" value="${stock}" class="v-stock w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
         </div>
         <div class="w-16">
             <label class="text-[10px] text-slate-400 font-bold uppercase">ขายแล้ว</label>
-            <input type="number" placeholder="ชิ้น" value="${sold}" class="v-sold w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-emerald-500 outline-none">
+            <input type="number" placeholder="ชิ้น" value="${sold}" class="v-sold w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
         </div>
         <button type="button" onclick="removeVariant(this)" class="mt-4 p-1 text-red-300 hover:text-red-500">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
@@ -115,9 +109,9 @@ function switchTab(tabId) {
     const viewEl = document.getElementById('view-' + tabId);
     if (viewEl) viewEl.classList.remove('hidden');
     
-    document.querySelectorAll('header button').forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-emerald-600'));
+    document.querySelectorAll('header button').forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600'));
     const activeBtn = document.getElementById('tab-' + tabId);
-    if(activeBtn) activeBtn.classList.add('bg-white', 'shadow-sm', 'text-emerald-600');
+    if(activeBtn) activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
 
     if (tabId === 'products') loadProducts();
     else loadData();
@@ -147,26 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadProducts();
         loadPromptpayData();
         
-        // ดักการเปลี่ยนหมวดหมู่เพื่อปรับหน่วย (G หรือ ชิ้น) - เพิ่มการเช็คเพื่อป้องกัน Error
-        const categoryEl = document.getElementById('pCategory');
-        if (categoryEl) {
-            categoryEl.addEventListener('change', (e) => {
-                const isAccessory = ["Accessories", "Rolling", "Other"].includes(e.target.value);
-                const unitLabel = isAccessory ? "ชิ้น" : "G";
-                const rows = document.querySelectorAll('.variant-row');
-                rows.forEach(row => {
-                    const label = row.querySelector('label');
-                    const span = row.querySelector('span');
-                    const input = row.querySelector('.v-size');
-                    if (label) label.textContent = isAccessory ? "ประเภท/รุ่น" : "ขนาด";
-                    if (span) span.textContent = unitLabel;
-                    if (input) {
-                        input.placeholder = unitLabel;
-                        input.type = isAccessory ? "text" : "number";
-                    }
-                });
-            });
-        }
+        // Removed cannabis-specific category listener
 
         if (localStorage.getItem('adminAuth') === 'true') showDashboard();
     } catch (err) {
@@ -510,6 +485,24 @@ async function deleteFullProduct(name) {
     loadProducts();
 }
 
+async function deleteAllProducts() {
+    if(!(await customConfirm("ลบสินค้าทั้งหมด", "คุณแน่ใจใช่ไหมที่จะลบสินค้า 'ทุกรายการ' ออกจากระบบถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้!", "⚠️"))) return;
+    showToast("กำลังเริ่มการลบสินค้าทั้งหมด...", "success");
+    
+    // ดึงรายการชื่อสินค้าทั้งหมดที่ไม่ซ้ำกัน
+    const uniqueNames = [...new Set(rawProducts.map(p => p.name))];
+    
+    for(let name of uniqueNames) {
+        const variants = rawProducts.filter(p => p.name === name);
+        for(let v of variants) {
+            await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) });
+        }
+    }
+    
+    showToast("ลบสินค้าทั้งหมดเรียบร้อยแล้ว", "success");
+    loadProducts();
+}
+
 async function saveProduct() {
     const btn = document.getElementById('saveProductBtn');
     const fileInput = document.getElementById('pImage');
@@ -518,13 +511,11 @@ async function saveProduct() {
     const note = document.getElementById('pNote').value;
     const tags = document.getElementById('pTags').value;
     const variantRows = document.querySelectorAll('.variant-row');
-    const isHerb = ["Indica", "Sativa", "Hybrid"].includes(category);
     const variants = Array.from(variantRows).map(row => {
         let sizeVal = row.querySelector('.v-size').value;
-        if (!sizeVal && !isHerb) sizeVal = "Standard";
-        if (sizeVal && !sizeVal.toString().endsWith('G') && isHerb) sizeVal += 'G';
+        if (!sizeVal) sizeVal = "Standard";
         return { size: sizeVal, price: row.querySelector('.v-price').value, stock: row.querySelector('.v-stock').value || 0, sold: row.querySelector('.v-sold').value || 0 };
-    }).filter(v => v.size && v.price && (isHerb ? v.size !== 'G' : true));
+    }).filter(v => v.size && v.price);
 
     if(!name || variants.length === 0) return alert("กรุณากรอกข้อมูลที่สำคัญให้ครบ");
 
@@ -749,4 +740,4 @@ window.editPromptpay = editPromptpay;
 window.deletePromptpay = deletePromptpay;
 window.savePromptpay = savePromptpay;
 window.previewQRCode = previewQRCode;
-window.loadPromptpayData = loadPromptpayData;
+window.deleteAllProducts = deleteAllProducts;

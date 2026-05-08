@@ -8,24 +8,13 @@ let cart = [];
 let currentCategory = "All";
 let currentLineUrl = "";
 
-// --- AI: SMART STRAIN CLASSIFIER ---
-const STRAIN_DB = {
-    sativa: ["haze", "sour diesel", "durban", "jack herer", "green crack", "ghost train", "strawberry cough", "thai", "acapulco", "amnesia", "clem", "tangie"],
-    indica: ["kush", "cake", "cookie", "northern lights", "purple", "berry", "grape", "afghan", "bubba", "granddaddy", "godfather", "white widow", "gorb", "runtz"],
-    hybrid: ["gorilla", "glue", "wedding", "sherbert", "gelato", "z-", "lemon cherry", "skunk", "cheese", "blue dream", "mac", "ak-47", "girl scout"],
-    accessories: ["bong", "grinder", "blender", "lighter", "บ้อง", "เครื่องบด", "เครื่องปั่น", "ไกเดอร์", "ไฟแช็ค", "หลุม"],
-    rolling: ["paper", "roll", "raw", "ocb", "filter", "tips", "กระดาษ", "มวน", "ก้นกรอง", "พันลำ"]
-};
-
-function classifyStrain(name) {
+// --- GENERIC CATEGORY CLASSIFIER ---
+function classifyItem(name) {
     const n = name.toLowerCase();
-    if (STRAIN_DB.sativa.some(s => n.includes(s))) return "Sativa";
-    if (STRAIN_DB.indica.some(i => n.includes(i))) return "Indica";
-    if (STRAIN_DB.hybrid.some(h => n.includes(h))) return "Hybrid";
-    if (STRAIN_DB.accessories.some(a => n.includes(a))) return "Accessories";
-    if (STRAIN_DB.rolling.some(r => n.includes(r))) return "Rolling";
-    
-    return "Other"; // Default for unknown strains
+    if (["phone", "laptop", "watch", "tech", "gadget"].some(s => n.includes(s))) return "Electronics";
+    if (["shirt", "pants", "dress", "bag", "shoe"].some(i => n.includes(i))) return "Fashion";
+    if (["chair", "table", "lamp", "sofa", "bed"].some(h => n.includes(h))) return "Home";
+    return "Other";
 }
 
 // --- CUSTOM UI: TOAST ---
@@ -34,7 +23,7 @@ function showToast(message, type = 'success') {
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    const icon = type === 'success' ? '✅' : '❌';
+    const icon = type === 'success' ? '✨' : '❌';
     toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
     container.appendChild(toast);
     setTimeout(() => {
@@ -74,7 +63,7 @@ function loadProductsFromSheet(callback) {
                         variants: [],
                         selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: item["หมวดหมู่"] || classifyStrain(item.name)
+                        aiType: item["หมวดหมู่"] || classifyItem(item.name)
                     };
                 }
                 
@@ -107,8 +96,7 @@ function renderProducts(filter = "") {
     const filtered = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q);
         const matchesCategory = currentCategory === "All" || p.aiType === currentCategory;
-        const isAccessory = ["Accessories", "Rolling"].includes(p.aiType);
-        return matchesSearch && matchesCategory && isAccessory;
+        return matchesSearch && matchesCategory;
     });
 
     if (filtered.length === 0) {
@@ -126,8 +114,8 @@ function renderProducts(filter = "") {
 
         card.innerHTML = `
             <div class="aspect-square bg-slate-50 rounded-2xl mb-3 relative overflow-hidden">
-                <img src="${p.image}" class="w-full h-full object-cover ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-50' : ''}" onerror="this.outerHTML='<span class=\\'text-3xl flex items-center justify-center h-full\\'>🏺</span>';" />
-                ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 flex items-center justify-center"><span class="bg-slate-900 text-white text-[10px] font-bold px-3 py-1 rounded-full">หมด</span></div>` : ''}
+                <img src="${p.image}" class="w-full h-full object-cover ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-50' : ''}" onerror="this.outerHTML='<span class=\\'text-3xl flex items-center justify-center h-full\\'>📦</span>';" />
+                ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">หมด</span></div>` : ''}
             </div>
             <div class="flex-1 flex flex-col">
                 <h3 class="font-bold text-slate-800 text-sm line-clamp-1">${p.name}</h3>
@@ -136,15 +124,15 @@ function renderProducts(filter = "") {
                 <!-- VARIANT SELECTOR -->
                 <div class="mt-2 flex flex-wrap gap-1">
                     ${p.variants.length > 1 ? p.variants.map((v, vIdx) => `
-                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-0.5 text-[9px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white text-slate-400 border-slate-100'}">
+                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-0.5 text-[9px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white text-slate-400 border-slate-100'}">
                             ${v.size}
                         </button>
                     `).join('') : ''}
                 </div>
 
                 <div class="mt-auto pt-3 flex items-center justify-between">
-                    <p class="font-black text-slate-900 text-sm">${variant.price.toLocaleString()} ฿</p>
-                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="w-8 h-8 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-slate-800 transition active:scale-90 disabled:opacity-20">
+                    <p class="font-black text-indigo-600 text-sm">${variant.price.toLocaleString()} ฿</p>
+                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 transition active:scale-90 disabled:opacity-20 shadow-md">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </button>
                 </div>
@@ -218,10 +206,10 @@ function updateCartUI() {
             total += item.price * item.qty;
             return `
                 <div class="flex gap-4 items-center">
-                    <img src="${item.image}" class="w-16 h-16 object-cover rounded-2xl bg-slate-50">
+                    <img src="${item.image}" class="w-16 h-16 object-cover rounded-2xl bg-slate-50" onerror="this.outerHTML='📦';">
                     <div class="flex-1">
                         <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
-                        <p class="text-xs text-slate-900 font-black mt-1">${item.price.toLocaleString()} ฿</p>
+                        <p class="text-xs text-indigo-600 font-black mt-1">${item.price.toLocaleString()} ฿</p>
                     </div>
                     <div class="flex items-center gap-3 bg-slate-50 p-2 rounded-xl">
                         <button onclick="window.updateQty(${idx}, -1)" class="w-6 h-6 flex items-center justify-center font-bold">-</button>
@@ -303,7 +291,7 @@ async function submitOrder() {
 
         // 3. Premium LINE Message
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} x${i.qty}`).join('\n');
-        const lineMsg = `🏺 ออเดอร์อุปกรณ์! [${SHOP_NAME} v${SHOP_VERSION}]
+        const lineMsg = `✨ ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
 📞 เบอร์: ${phone}
 📍 พิกัดจัดส่ง: ${map}
 
@@ -319,7 +307,7 @@ ${itemsDetail}
         document.getElementById('finalOrderTotal').textContent = subtotal.toLocaleString() + " ฿";
         document.getElementById('successModal').classList.remove('hidden');
         
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#ffffff', '#fbbf24', '#ef4444'] });
         
         // Auto redirect after 3s
         setTimeout(() => { if(currentLineUrl) window.location.href = currentLineUrl; }, 3000);

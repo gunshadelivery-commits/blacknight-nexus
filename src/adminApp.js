@@ -286,7 +286,10 @@ function renderOrdersTable() {
         };
 
         const status = (getVal(["สถานะ", "status"]) || "รอดำเนินการ").toString().trim();
+        const payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "โอนเงิน").toString().trim();
         const isConfirmed = status === "ชำระเงินแล้ว";
+        const isCOD = payMethod === "เก็บเงินปลายทาง";
+        
         const phone = getVal(["เบอร์โทร", "phone"]);
         const custName = getVal(["ชื่อลูกค้า", "name"]);
         const displayIdentity = (custName && custName !== "N/A") ? custName : (phone || "N/A");
@@ -311,9 +314,14 @@ function renderOrdersTable() {
                 </td>
                 <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">${total.toLocaleString()} ฿</td>
                 <td class="px-6 py-4 w-[120px] text-center">
-                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight ${isConfirmed?'bg-emerald-50 text-emerald-600 border border-emerald-100':'bg-amber-50 text-amber-600 border border-amber-100'}">
-                        ${status}
-                    </span>
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight ${isConfirmed?'bg-emerald-50 text-emerald-600 border border-emerald-100':'bg-amber-50 text-amber-600 border border-amber-100'}">
+                            ${status}
+                        </span>
+                        <span class="text-[9px] font-bold ${isCOD ? 'text-blue-500' : 'text-slate-400'} uppercase tracking-tighter">
+                            ${payMethod}
+                        </span>
+                    </div>
                 </td>
                 <td class="px-6 py-4 w-[160px] text-right">
                     <div class="flex justify-end gap-2">

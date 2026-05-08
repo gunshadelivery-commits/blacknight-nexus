@@ -217,10 +217,33 @@
             </div>
             
             <div class="p-6 overflow-y-auto space-y-6">
-                <!-- PAYMENT DETAILS SECTION -->
+                <!-- PAYMENT METHODS -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">วิธีชำระเงิน *</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="paymentMethod" value="transfer" checked class="peer hidden" onchange="window.updatePaymentMethod('transfer')">
+                            <div class="p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/20 transition-all">
+                                <div class="text-xl mb-1">🏦</div>
+                                <div class="text-xs font-bold text-white">โอนเงิน</div>
+                                <div class="text-[9px] text-white/40">ไม่มีค่าธรรมเนียม</div>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="paymentMethod" value="cod" class="peer hidden" onchange="window.updatePaymentMethod('cod')">
+                            <div class="p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/20 transition-all">
+                                <div class="text-xl mb-1">🚚</div>
+                                <div class="text-xs font-bold text-white">เก็บเงินปลายทาง</div>
+                                <div class="text-[9px] text-white/40">+50 บาท</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- PAYMENT DETAILS SECTION (Show for Transfer) -->
                 <div id="paymentDetailsSection" class="bg-indigo-500/10 border-2 border-indigo-500/20 rounded-3xl p-6">
                     <h4 class="text-sm font-bold text-indigo-300 mb-4 flex items-center gap-2">
-                        <span class="text-lg">💳</span> ข้อมูลการชำระเงิน
+                        <span class="text-lg">💳</span> ข้อมูลการโอนเงิน
                     </h4>
                     <div id="paymentMethodsContainer" class="space-y-3 text-white">
                         <!-- Payment methods will be loaded here -->

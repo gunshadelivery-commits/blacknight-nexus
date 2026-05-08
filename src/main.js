@@ -7,6 +7,8 @@ let products = []; // Keyed by Name
 let cart = [];
 let currentCategory = "All";
 let currentLineUrl = "";
+let selectedPaymentMethod = "transfer"; // "transfer" or "cod"
+const COD_FEE = 50;
 
 // --- GENERIC CATEGORY CLASSIFIER ---
 function classifyItem(name) {
@@ -382,9 +384,41 @@ function previewPaymentQR(qrUrl) {
 
 function goToCheckout() { 
     loadAndDisplayPaymentMethods();
+    updatePaymentMethod('transfer'); // Reset to default
     document.getElementById('checkoutModal').classList.remove('hidden'); 
 }
 function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
+
+function updatePaymentMethod(method) {
+    selectedPaymentMethod = method;
+    const paymentDetails = document.getElementById('paymentDetailsSection');
+    const slipSection = document.getElementById('slipInput').parentElement.parentElement;
+    const confirmBtn = document.getElementById('confirmBtn');
+
+    if (method === 'cod') {
+        paymentDetails.classList.add('hidden');
+        slipSection.classList.add('hidden');
+        confirmBtn.innerHTML = `ยืนยันสั่งซื้อ (เก็บเงินปลายทาง)`;
+    } else {
+        paymentDetails.classList.remove('hidden');
+        slipSection.classList.remove('hidden');
+        confirmBtn.innerHTML = `ยืนยันและสั่งซื้อ`;
+    }
+    // Update total display in button if possible
+    updateConfirmButtonText();
+}
+
+function updateConfirmButtonText() {
+    const btn = document.getElementById('confirmBtn');
+    let subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
+    
+    if (selectedPaymentMethod === 'cod') {
+        btn.innerHTML = `ยืนยันสั่งซื้อ (ยอดรวม ${finalTotal.toLocaleString()} ฿)`;
+    } else {
+        btn.innerHTML = `ยืนยันและสั่งซื้อ (${finalTotal.toLocaleString()} ฿)`;
+    }
+}
 
 function previewSlip(input) {
     if (input.files[0]) {
@@ -527,25 +561,37 @@ async function submitOrder() {
     const btn = document.getElementById('confirmBtn');
     const imgbbUrl = getImgbbUploadUrl();
 
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
+
     const data = {
         name: "Customer (" + document.getElementById('custPhone').value + ")",
         phone: document.getElementById('custPhone').value,
         address: "Google Maps Pin: " + document.getElementById('custMap').value,
         map: document.getElementById('custMap').value,
-        slip: document.getElementById('slipInput').files[0]
+        slip: document.getElementById('slipInput').files[0],
+        paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'
     };
 
-    if (!data.phone || !data.map || !data.slip) return showToast("กรุณากรอกข้อมูลและแนบสลิปให้ครบถ้วน", "error");
+    // Validation
+    if (!data.phone || !data.map) return showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+    if (selectedPaymentMethod === 'transfer' && !data.slip) return showToast("กรุณาแนบสลิปโอนเงิน", "error");
 
     btn.disabled = true;
     btn.innerHTML = "กำลังบันทึกออเดอร์...";
 
     try {
-        // 1. Upload Slip
-        const formData = new FormData(); formData.append('image', data.slip);
-        const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
-        const imgData = await imgRes.json();
-        if (!imgData.success) throw new Error("Upload Fail");
+        let slipUrl = "COD (ไม่แนบสลิป)";
+        
+        // 1. Upload Slip (only for transfer)
+        if (selectedPaymentMethod === 'transfer') {
+            const formData = new FormData(); 
+            formData.append('image', data.slip);
+            const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
+            const imgData = await imgRes.json();
+            if (!imgData.success) throw new Error("Upload Fail");
+            slipUrl = imgData.data.url;
+        }
 
         // 2. Log to Sheet
         let orderItems = cart.map(i => `${i.name} [${i.size}] x${i.qty}`).join(', ');
@@ -554,26 +600,38 @@ async function submitOrder() {
 
         await fetch(GAS_URL, {
             method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
-                action: "log", name: data.name, phone: data.phone, address: data.address,
-                mapUrl: data.map, items: orderItems, itemsArray: itemsArray, total: subtotal, slipUrl: imgData.data.url, status: "รอดำเนินการ"
+                action: "log", 
+                name: data.name, 
+                phone: data.phone, 
+                address: data.address,
+                mapUrl: data.map, 
+                items: orderItems, 
+                itemsArray: itemsArray, 
+                total: finalTotal, 
+                slipUrl: slipUrl, 
+                paymentMethod: data.paymentMethod,
+                status: "รอดำเนินการ"
             })
         });
 
         // 3. Premium LINE Message
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} [${i.size}] x${i.qty}`).join('\n');
         const lineMsg = `✨ ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
+💰 วิธีชำระ: ${data.paymentMethod}
 📞 เบอร์: ${data.phone}
 📍 พิกัดจัดส่ง: ${data.map}
 
 🛒 รายการ:
 ${itemsDetail}
-💰 ยอดรวม: ${subtotal.toLocaleString()} บาท
+💰 ยอดรวม: ${finalTotal.toLocaleString()} บาท
 
-🖼️ สลิป: ${imgData.data.url}`;
+🖼️ หลักฐาน: ${slipUrl}`;
 
         // --- CELEBRATION ---
-        document.getElementById('finalOrderTotal').textContent = subtotal.toLocaleString() + " ฿";
+        document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
         document.getElementById('successModal').classList.remove('hidden');
 
         // Build direct OA URL
@@ -613,6 +671,7 @@ window.getCurrentLocation = getCurrentLocation;
 window.openMapModal = openMapModal;
 window.closeMapModal = closeMapModal;
 window.confirmMapLocation = confirmMapLocation;
+window.updatePaymentMethod = updatePaymentMethod;
 window.submitOrder = submitOrder;
 window.redirectToLine = () => {
     if (currentLineUrl) window.location.href = currentLineUrl;

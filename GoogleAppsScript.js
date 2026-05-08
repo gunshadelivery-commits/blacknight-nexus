@@ -1,242 +1,136 @@
+/**
+ * BLACKNIGHT-NEXUS CENTRAL BACKEND V.12
+ * 🚀 รองรับ: ดึงข้อมูลสินค้า, บันทึกออเดอร์, ตัดสต็อก, เพิ่ม/ลบสินค้า
+ */
+
+const SHEET_PRODUCTS = "Blacknight69 - Product List";
+const SHEET_ORDERS = "Orders";
+const SHEET_SETTINGS = "Settings";
+
 function doGet(e) {
   if (!e || !e.parameter) {
     return ContentService.createTextOutput(JSON.stringify({ "error": "No parameters" })).setMimeType(ContentService.MimeType.JSON);
   }
-  var action = e.parameter.action;
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheetOrders = ss.getSheetByName("Orders");
-  var sheetProducts = ss.getSheetByName("Blacknight69 - Product List");
-  var sheetSettings = ss.getSheetByName("Settings");
+  const action = e.parameter.action;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  try {
+    if (action === "getProducts") {
+      const data = ss.getSheetByName(SHEET_PRODUCTS).getDataRange().getValues();
+      return sendResponse(data);
+    }
+    
+    if (action === "getOrders") {
+      const data = ss.getSheetByName(SHEET_ORDERS).getDataRange().getValues();
+      return sendResponse(data);
+    }
 
-  if (action === "getOrders") {
-    var data = sheetOrders.getDataRange().getValues();
-    return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  if (action === "getProducts") {
-    var data = sheetProducts.getDataRange().getValues();
-    return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+    if (action === "getSettings") {
+      const data = ss.getSheetByName(SHEET_SETTINGS).getDataRange().getValues();
+      return sendResponse(data);
+    }
+  } catch (err) {
+    return sendResponse({ error: "Sheet not found: " + err.toString() });
   }
   
-  if (action === "getSettings") {
-    var data = sheetSettings.getDataRange().getValues();
-    return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  return ContentService.createTextOutput(JSON.stringify({ "error": "Invalid action" })).setMimeType(ContentService.MimeType.JSON);
+  return sendResponse({ error: "Invalid action" });
 }
 
 function doPost(e) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheetOrders = ss.getSheetByName("Orders");
-    var sheetProducts = ss.getSheetByName("Blacknight69 - Product List");
-    var data = JSON.parse(e.postData.contents);
-    
-    // CASE 1: บันทึกออเดอร์ใหม่
-    if (data.action === "log") {
-      sheetOrders.appendRow([
-        new Date(),
-        data.name || "-",
-        data.phone || "-",
-        data.address || "-",
-        data.mapUrl || "-",
-        data.items || "-",
-        data.total || 0,
-        data.slipUrl || "-",
-        "รอดำเนินการ"
-      ]);
-      SpreadsheetApp.flush();
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // CASE 2: เพิ่มสินค้าใหม่
-    if (data.action === "addProduct") {
-      if (data.variants && data.variants.length > 0) {
-        data.variants.forEach(function(v) {
-          sheetProducts.appendRow([
-            data.name, 
-            v.size || "1G", 
-            v.price || 0, 
-            data.note || "", 
-            data.image || "", 
-            data.tags || "", 
-            "มีของ", 
-            v.stock || 0, 
-            0 // sold_count
-          ]);
-        });
-      }
-      SpreadsheetApp.flush();
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // CASE 3: ลบสินค้าทั้งหมด
-    if (data.action === "clearProducts") {
-      var lastRow = sheetProducts.getLastRow();
-      if (lastRow > 1) {
-        sheetProducts.deleteRows(2, lastRow - 1);
-      }
-      SpreadsheetApp.flush();
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
-    }
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    const sheetProducts = ss.getSheetByName(SHEET_PRODUCTS);
+    const sheetOrders = ss.getSheetByName(SHEET_ORDERS);
 
-    // CASE 4: อัปเดตสถานะออเดอร์
-    if (data.action === "updateStatus") {
-      var range = sheetOrders.getDataRange();
-      var values = range.getValues();
-      for (var i = 1; i < values.length; i++) {
-        if (values[i][0].toString() === data.id.toString()) {
-          sheetOrders.getRange(i + 1, 9).setValue(data.status);
-          SpreadsheetApp.flush();
-          return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
-        }
-      }
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Action not found" })).setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": err.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-    var contents = JSON.parse(e.postData.contents);
-    var action = contents.action;
-    // --- CASE 1: Log new order ---
+    // --- 1. บันทึกออเดอร์ใหม่ + ตัดสต็อก ---
     if (action === "log") {
-      // แทรกแถวใหม่ที่แถวที่ 2 (บนสุดต่อจาก Header)
-      sheetOrders.insertRowBefore(2);
-      var newRow = [
-        new Date(), // Timestamp
-        contents.name,
-        contents.phone,
-        contents.address,
-        contents.mapUrl,
-        contents.items,
-        contents.total,
-        contents.slipUrl,
-        contents.status || "รอดำเนินการ"
-      ];
-      sheetOrders.getRange(2, 1, 1, newRow.length).setValues([newRow]);
+      sheetOrders.appendRow([
+        new Date(), data.name || "-", data.phone || "-", data.address || "-", 
+        data.mapUrl || "-", data.items || "-", data.total || 0, data.slipUrl || "-", 
+        data.paymentMethod || "โอนเงิน", "รอดำเนินการ"
+      ]);
 
-      // ตัดสต็อกสินค้า
-      if (contents.itemsArray) {
-        var products = sheetProducts.getDataRange().getValues();
-        contents.itemsArray.forEach(function (item) {
-          for (var i = 1; i < products.length; i++) {
-            if (products[i][0] == item.name && products[i][1] == item.size) {
-              var currentStock = parseInt(products[i][7]) || 0;
-              var currentSold = parseInt(products[i][8]) || 0;
-              var newStock = currentStock - item.qty;
-              var newSold = currentSold + item.qty;
-              sheetProducts.getRange(i + 1, 8).setValue(newStock);
-              sheetProducts.getRange(i + 1, 9).setValue(newSold);
-              
-              // อัปเดตข้อมูลในหน่วยความจำเพื่อป้องกันปัญหาถ้ามีสินค้าซ้ำกันใน itemsArray
-              products[i][7] = newStock;
-              products[i][8] = newSold;
-
-              // ปรับสถานะอัตโนมัติถ้าของหมด
-              if (newStock <= 0) {
-                sheetProducts.getRange(i + 1, 7).setValue("หมด");
-              }
+      if (data.itemsArray) {
+        const productData = sheetProducts.getDataRange().getValues();
+        data.itemsArray.forEach(item => {
+          for (let i = 1; i < productData.length; i++) {
+            if (productData[i][0] == item.name && productData[i][1] == item.size) {
+              const currentStock = parseInt(productData[i][7]) || 0;
+              const currentSold = parseInt(productData[i][8]) || 0;
+              sheetProducts.getRange(i + 1, 8).setValue(currentStock - item.qty);
+              sheetProducts.getRange(i + 1, 9).setValue(currentSold + item.qty);
               break;
             }
           }
         });
       }
-
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success" }))
-        .setMimeType(ContentService.MimeType.JSON);
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success" });
     }
 
-    // --- CASE 2: Update status ---
-    if (action === "updateStatus") {
-      var data = sheetOrders.getDataRange().getValues();
-      for (var i = 1; i < data.length; i++) {
-        // ตรวจสอบชื่อลูกค้าและลิงก์สลิปเพื่อให้แม่นยำ
-        if (data[i][1] == contents.name && data[i][7] == contents.slipUrl) {
-          sheetOrders.getRange(i + 1, 9).setValue(contents.status);
-          return ContentService.createTextOutput(JSON.stringify({ "result": "success" }))
-            .setMimeType(ContentService.MimeType.JSON);
-        }
-      }
-      return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Order not found" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // --- CASE 3: Add new product ---
+    // --- 2. เพิ่มสินค้าใหม่ (Add Product) ---
     if (action === "addProduct") {
-      sheetProducts.appendRow([
-        contents.name,
-        contents.size,
-        contents.price,
-        contents.note,
-        contents.image,
-        contents.tags,
-        contents.status,
-        contents.stock || 0,
-        contents.sold_count || 0,
-        contents.category || ""
-      ]);
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // --- CASE 4: Update product ---
-    if (action === "updateProduct") {
-      var data = sheetProducts.getDataRange().getValues();
-      for (let i = 1; i < data.length; i++) {
-        var sheetName = (data[i][0] || "").toString().trim();
-        var sheetSize = (data[i][1] || "").toString().trim();
-        var targetName = (contents.oldName || "").toString().trim();
-        var targetSize = (contents.oldSize || "").toString().trim();
-
-        if (sheetName == targetName && sheetSize == targetSize) {
-          sheetProducts.getRange(i + 1, 1, 1, 10).setValues([[
-            contents.name,
-            contents.size,
-            contents.price,
-            contents.note,
-            contents.image,
-            contents.tags,
-            contents.status,
-            contents.stock,
-            contents.sold_count,
-            contents.category
-          ]]);
-          return ContentService.createTextOutput(JSON.stringify({ "result": "success" }))
-            .setMimeType(ContentService.MimeType.JSON);
-        }
+      if (data.variants && data.variants.length > 0) {
+        data.variants.forEach(v => {
+          sheetProducts.appendRow([
+            data.name, v.size || "Standard", v.price || 0, data.note || "", 
+            data.image || "", data.tags || "", (parseInt(v.stock) > 0 ? "มีของ" : "หมด"), v.stock || 0, 0
+          ]);
+        });
       }
-      return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Product not found" }))
-        .setMimeType(ContentService.MimeType.JSON);
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success" });
     }
 
-    // --- CASE 5: Delete product ---
+    // --- 3. ลบสินค้าทีละรายการ (Delete Product) ---
     if (action === "deleteProduct") {
-      var data = sheetProducts.getDataRange().getValues();
-      for (let i = 1; i < data.length; i++) {
-        var sheetName = (data[i][0] || "").toString().trim();
-        var sheetSize = (data[i][1] || "").toString().trim();
-        var targetName = (contents.name || "").toString().trim();
-        var targetSize = (contents.size || "").toString().trim();
-
-        if (sheetName == targetName && sheetSize == targetSize) {
+      const rows = sheetProducts.getDataRange().getValues();
+      for (let i = rows.length - 1; i >= 1; i--) {
+        if (rows[i][0].toString().trim() === data.name.toString().trim() && 
+            rows[i][1].toString().trim() === data.size.toString().trim()) {
           sheetProducts.deleteRow(i + 1);
-          return ContentService.createTextOutput(JSON.stringify({ "result": "success" }))
-            .setMimeType(ContentService.MimeType.JSON);
         }
       }
-      return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "Product not found to delete" }))
-        .setMimeType(ContentService.MimeType.JSON);
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success" });
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ "result": "action not found" }))
-      .setMimeType(ContentService.MimeType.JSON);
+    // --- 4. ลบสินค้าทั้งหมด (Clear Products) ---
+    if (action === "clearProducts") {
+      const lastRow = sheetProducts.getLastRow();
+      if (lastRow > 1) {
+        sheetProducts.deleteRows(2, lastRow - 1);
+      }
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success" });
+    }
+
+    // --- 5. อัปเดตสถานะออเดอร์ (Update Status) ---
+    if (action === "updateStatus") {
+      const rows = sheetOrders.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        // เช็คชื่อหรือสลิปเพื่อให้ตรงออเดอร์
+        if (rows[i][1].toString() === data.name.toString() && rows[i][7].toString() === data.slipUrl.toString()) {
+          sheetOrders.getRange(i + 1, 10).setValue(data.status);
+          SpreadsheetApp.flush();
+          return sendResponse({ result: "success" });
+        }
+      }
+    }
+
+    return sendResponse({ result: "error", message: "Action not found: " + action });
 
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return sendResponse({ result: "error", error: err.toString() });
   }
+}
+
+/**
+ * ส่งข้อมูลกลับในรูปแบบ JSON
+ */
+function sendResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }

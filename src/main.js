@@ -68,15 +68,17 @@ function loadProductsFromSheet(callback) {
     Papa.parse(SHEET_CSV_URL + cacheBuster, {
         download: true, header: true,
         complete: function (results) {
-            if (!results || !results.data) {
+            console.log("Sheet Data Fetched:", results);
+            if (!results || !results.data || results.data.length === 0) {
                 console.error("No data found in sheet");
+                showToast("ไม่พบข้อมูลสินค้า", "error");
                 return;
             }
             const data = results.data;
             const grouped = {};
 
             data.forEach(item => {
-                if (!item.name) return;
+                if (!item.name || item.name.trim() === "") return;
                 if (!grouped[item.name]) {
                     let tags = [];
                     if (item.tags) tags = item.tags.split(',').map(t => t.trim()).filter(t => t !== '');
@@ -89,7 +91,7 @@ function loadProductsFromSheet(callback) {
                         variants: [],
                         selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: item["หมวดหมู่"] || classifyItem(item.name) // Use manual category if available, otherwise generic
+                        aiType: item["category"] || item["หมวดหมู่"] || classifyItem(item.name)
                     };
                 }
 
@@ -106,7 +108,12 @@ function loadProductsFromSheet(callback) {
             });
 
             products = Object.values(grouped);
+            console.log("Processed Products:", products);
             if (callback) callback();
+        },
+        error: function(err) {
+            console.error("PapaParse Fetch Error:", err);
+            showToast("โหลดข้อมูลล้มเหลว (เช็คการแชร์ Sheet)", "error");
         }
     });
 }

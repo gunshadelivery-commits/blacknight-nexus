@@ -118,58 +118,59 @@
                 <button onclick="closeCheckout()" class="text-slate-400">ปิด</button>
             </div>
             <div class="flex-1 overflow-y-auto p-6 space-y-6">
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">ชื่อ-นามสกุล ผู้รับ *</label>
-                        <input type="text" id="custName" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-lg font-medium" placeholder="ระบุชื่อผู้รับสินค้า">
-                    </div>
+                    <div class="space-y-4">
+                        <div class="group">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">ชื่อ-นามสกุล ผู้รับ *</label>
+                            <input type="text" id="custName" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-lg font-medium" placeholder="ระบุชื่อผู้รับสินค้า">
+                        </div>
 
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">เบอร์โทรติดต่อ *</label>
-                        <input type="tel" id="custPhone" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-lg font-medium" placeholder="08x-xxx-xxxx">
-                    </div>
+                        <div class="group">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">เบอร์โทรติดต่อ *</label>
+                            <input type="tel" id="custPhone" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-lg font-medium" placeholder="08x-xxx-xxxx">
+                        </div>
 
-                    <div class="group">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">ที่อยู่จัดส่งโดยละเอียด *</label>
-                        <textarea id="custAddress" rows="3" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-base" placeholder="บ้านเลขที่, ซอย, ถนน, ตำบล, อำเภอ, จังหวัด, รหัสไปรษณีย์"></textarea>
-                    </div>
+                        <div class="group">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">ที่อยู่จัดส่งโดยละเอียด *</label>
+                            <textarea id="custAddress" rows="3" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-base" placeholder="บ้านเลขที่, ซอย, ถนน, ตำบล, อำเภอ, จังหวัด, รหัสไปรษณีย์"></textarea>
+                        </div>
 
-                    <!-- PAYMENT SELECTION -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="updatePaymentMethod('transfer')" id="payTransfer" class="flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-900 bg-white transition shadow-sm">
-                            <span class="text-2xl">💳</span>
-                            <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">โอนเงิน</span>
-                        </button>
-                        <button onclick="updatePaymentMethod('cod')" id="payCOD" class="flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-slate-400 transition">
-                            <span class="text-2xl">🚚</span>
-                            <span class="text-xs font-bold uppercase tracking-wider">เก็บเงินปลายทาง</span>
-                        </button>
-                    </div>
+                        <!-- PAYMENT SELECTION -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="updatePaymentMethod('transfer')" id="payTransfer" class="flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-900 bg-white transition shadow-sm">
+                                <span class="text-2xl">💳</span>
+                                <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">โอนเงิน</span>
+                            </button>
+                            <button onclick="updatePaymentMethod('cod')" id="payCOD" class="flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-slate-400 transition">
+                                <span class="text-2xl">🚚</span>
+                                <span class="text-xs font-bold uppercase tracking-wider">เก็บเงินปลายทาง</span>
+                            </button>
+                        </div>
 
-                    <div id="paymentDetailsSection" class="p-6 bg-blue-50 rounded-3xl border border-blue-100 space-y-3">
-                        <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest">ช่องทางชำระเงิน</label>
-                        <div id="paymentMethodsContainer" class="space-y-3">
-                            <!-- Payment methods will be loaded here -->
+                        <div id="paymentDetailsSection" class="p-6 bg-blue-50 rounded-3xl border border-blue-100 space-y-3">
+                            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest">ช่องทางชำระเงิน</label>
+                            <div id="paymentMethodsContainer" class="space-y-3">
+                                <!-- Payment methods will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div id="slipUploadSection" class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">หลักฐานการโอนเงิน (สลิป) *</label>
+                            <input type="file" id="slipInput" accept="image/*" onchange="previewSlip(this)" class="hidden">
+                            <label for="slipInput" class="cursor-pointer block w-full aspect-video bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-slate-400 transition overflow-hidden">
+                                <img id="slipPreview" class="hidden w-full h-full object-cover">
+                                <div id="slipPlaceholder" class="flex flex-col items-center">
+                                    <span class="text-3xl mb-1">📸</span>
+                                    <span class="text-xs font-bold">อัปโหลดสลิปที่นี่</span>
+                                </div>
+                            </label>
                         </div>
                     </div>
-
-                    <div id="slipUploadSection" class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">หลักฐานการโอนเงิน (สลิป) *</label>
-                        <input type="file" id="slipInput" accept="image/*" onchange="previewSlip(this)" class="hidden">
-                        <label for="slipInput" class="cursor-pointer block w-full aspect-video bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-slate-400 transition overflow-hidden">
-                            <img id="slipPreview" class="hidden w-full h-full object-cover">
-                            <div id="slipPlaceholder" class="flex flex-col items-center">
-                                <span class="text-3xl mb-1">📸</span>
-                                <span class="text-xs font-bold">อัปโหลดสลิปที่นี่</span>
-                            </div>
-                        </label>
-                    </div>
+                </div>
+                <div class="p-8 border-t border-slate-50">
+                    <button onclick="submitOrder()" id="submitOrderBtn" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 disabled:opacity-50">สั่งซื้อและส่งข้อมูล 🛸</button>
                 </div>
             </div>
-            <div class="p-8 border-t border-slate-50">
-                <button onclick="submitOrder()" id="submitOrderBtn" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 disabled:opacity-50">สั่งซื้อและส่งข้อมูล 🛸</button>
-            </div>
         </div>
-    </div>
 
     <!-- SUCCESS MODAL -->
     <div id="successModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">

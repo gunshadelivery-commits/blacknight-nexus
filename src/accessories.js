@@ -7,6 +7,8 @@ let products = []; // Keyed by Name
 let cart = [];
 let currentCategory = "All";
 let currentLineUrl = "";
+let selectedPaymentMethod = "transfer"; // "transfer" or "cod"
+const COD_FEE = 50;
 
 // --- GENERIC CATEGORY CLASSIFIER ---
 function classifyItem(name) {
@@ -43,14 +45,15 @@ function handleLogoClick() {
 }
 
 function loadProductsFromSheet(callback) {
-    Papa.parse(SHEET_CSV_URL, {
+    const cacheBuster = `?t=${Date.now()}`;
+    Papa.parse(SHEET_CSV_URL + cacheBuster, {
         download: true, header: true,
         complete: function(results) {
             const data = results.data;
             const grouped = {};
             
             data.forEach(item => {
-                if(!item.name) return;
+                if(!item.name || item.name.trim() === "") return;
                 if(!grouped[item.name]) {
                     let tags = [];
                     if (item.tags) tags = item.tags.split(',').map(t => t.trim()).filter(t => t !== '');
@@ -86,13 +89,12 @@ function loadProductsFromSheet(callback) {
 }
 
 function renderProducts(filter = "") {
-    const grid = document.getElementById("productList"); // Note ID change for accessories.html
+    const grid = document.getElementById("productList");
     if (!grid) return;
     grid.innerHTML = "";
     let q = "";
     if (typeof filter === "string") q = filter.toLowerCase();
     
-    // Apply Filters: Search + Category + Accessories Only
     const filtered = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q);
         const matchesCategory = currentCategory === "All" || p.aiType === currentCategory;
@@ -121,7 +123,6 @@ function renderProducts(filter = "") {
                 <h3 class="font-bold text-slate-800 text-sm line-clamp-1">${p.name}</h3>
                 <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">${p.note}</p>
                 
-                <!-- VARIANT SELECTOR -->
                 <div class="mt-2 flex flex-wrap gap-1">
                     ${p.variants.length > 1 ? p.variants.map((v, vIdx) => `
                         <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-0.5 text-[9px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white text-slate-400 border-slate-100'}">
@@ -164,7 +165,6 @@ function switchCategory(cat) {
     renderProducts();
 }
 
-// Reuse cart logic from main.js or slightly adapt
 function addToCart(pName, vIdx) {
     const product = products.find(p => p.name === pName);
     if (!product) return;
@@ -230,7 +230,10 @@ function updateQty(idx, change) {
     updateCartUI();
 }
 
-function goToCheckout() { document.getElementById('checkoutModal').classList.remove('hidden'); }
+function goToCheckout() { 
+    document.getElementById('checkoutModal').classList.remove('hidden'); 
+    loadAndDisplayPaymentMethods();
+}
 function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
 
 function previewSlip(input) {
@@ -245,71 +248,110 @@ function previewSlip(input) {
     }
 }
 
-function getCurrentLocation() {
-    if (!navigator.geolocation) return showToast("ไม่รองรับ GPS", "error");
-    navigator.geolocation.getCurrentPosition((pos) => {
-        const url = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-        document.getElementById('custMap').textContent = url;
-        document.getElementById('custMap').classList.remove('hidden');
-        showToast("ดึงพิกัดสำเร็จ!");
-    }, (err) => {
-        showToast("ไม่สามารถดึงพิกัดได้", "error");
-    });
+async function loadAndDisplayPaymentMethods() {
+    const container = document.getElementById('paymentMethodsContainer');
+    container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs animate-pulse">กำลังโหลดข้อมูลชำระเงิน...</div>`;
+    try {
+        const res = await fetch(`${GAS_URL}?action=getSettings`);
+        const data = await res.json();
+        const promptpayList = data.length > 0 ? data.slice(1).map(row => ({
+            name: row[0], bank: row[1], number: row[2], qrImage: row[3], status: row[4] || 'active'
+        })) : [];
+        const activePromptpay = promptpayList.filter(pp => pp.status === 'active');
+        if (activePromptpay.length === 0) {
+            container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs">ยังไม่มีข้อมูลการชำระเงิน</div>`;
+            return;
+        }
+        container.innerHTML = activePromptpay.map(pp => `
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition group">
+                <div class="flex gap-4">
+                    ${pp.qrImage ? `<img src="${pp.qrImage}" class="w-16 h-16 object-cover rounded-xl border border-slate-100 shadow-sm">` : ''}
+                    <div class="flex-1">
+                        <h5 class="font-bold text-slate-800 text-xs mb-1">${pp.name}</h5>
+                        <p class="text-[10px] text-slate-500 font-mono bg-slate-50 px-2 py-1 rounded inline-block">${pp.number}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) { container.innerHTML = `<div class="text-center py-4 text-red-400 text-xs">โหลดข้อมูลล้มเหลว</div>`; }
+}
+
+function updatePaymentMethod(method) {
+    selectedPaymentMethod = method;
+    const btnTransfer = document.getElementById('payTransfer');
+    const btnCOD = document.getElementById('payCOD');
+    const details = document.getElementById('paymentDetailsSection');
+    const slipSection = document.getElementById('slipUploadSection');
+
+    if (method === 'transfer') {
+        btnTransfer.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-900 bg-white transition shadow-sm";
+        btnCOD.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-slate-400 transition";
+        details.classList.remove('hidden');
+        slipSection.classList.remove('hidden');
+    } else {
+        btnTransfer.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-slate-400 transition";
+        btnCOD.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-900 bg-white transition shadow-sm text-slate-900";
+        details.classList.add('hidden');
+        slipSection.classList.add('hidden');
+    }
 }
 
 async function submitOrder() {
     const btn = document.getElementById('submitOrderBtn');
-    const imgbbUrl = getImgbbUploadUrl();
-    const phone = document.getElementById('custPhone').value;
-    const map = document.getElementById('custMap').textContent;
-    const slip = document.getElementById('custSlip').files[0];
+    const name = document.getElementById('custName').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const address = document.getElementById('custAddress').value.trim();
+    const slip = document.getElementById('slipInput').files[0];
 
-    if(!phone || !map || !slip) return showToast("กรุณากรอกข้อมูลให้ครบ", "error");
+    if(!name || !phone || !address) return showToast("กรุณากรอกข้อมูลให้ครบ", "error");
+    if(selectedPaymentMethod === 'transfer' && !slip) return showToast("กรุณาแนบสลิป", "error");
     
     btn.disabled = true;
     btn.textContent = "กำลังดำเนินการ...";
 
     try {
-        // 1. Upload Slip
-        const formData = new FormData(); formData.append('image', slip);
-        const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
-        const imgData = await imgRes.json();
-        if(!imgData.success) throw new Error("Upload Fail");
+        let slipUrl = "-";
+        if (selectedPaymentMethod === 'transfer') {
+            const formData = new FormData(); formData.append('image', slip);
+            const imgRes = await fetch(getImgbbUploadUrl(), { method: 'POST', body: formData });
+            const imgData = await imgRes.json();
+            if(!imgData.success) throw new Error("Upload Fail");
+            slipUrl = imgData.data.url;
+        }
 
-        // 2. Log to Sheet
+        const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+        const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
         const orderItems = cart.map(i => `${i.name} [${i.size}] x${i.qty}`).join(', ');
         const itemsArray = cart.map(i => ({ name: i.name, size: i.size, qty: i.qty }));
-        const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 
         await fetch(GAS_URL, {
             method: 'POST',
+            mode: 'no-cors',
             body: JSON.stringify({
-                action: "log", name: "AccCust (" + phone + ")", phone, address: "Map: " + map,
-                mapUrl: map, items: orderItems, itemsArray: itemsArray, total: subtotal, slipUrl: imgData.data.url, status: "รอดำเนินการ"
+                action: "log", name, phone, address, mapUrl: "-", 
+                items: orderItems, itemsArray: itemsArray, total: finalTotal, slipUrl: slipUrl, 
+                paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน',
+                status: "รอดำเนินการ"
             })
         });
 
-        // 3. Premium LINE Message
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} x${i.qty}`).join('\n');
         const lineMsg = `✨ ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
+💰 วิธีชำระ: ${selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'}
+👤 ผู้รับ: ${name}
 📞 เบอร์: ${phone}
-📍 พิกัดจัดส่ง: ${map}
+🏠 ที่อยู่: ${address}
 
 🛒 รายการ:
 ${itemsDetail}
-💰 ยอดรวม: ${subtotal.toLocaleString()} บาท
+💰 ยอดรวม: ${finalTotal.toLocaleString()} บาท
 
-🖼️ สลิป: ${imgData.data.url}`;
+🖼️ สลิป: ${slipUrl}`;
         
-        // Build direct OA URL
         currentLineUrl = buildLineUrl(lineMsg);
-
-        document.getElementById('finalOrderTotal').textContent = subtotal.toLocaleString() + " ฿";
+        document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
         document.getElementById('successModal').classList.remove('hidden');
-        
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#ffffff', '#fbbf24', '#ef4444'] });
-        
-        // Auto redirect after 3s
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         setTimeout(() => { if(currentLineUrl) window.location.href = currentLineUrl; }, 3000);
     } catch(e) { 
         showToast("เกิดข้อผิดพลาด", "error"); 
@@ -318,6 +360,7 @@ ${itemsDetail}
     }
 }
 
+window.handleLogoClick = handleLogoClick;
 window.toggleCart = toggleCart;
 window.switchCategory = switchCategory;
 window.selectVariant = selectVariant;
@@ -326,7 +369,7 @@ window.updateQty = updateQty;
 window.goToCheckout = goToCheckout;
 window.closeCheckout = closeCheckout;
 window.previewSlip = previewSlip;
-window.getCurrentLocation = getCurrentLocation;
+window.updatePaymentMethod = updatePaymentMethod;
 window.submitOrder = submitOrder;
 window.redirectToLine = () => { if(currentLineUrl) window.location.href = currentLineUrl; };
 

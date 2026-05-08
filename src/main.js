@@ -43,6 +43,7 @@ document.addEventListener('touchmove', e => {
         if (window.navigator.vibrate) window.navigator.vibrate(10); // Subtle Haptic
         loadProductsFromSheet(() => {
             renderProducts();
+            initRevealObserver();
             setTimeout(() => {
                 document.body.classList.remove('ptr-loading');
                 isRefreshing = false;
@@ -110,29 +111,48 @@ function loadProductsFromSheet(callback) {
     });
 }
 
-function renderProducts(filter = "") {
-    const grid = document.getElementById("productGrid");
-    if (!grid) return; // safeguard
-    grid.innerHTML = "";
-    // If filter is an object (due to event listener binding instead of direct call), handle it.
-    let q = "";
-    if (typeof filter === "string") q = filter.toLowerCase();
+function initRevealObserver() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+}
 
-    // Apply Filters: Search + Category
-    const filtered = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(q) || p.note.toLowerCase().includes(q);
-        const matchesCategory = currentCategory === "All" || p.aiType === currentCategory;
-        return matchesSearch && matchesCategory;
-    });
+function renderProducts(filter = "") {
+    try {
+        const grid = document.getElementById("productList");
+        if (!grid) return; 
+        grid.innerHTML = "";
+        
+        let q = "";
+        if (typeof filter === "string") q = filter.toLowerCase();
+
+        if (products.length === 0) {
+            grid.innerHTML = `<div class="col-span-2 text-center text-white/40 py-20 animate-pulse">กำลังโหลดข้อมูลสินค้า...</div>`;
+            return;
+        }
+
+        // Apply Filters: Search + Category
+        const filtered = products.filter(p => {
+            const matchesSearch = p.name.toLowerCase().includes(q) || (p.note && p.note.toLowerCase().includes(q));
+            const matchesCategory = currentCategory === "All" || p.aiType === currentCategory;
+            return matchesSearch && matchesCategory;
+        });
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-2 text-center text-slate-400 py-10">ไม่พบสินค้า</div>`;
+        grid.innerHTML = `<div class="col-span-2 text-center text-white/40 py-20">ไม่พบสินค้าในหมวดหมู่นี้</div>`;
         return;
     }
 
-    filtered.forEach((p) => {
+    filtered.forEach((p, idx) => {
         const card = document.createElement("div");
-        card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col";
+        card.className = "glass-card rounded-3xl shadow-lg overflow-hidden flex flex-col reveal";
+        card.style.transitionDelay = `${(idx % 4) * 100}ms`;
         const isOutOfStock = p.status === 'หมด' || p.status === 'sold out' || p.status === '0';
 
         // Select Current Variant
@@ -146,61 +166,64 @@ function renderProducts(filter = "") {
         const pNameEscaped = p.name.replace(/'/g, "\\'");
 
         card.innerHTML = `
-            <div class="h-32 bg-slate-100 flex items-center justify-center relative overflow-hidden">
+            <div class="h-32 bg-white/5 flex items-center justify-center relative overflow-hidden">
                 <img src="${p.image}" 
                      ${priorityAttr} 
-                     class="w-full h-full object-cover img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-75' : ''}" 
+                     class="w-full h-full object-cover img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}" 
                      onload="this.classList.add('img-loaded')"
-                     onerror="this.outerHTML='<span class=\\'text-3xl\\'>🌿</span>';" />
+                     onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
                 <div class="absolute top-2 left-2 flex flex-col gap-1">
-                    ${p.tags.length ? `<span class="bg-emerald-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">${p.tags[0]}</span>` : ''}
-                    ${p.totalSold > 0 ? `<span class="bg-orange-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">ขายแล้ว ${p.totalSold}+</span>` : ''}
+                    ${p.tags.length ? `<span class="bg-indigo-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">${p.tags[0]}</span>` : ''}
+                    ${p.totalSold > 0 ? `<span class="bg-orange-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">SOLD ${p.totalSold}+</span>` : ''}
                 </div>
-                ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-slate-900/40 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">หมดชั่วคราว</span></div>` : ''}
+                ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span></div>` : ''}
             </div>
             <div class="p-3 flex-1 flex flex-col">
                 <div class="flex-1">
-                    <h3 class="font-bold text-slate-800 leading-tight text-sm">${p.name}</h3>
-                    <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">${p.note}</p>
+                    <h3 class="font-bold text-white leading-tight text-sm">${p.name}</h3>
+                    <p class="text-[10px] text-white/40 mt-1 line-clamp-1">${p.note}</p>
                 </div>
                 
                 <!-- VARIANT SELECTOR -->
                 <div class="mt-3 flex flex-wrap gap-1">
                     ${p.variants.map((v, vIdx) => `
-                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-50 text-slate-500 border-slate-100'} ${v.stock <= 0 ? 'opacity-40' : ''}">
+                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-white/20 border-white/40 text-white' : 'bg-black/20 text-white/30 border-white/5'} ${v.stock <= 0 ? 'opacity-20' : ''}">
                             ${v.size}
                         </button>
                     `).join('')}
                 </div>
 
-                ${variant.stock > 0 && variant.stock <= 5 ? `<p class="text-[9px] text-red-500 font-bold mt-2">🔥 เหลือเพียง ${variant.stock} ชิ้น!</p>` : ''}
+                ${variant.stock > 0 && variant.stock <= 5 ? `<p class="text-[9px] text-red-400 font-bold mt-2">🔥 Only ${variant.stock} left!</p>` : ''}
 
                 <div class="mt-3 flex items-center justify-between">
-                    <p class="font-bold text-indigo-600 text-sm">${variant.price.toLocaleString()} ฿</p>
-                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-indigo-100 text-indigo-700 p-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-30">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    <p class="font-bold text-white text-sm">${variant.price.toLocaleString()} ฿</p>
+                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-white/10 text-white p-2 rounded-xl hover:bg-white/20 transition-all disabled:opacity-10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </button>
                 </div>
             </div>
         `;
         grid.appendChild(card);
-    });
+        });
+        
+        initRevealObserver();
+    } catch (err) {
+        console.error("Render Error:", err);
+        showToast("เกิดข้อผิดพลาดในการแสดงสินค้า", "error");
+    }
 }
 
 function switchCategory(cat) {
     currentCategory = cat;
-    // Update UI
-    document.querySelectorAll('.category-tab').forEach(t => {
-        t.classList.remove('category-tab-active');
-        t.classList.add('category-tab-inactive');
+    document.querySelectorAll('#categoryTabs button').forEach(btn => {
+        btn.classList.remove('category-active');
+        btn.classList.add('category-inactive');
     });
-    const tabEl = document.getElementById('tab-' + cat);
-    if (tabEl) {
-        tabEl.classList.remove('category-tab-inactive');
-        tabEl.classList.add('category-tab-active');
+    const activeTab = document.getElementById('tab-' + cat);
+    if(activeTab) {
+        activeTab.classList.remove('category-inactive');
+        activeTab.classList.add('category-active');
     }
-
-    // Check if search input exists
     const searchInput = document.getElementById('searchInput');
     renderProducts(searchInput ? searchInput.value : "");
 }
@@ -615,12 +638,13 @@ function initHero3D() {
 
     for (let i = 0; i < debrisCount; i++) {
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        const material = new THREE.MeshPhongMaterial({ 
+        const material = new THREE.MeshStandardMaterial({ 
             color: randomColor, 
             flatShading: true,
-            shininess: 50,
+            metalness: 0.8,
+            roughness: 0.2,
             emissive: randomColor,
-            emissiveIntensity: 0.3
+            emissiveIntensity: 0.4
         });
 
         const geo = geometries[Math.floor(Math.random() * geometries.length)];
@@ -695,13 +719,22 @@ function initHero3D() {
         mouseY = (e.clientY - window.innerHeight / 2) / 150;
     });
 
+    let scrollY = 0;
+    window.addEventListener('scroll', () => {
+        scrollY = window.scrollY;
+        const progress = Math.min(scrollY / 300, 1) * 100;
+        const progressBar = document.getElementById('scroll-progress');
+        if(progressBar) progressBar.style.width = `${progress}%`;
+    });
+
     function animate() {
         requestAnimationFrame(animate);
 
         const time = Date.now() * 0.001;
+        const scrollBoost = scrollY * 0.005; // Speed increases as you scroll
 
         debris.forEach(d => {
-            d.mesh.position.z += d.speed;
+            d.mesh.position.z += (d.speed + scrollBoost);
             d.mesh.rotation.x += d.rotSpeedX;
             d.mesh.rotation.y += d.rotSpeedY;
             if (d.mesh.position.z > 15) resetAsteroid(d.mesh);
@@ -717,7 +750,7 @@ function initHero3D() {
         stars.rotation.z += 0.0003;
         nebulae.forEach((n, i) => {
             n.rotation.y += 0.001 * (i + 1);
-            n.position.z += 0.1;
+            n.position.z += (0.1 + scrollBoost);
             if (n.position.z > 100) n.position.z = -500;
         });
 

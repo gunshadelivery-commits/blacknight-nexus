@@ -16,7 +16,7 @@ export const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/11p5OmXlmYo
 export const ORDERS_CSV_URL = "https://docs.google.com/spreadsheets/d/11p5OmXlmYoSvrjatX1JTRKlM6QcRnJdBIxm1EwqM0Sw/gviz/tq?tqx=out:csv&sheet=Orders";
 
 // --- Google Apps Script (GAS) Web App URL ---
-export const GAS_URL = "https://script.google.com/macros/s/AKfycbyDMDX5k__3Ajiil12n3-7ZS24h0q0whhJHLvb2RsJZpbnrbJgV9-wqk7ZHdM-scgUa4Q/exec";
+export const GAS_URL = "https://script.google.com/macros/s/AKfycbzLAzNLSWbqwi07DiCKEw0Ml8kfUPTrRforHKLPy9RWzKc5JmB-b8mW2gcfBfrgkKbZCQ/exec";
 
 // --- LINE OA ID ---
 export const LINE_OA_ID = "@165jrxwa";

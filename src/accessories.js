@@ -211,10 +211,10 @@ function updateCartUI() {
                         <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
                         <p class="text-xs text-indigo-600 font-black mt-1">${item.price.toLocaleString()} ฿</p>
                     </div>
-                    <div class="flex items-center gap-3 bg-slate-50 p-2 rounded-xl">
-                        <button onclick="window.updateQty(${idx}, -1)" class="w-6 h-6 flex items-center justify-center font-bold">-</button>
-                        <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
-                        <button onclick="window.updateQty(${idx}, 1)" class="w-6 h-6 flex items-center justify-center font-bold">+</button>
+                    <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
+                        <button onclick="window.updateQty(${idx}, -1)" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition active:scale-90">-</button>
+                        <span class="text-xs font-black text-slate-900 min-w-[24px] text-center">${item.qty}</span>
+                        <button onclick="window.updateQty(${idx}, 1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-900 text-white hover:bg-slate-800 transition active:scale-90 shadow-sm">+</button>
                     </div>
                 </div>`;
         }).join('');

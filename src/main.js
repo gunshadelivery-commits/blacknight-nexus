@@ -296,10 +296,10 @@ function updateCartUI() {
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${item.size}</p>
                         <div class="flex justify-between items-center mt-2">
                             <p class="text-indigo-600 font-bold text-sm">${(item.price * item.qty).toLocaleString()} ฿</p>
-                            <div class="flex items-center gap-3">
-                                <button onclick="window.updateQty(${idx}, -1)" class="w-6 h-6 border flex items-center justify-center p-1 rounded-full">-</button>
-                                <span class="text-sm font-bold">${item.qty}</span>
-                                <button onclick="window.updateQty(${idx}, 1)" class="w-6 h-6 border flex items-center justify-center p-1 rounded-full">+</button>
+                            <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
+                                <button onclick="window.updateQty(${idx}, -1)" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition active:scale-90">-</button>
+                                <span class="text-xs font-black text-slate-900 min-w-[24px] text-center">${item.qty}</span>
+                                <button onclick="window.updateQty(${idx}, 1)" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-900 text-white hover:bg-slate-800 transition active:scale-90 shadow-sm">+</button>
                             </div>
                         </div>
                     </div>

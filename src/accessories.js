@@ -236,30 +236,6 @@ function goToCheckout() {
 }
 function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
 
-function updatePaymentMethod(method) {
-    selectedPaymentMethod = method;
-    const paymentDetails = document.getElementById('paymentDetailsSection');
-    const slipSection = document.getElementById('slipUploadSection');
-    const payTransfer = document.getElementById('payTransfer');
-    const payCOD = document.getElementById('payCOD');
-
-    if (method === 'cod') {
-        paymentDetails.classList.add('hidden');
-        slipSection.classList.add('hidden');
-        payCOD.classList.add('border-slate-900', 'bg-white', 'shadow-sm');
-        payCOD.classList.remove('border-slate-50', 'bg-slate-50', 'text-slate-400');
-        payTransfer.classList.remove('border-slate-900', 'bg-white', 'shadow-sm');
-        payTransfer.classList.add('border-slate-50', 'bg-slate-50', 'text-slate-400');
-    } else {
-        paymentDetails.classList.remove('hidden');
-        slipSection.classList.remove('hidden');
-        payTransfer.classList.add('border-slate-900', 'bg-white', 'shadow-sm');
-        payTransfer.classList.remove('border-slate-50', 'bg-slate-50', 'text-slate-400');
-        payCOD.classList.remove('border-slate-900', 'bg-white', 'shadow-sm');
-        payCOD.classList.add('border-slate-50', 'bg-slate-50', 'text-slate-400');
-    }
-    updateConfirmButtonText();
-}
 
 function updateConfirmButtonText() {
     const btn = document.getElementById('submitOrderOrderBtn') || document.getElementById('submitOrderBtn');
@@ -332,6 +308,7 @@ function updatePaymentMethod(method) {
         details.classList.add('hidden');
         slipSection.classList.add('hidden');
     }
+    updateConfirmButtonText();
 }
 
 async function submitOrder() {

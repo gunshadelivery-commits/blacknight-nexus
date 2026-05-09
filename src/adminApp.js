@@ -713,7 +713,7 @@ let editingPromptpayId = null;
 
 async function loadPromptpayData() {
     try {
-        const res = await fetch(`${GAS_URL}?action=getSettings`);
+        const res = await fetch(`${GAS_URL}?action=getBank`);
         const data = await res.json();
         
         // If GAS has data (more than just headers)
@@ -938,11 +938,11 @@ async function syncPromptpayToGAS() {
             ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
         ];
 
-        // ใช้ fetch แบบปกติ (ไม่ต้อง no-cors เพื่อให้รู้ผลลัพธ์)
+        // ใช้ fetch แบบปกติ
         const res = await fetch(GAS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+            body: JSON.stringify({ action: "saveBank", settings: settingsPayload })
         });
         
         const result = await res.json();

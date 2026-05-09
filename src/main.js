@@ -324,7 +324,7 @@ async function loadAndDisplayPaymentMethods() {
     container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm animate-pulse">กำลังโหลดข้อมูลชำระเงิน...</div>`;
     
     try {
-        const res = await fetch(`${GAS_URL}?action=getSettings`);
+        const res = await fetch(`${GAS_URL}?action=getBank`);
         const data = await res.json();
         
         // Convert 2D array to objects

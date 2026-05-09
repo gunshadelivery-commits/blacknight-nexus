@@ -266,7 +266,7 @@ async function loadAndDisplayPaymentMethods() {
     const container = document.getElementById('paymentMethodsContainer');
     container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs animate-pulse">กำลังโหลดข้อมูลชำระเงิน...</div>`;
     try {
-        const res = await fetch(`${GAS_URL}?action=getSettings`);
+        const res = await fetch(`${GAS_URL}?action=getBank`);
         const data = await res.json();
         const promptpayList = data.length > 0 ? data.slice(1).map(row => ({
             name: row[0], bank: row[1], number: row[2], qrImage: row[3], status: row[4] || 'active'

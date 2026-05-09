@@ -396,7 +396,7 @@ async function updateConfirm(btn, name, slip) {
     setTimeout(loadData, 5000);
 }
 
-window.printLabel = function(idx) {
+function printLabel(idx) {
     const order = rawOrders[idx];
     const keys = Object.keys(order);
     const getVal = (targets) => {
@@ -484,144 +484,8 @@ window.printLabel = function(idx) {
     printWindow.document.close();
 }
 
-// --- PROMPTPAY SETTINGS ---
-async function loadPromptpay() {
-    try {
-        const res = await fetch(`${GAS_URL}?action=getSettings`);
-        const data = await res.json();
-        
-        // Convert from 2D array [ [Name, Bank, Number, Image, Status], ... ]
-        // to objects for the UI
-        const promptpayList = data.length > 0 ? data.slice(1).map(row => ({
-            name: row[0],
-            bank: row[1],
-            number: row[2],
-            qrImage: row[3],
-            status: row[4] || 'active'
-        })) : [];
 
-        renderPromptpay(promptpayList);
-    } catch (err) {
-        console.error("Load Settings Error:", err);
-        // Fallback to empty if sheet not ready
-        renderPromptpay([]);
-    }
-}
 
-function renderPromptpay(list) {
-    const listEl = document.getElementById('promptpayList');
-    listEl.innerHTML = list.map((pp, idx) => `
-        <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between group hover:border-slate-300 transition-all">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 overflow-hidden">
-                    ${pp.qrImage ? `<img src="${pp.qrImage}" class="w-full h-full object-cover">` : '🏧'}
-                </div>
-                <div>
-                    <h5 class="font-bold text-slate-800 text-sm">${pp.name}</h5>
-                    <p class="text-[11px] text-slate-400 font-mono">${pp.bank} | ${pp.number}</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="togglePromptpayStatus(${idx}, '${pp.status}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold ${pp.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}">
-                    ${pp.status === 'active' ? 'เปิดใช้งาน' : 'ปิดอยู่'}
-                </button>
-                <button onclick="deletePromptpay(${idx})" class="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-            </div>
-        </div>
-    `).join('') || `<div class="text-center py-8 text-slate-400 text-sm">ยังไม่มีข้อมูล Promptpay</div>`;
-}
-
-async function savePromptpay(e) {
-    if (e) e.preventDefault();
-    const btn = document.querySelector('#promptpayForm button[type="submit"]');
-    const originalText = btn.innerHTML;
-
-    const newPP = {
-        name: document.getElementById('ppName').value,
-        bank: document.getElementById('ppBank').value,
-        number: document.getElementById('ppNumber').value,
-        qrImage: '',
-        status: 'active'
-    };
-
-    const qrFile = document.getElementById('ppQR').files[0];
-    
-    try {
-        btn.disabled = true;
-        btn.innerHTML = "กำลังบันทึก...";
-
-        // 1. Upload QR if exists
-        if (qrFile) {
-            const formData = new FormData();
-            formData.append('image', qrFile);
-            const res = await fetch(getImgbbUploadUrl(), { method: 'POST', body: formData });
-            const imgData = await res.json();
-            if (imgData.success) newPP.qrImage = imgData.data.url;
-        }
-
-        // 2. Fetch Current Settings
-        const currentRes = await fetch(`${GAS_URL}?action=getSettings`);
-        const currentData = await currentRes.json();
-        
-        const settings = currentData.length > 0 ? currentData : [["Name", "Bank", "Number", "QR", "Status"]];
-        settings.push([newPP.name, newPP.bank, newPP.number, newPP.qrImage, newPP.status]);
-
-        // 3. Save to GAS
-        await fetch(GAS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "saveSettings", settings: settings })
-        });
-
-        document.getElementById('promptpayForm').reset();
-        loadPromptpay();
-        showToast("บันทึก Promptpay เรียบร้อย!");
-    } catch (err) {
-        showToast("บันทึกล้มเหลว", "error");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-}
-
-async function deletePromptpay(idx) {
-    if (!confirm("ยืนยันการลบช่องทางนี้?")) return;
-    try {
-        const res = await fetch(`${GAS_URL}?action=getSettings`);
-        const data = await res.json();
-        if (data.length > idx + 1) {
-            data.splice(idx + 1, 1); // +1 because of header row
-            await fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: "saveSettings", settings: data })
-            });
-            loadPromptpay();
-        }
-    } catch (err) { showToast("ลบล้มเหลว", "error"); }
-}
-
-async function togglePromptpayStatus(idx, currentStatus) {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    try {
-        const res = await fetch(`${GAS_URL}?action=getSettings`);
-        const data = await res.json();
-        if (data.length > idx + 1) {
-            data[idx + 1][4] = newStatus;
-            await fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: "saveSettings", settings: data })
-            });
-            loadPromptpay();
-        }
-    } catch (err) { showToast("อัปเดตล้มเหลว", "error"); }
-}
 
 // --- PRODUCT MANAGEMENT ---
 function loadProducts() {

@@ -949,11 +949,14 @@ async function syncPromptpayToGAS() {
         if (result.result === "success") {
             showToast("ซิงค์ข้อมูลลง Google Sheets สำเร็จ!", "success");
         } else {
-            throw new Error(result.error || "Unknown Error");
+            // ถ้ามี Error กลับมาจาก GAS ให้แสดงตรงๆ
+            const errMsg = result.error || "เกิดข้อผิดพลาดไม่ทราบสาเหตุ";
+            showToast("ซิงค์ล้มเหลว: " + errMsg, "error");
+            console.error("GAS Sync Error:", errMsg);
         }
     } catch (err) {
-        console.error("Sync Error:", err);
-        showToast("ซิงค์ล้มเหลว: " + err.message, "error");
+        console.error("Network/Fetch Error:", err);
+        showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;

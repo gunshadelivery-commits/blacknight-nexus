@@ -1019,4 +1019,4 @@ window.deletePromptpay = deletePromptpay;
 window.savePromptpay = savePromptpay;
 window.previewQRCode = previewQRCode;
 window.deleteAllProducts = deleteAllProducts;
-window.printLabel = window.printLabel;
+window.printLabel = printLabel;

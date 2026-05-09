@@ -711,10 +711,29 @@ async function saveProduct() {
 let promptpayList = [];
 let editingPromptpayId = null;
 
-function loadPromptpayData() {
-    const stored = localStorage.getItem('promptpayData');
-    promptpayList = stored ? JSON.parse(stored).map(pp => ({ status: pp.status || 'active', ...pp })) : [];
-    renderPromptpayTable();
+async function loadPromptpayData() {
+    try {
+        const res = await fetch(`${GAS_URL}?action=getSettings`);
+        const data = await res.json();
+        
+        // Convert from 2D array [ [Name, Bank, Number, Image, Status], ... ]
+        // to objects for the UI
+        promptpayList = data.length > 1 ? data.slice(1).map(row => ({
+            name: row[0],
+            bank: row[1],
+            number: row[2],
+            qrImage: row[3],
+            status: row[4] || 'active'
+        })) : [];
+
+        savePromptpayToStorage(); // Sync to local storage as backup
+        renderPromptpayTable();
+    } catch (err) {
+        console.error("Load Settings Error:", err);
+        const stored = localStorage.getItem('promptpayData');
+        promptpayList = stored ? JSON.parse(stored) : [];
+        renderPromptpayTable();
+    }
 }
 
 function savePromptpayToStorage() {
@@ -838,8 +857,23 @@ async function savePromptpay() {
         }
 
         savePromptpayToStorage();
+        
+        // 🚀 SYNC TO GAS
+        const settingsPayload = [
+            ["Name", "Bank", "Number", "QR", "Status"],
+            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
+        ];
+
+        await fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+        });
+
         renderPromptpayTable();
         togglePromptpayModal(false);
+        showToast("ซิงค์ข้อมูลสำเร็จ!", "success");
     } catch (err) {
         console.error("Save error:", err);
         showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
@@ -860,8 +894,27 @@ async function deletePromptpay(idx) {
     if (confirmed) {
         promptpayList.splice(idx, 1);
         savePromptpayToStorage();
+        
+        // 🚀 SYNC TO GAS
+        const settingsPayload = [
+            ["Name", "Bank", "Number", "QR", "Status"],
+            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
+        ];
+
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+            });
+            showToast("ลบและซิงค์ข้อมูลสำเร็จ!", "success");
+        } catch (err) {
+            console.error("Sync error:", err);
+            showToast("ลบสำเร็จแต่ซิงค์ข้อมูลล้มเหลว", "warning");
+        }
+
         renderPromptpayTable();
-        showToast("ลบ Promptpay สำเร็จ!", "success");
     }
 }
 

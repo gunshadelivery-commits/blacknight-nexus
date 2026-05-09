@@ -716,17 +716,24 @@ async function loadPromptpayData() {
         const res = await fetch(`${GAS_URL}?action=getSettings`);
         const data = await res.json();
         
-        // Convert from 2D array [ [Name, Bank, Number, Image, Status], ... ]
-        // to objects for the UI
-        promptpayList = data.length > 1 ? data.slice(1).map(row => ({
-            name: row[0],
-            bank: row[1],
-            number: row[2],
-            qrImage: row[3],
-            status: row[4] || 'active'
-        })) : [];
-
-        savePromptpayToStorage(); // Sync to local storage as backup
+        // If GAS has data (more than just headers)
+        if (data && data.length > 1) {
+            promptpayList = data.slice(1).map(row => ({
+                name: row[0],
+                bank: row[1],
+                number: row[2],
+                qrImage: row[3],
+                status: row[4] || 'active'
+            }));
+            savePromptpayToStorage(); // Update local backup
+        } else {
+            // If GAS is empty, try loading from local storage
+            const stored = localStorage.getItem('promptpayData');
+            if (stored) {
+                promptpayList = JSON.parse(stored);
+                console.log("GAS empty, loaded from LocalStorage");
+            }
+        }
         renderPromptpayTable();
     } catch (err) {
         console.error("Load Settings Error:", err);

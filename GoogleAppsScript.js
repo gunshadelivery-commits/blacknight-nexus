@@ -49,7 +49,8 @@ function doPost(e) {
     if (action === "saveSettings") {
       sheetSettings.clear();
       if (data.settings && data.settings.length > 0) {
-        data.settings.forEach(row => sheetSettings.appendRow(row));
+        // บันทึกแบบยกแผง แม่นยำกว่า
+        sheetSettings.getRange(1, 1, data.settings.length, data.settings[0].length).setValues(data.settings);
       }
       SpreadsheetApp.flush();
       return sendResponse({ result: "success" });

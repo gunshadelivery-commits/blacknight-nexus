@@ -925,6 +925,41 @@ async function deletePromptpay(idx) {
     }
 }
 
+async function syncPromptpayToGAS() {
+    const btn = event?.target?.closest('button') || { disabled: false, innerHTML: '' };
+    const originalText = btn.innerHTML;
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = "🔄 กำลังซิงค์...";
+        
+        const settingsPayload = [
+            ["Name", "Bank", "Number", "QR", "Status"],
+            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
+        ];
+
+        // ใช้ fetch แบบปกติ (ไม่ต้อง no-cors เพื่อให้รู้ผลลัพธ์)
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+        });
+        
+        const result = await res.json();
+        if (result.result === "success") {
+            showToast("ซิงค์ข้อมูลลง Google Sheets สำเร็จ!", "success");
+        } else {
+            throw new Error(result.error || "Unknown Error");
+        }
+    } catch (err) {
+        console.error("Sync Error:", err);
+        showToast("ซิงค์ล้มเหลว: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
 // === EXPOSE GLOBALS ===
 window.checkPass = checkPass;
 window.logout = logout;
@@ -941,6 +976,7 @@ window.togglePromptpayModal = togglePromptpayModal;
 window.editPromptpay = editPromptpay;
 window.deletePromptpay = deletePromptpay;
 window.savePromptpay = savePromptpay;
+window.syncPromptpayToGAS = syncPromptpayToGAS;
 window.previewQRCode = previewQRCode;
 window.deleteAllProducts = deleteAllProducts;
 window.printLabel = printLabel;

@@ -109,12 +109,12 @@ function loadProductsFromSheet(callback) {
             });
 
             products = Object.values(grouped);
-        },
-        error: function(err) {
-            console.error("PapaParse Fetch Error:", err);
-            showToast("โหลดข้อมูลล้มเหลว (เช็คการแชร์ Sheet)", "error");
-        }
-    });
+            if (callback) callback(products);
+        })
+        .catch(err => {
+            console.error("Fetch Products Error:", err);
+            showToast("โหลดข้อมูลสินค้าล้มเหลว", "error");
+        });
 }
 
 function initRevealObserver() {

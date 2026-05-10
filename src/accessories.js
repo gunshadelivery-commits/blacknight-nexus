@@ -44,29 +44,35 @@ function handleLogoClick() {
     logoClickTimeout = setTimeout(() => { logoClickCount = 0; }, 2000);
 }
 
-function loadProductsFromSheet(callback) {
-    const cacheBuster = `?t=${Date.now()}`;
-    Papa.parse(SHEET_CSV_URL + cacheBuster, {
-        download: true, header: true,
-        complete: function(results) {
-            const data = results.data;
-            const grouped = {};
+function loadProductsFromSheet() {
+    fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+            console.log("GAS Accessories Data Fetched:", data);
+            if (!data || data.error || data.length === 0) {
+                console.error("No data found or error:", data?.error);
+                showToast("ไม่พบข้อมูลสินค้า", "error");
+                return;
+            }
             
+            const grouped = {};
             data.forEach(item => {
-                if(!item.name || item.name.trim() === "") return;
-                if(!grouped[item.name]) {
-                    let tags = [];
-                    if (item.tags) tags = item.tags.split(',').map(t => t.trim()).filter(t => t !== '');
-                    grouped[item.name] = {
-                        name: item.name,
-                        note: item.note || '',
-                        image: item.image || '',
-                        tags: tags,
-                        status: (item.status || '').trim().toLowerCase(),
+                const name = item.name || item.Name;
+                const cat = item.category || item.Category || "";
+                
+                // เฉพาะหมวดหมู่ Accessories เท่านั้น
+                if (cat.toLowerCase() !== "accessories" && cat !== "อุปกรณ์") return;
+                if (!name || name.trim() === "") return;
+                
+                if (!grouped[name]) {
+                    grouped[name] = {
+                        name: name,
+                        note: item.note || item.Note || '',
+                        image: item.image || item.Image || '',
+                        category: cat,
                         variants: [],
-                        selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: item["หมวดหมู่"] || classifyItem(item.name)
+                        aiType: cat
                     };
                 }
 

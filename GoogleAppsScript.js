@@ -1,9 +1,9 @@
 /**
- * BLACKNIGHT-NEXUS CENTRAL BACKEND V.21 (PRO)
- * 🚀 ปรับปรุง: ระบบ updateProduct แบบ Single-Action เพื่อความแม่นยำสูง
+ * BLACKNIGHT-NEXUS CENTRAL BACKEND V.22 (ULTRA-ROBUST)
+ * 🚀 ปรับปรุง: ระบบจัดการหัวตารางอัตโนมัติ และระบบดึงข้อมูลแบบ Array (กันพลาด)
  */
 
-const GAS_VERSION = "V21-PRO-SYNC";
+const GAS_VERSION = "V22-ULTRA-ROBUST";
 const SPREADSHEET_ID = "11p5OmXlmYoSvrjatX1JTRKlM6QcRnJdBIxm1EwqM0Sw";
 const SHEET_PRODUCTS = "Blacknight69 - Product List";
 const SHEET_ORDERS = "Orders";
@@ -17,6 +17,15 @@ function getSS() {
   return SpreadsheetApp.getActiveSpreadsheet();
 }
 
+function initSheets() {
+  const ss = getSS();
+  let pSheet = ss.getSheetByName(SHEET_PRODUCTS);
+  if (!pSheet) {
+    pSheet = ss.insertSheet(SHEET_PRODUCTS);
+    pSheet.appendRow(["name", "size", "price", "note", "image", "tags", "status", "stock", "sold", "category"]);
+  }
+}
+
 function doGet(e) {
   try {
     const action = e.parameter.action;
@@ -25,29 +34,17 @@ function doGet(e) {
     const ss = getSS();
     if (action === "getProducts") {
       const sheet = ss.getSheetByName(SHEET_PRODUCTS);
-      if (!sheet) return sendResponse({ error: "Sheet not found" });
+      if (!sheet) return sendResponse({ error: "Product sheet missing" });
       const values = sheet.getDataRange().getValues();
-      // แปลงเป็น JSON Array เพื่อให้หน้าร้านใช้งานง่าย
-      const headers = values[0];
-      const data = values.slice(1).map(row => {
-        let obj = {};
-        headers.forEach((h, i) => { obj[h] = row[i]; });
-        return obj;
-      });
-      return sendResponse(data);
+      return sendResponse(values); // ส่งเป็น Array ดิบเลยเพื่อความชัวร์
     }
 
     if (action === "getBank") {
-      let sheet = ss.getSheetByName(SHEET_BANK);
-      return sendResponse(sheet ? sheet.getDataRange().getValues() : []);
-    }
-    
-    if (action === "getOrders") {
-      let sheet = ss.getSheetByName(SHEET_ORDERS);
+      const sheet = ss.getSheetByName(SHEET_BANK);
       return sendResponse(sheet ? sheet.getDataRange().getValues() : []);
     }
   } catch (err) {
-    return sendResponse({ error: err.toString() });
+    return sendResponse({ error: "GAS doGet Error: " + err.toString() });
   }
 }
 
@@ -56,21 +53,24 @@ function doPost(e) {
     const ss = getSS();
     const data = JSON.parse(e.postData.contents);
     const action = data.action;
-    const sheet = ss.getSheetByName(SHEET_PRODUCTS);
+    let sheet = ss.getSheetByName(SHEET_PRODUCTS);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_PRODUCTS);
+      sheet.appendRow(["name", "size", "price", "note", "image", "tags", "status", "stock", "sold", "category"]);
+    }
 
-    // ✅ ฟังชันใหม่: อัปเดตสินค้าทีเดียวจบ (ลบของเก่าทิ้งแล้วแอดใหม่)
     if (action === "updateProduct" || action === "addProduct") {
       const rows = sheet.getDataRange().getValues();
       const targetName = data.oldName || data.name;
       
-      // 1. ลบของเดิมทิ้ง (ถ้ามี)
+      // ลบรายการเดิมออก
       for (let i = rows.length - 1; i >= 1; i--) {
         if (rows[i][0] == targetName) {
           sheet.deleteRow(i + 1);
         }
       }
       
-      // 2. เพิ่มใหม่ทั้งหมด (รวม Variants)
+      // เพิ่มใหม่
       if (data.variants && data.variants.length > 0) {
         data.variants.forEach(v => {
           sheet.appendRow([
@@ -99,21 +99,16 @@ function doPost(e) {
       return sendResponse({ result: "success" });
     }
 
-    if (action === "saveBank") {
-      let bSheet = ss.getSheetByName(SHEET_BANK) || ss.insertSheet(SHEET_BANK);
-      bSheet.clear();
-      if (data.settings) bSheet.getRange(1, 1, data.settings.length, data.settings[0].length).setValues(data.settings);
-      return sendResponse({ result: "success" });
-    }
-
     if (action === "log") {
       const oSheet = ss.getSheetByName(SHEET_ORDERS);
-      oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
+      if (oSheet) {
+        oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
+      }
       return sendResponse({ result: "success" });
     }
 
   } catch (err) {
-    return sendResponse({ error: err.toString() });
+    return sendResponse({ error: "GAS doPost Error: " + err.toString() });
   }
 }
 

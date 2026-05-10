@@ -48,17 +48,17 @@ function loadProductsFromSheet() {
     fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
-            console.log("GAS Accessories Data Fetched:", data);
-            if (!data || data.error || data.length === 0) {
+            console.log("GAS Raw Accessories Fetched:", data);
+            if (!data || data.error || data.length < 2) {
                 console.error("No data found or error:", data?.error);
                 showToast("ไม่พบข้อมูลสินค้า", "error");
                 return;
             }
             
             const grouped = {};
-            data.forEach(item => {
-                const name = item.name || item.Name;
-                const cat = item.category || item.Category || "";
+            data.slice(1).forEach(row => {
+                const name = row[0];
+                const cat = row[9] || "";
                 
                 // เฉพาะหมวดหมู่ Accessories เท่านั้น
                 if (cat.toLowerCase() !== "accessories" && cat !== "อุปกรณ์") return;
@@ -67,8 +67,8 @@ function loadProductsFromSheet() {
                 if (!grouped[name]) {
                     grouped[name] = {
                         name: name,
-                        note: item.note || item.Note || '',
-                        image: item.image || item.Image || '',
+                        note: row[3] || '',
+                        image: row[4] || '',
                         category: cat,
                         variants: [],
                         totalSold: 0,
@@ -76,10 +76,10 @@ function loadProductsFromSheet() {
                     };
                 }
 
-                const stock = parseInt(item.stock || item.Stock) || 0;
-                const price = parseFloat(item.price || item.Price) || 0;
-                const size = item.size || item.Size || 'Standard';
-                const sold = parseInt(item.sold || item.Sold || item.sold_count) || 0;
+                const size = row[1] || 'Standard';
+                const price = parseFloat(row[2]) || 0;
+                const stock = parseInt(row[7]) || 0;
+                const sold = parseInt(row[8]) || 0;
 
                 grouped[name].variants.push({ size, price, stock, sold_count: sold });
                 grouped[name].totalSold += sold;

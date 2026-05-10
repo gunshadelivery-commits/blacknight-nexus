@@ -69,40 +69,43 @@ function loadProductsFromSheet(callback) {
     fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
-            console.log("GAS Product Data Fetched:", data);
-            if (!data || data.error || data.length === 0) {
+            console.log("GAS Raw Data Fetched:", data);
+            if (!data || data.error || data.length < 2) {
                 console.error("No data found or error:", data?.error);
                 showToast("ไม่พบข้อมูลสินค้า", "error");
                 return;
             }
             
             const grouped = {};
-            data.forEach(item => {
-                const name = item.name || item.Name;
+            // ข้ามแถวแรก (Headers)
+            data.slice(1).forEach(row => {
+                const name = row[0];
                 if (!name || name.trim() === "") return;
                 
                 if (!grouped[name]) {
                     let tags = [];
-                    const rawTags = item.tags || item.Tags || "";
-                    if (rawTags) tags = rawTags.split(',').map(t => t.trim()).filter(t => t !== '');
+                    const rawTags = row[5] || "";
+                    if (rawTags) tags = rawTags.toString().split(',').map(t => t.trim()).filter(t => t !== '');
                     
                     grouped[name] = {
                         name: name,
-                        note: item.note || item.Note || '',
-                        image: item.image || item.Image || '',
+                        size: row[1],
+                        price: parseFloat(row[2]) || 0,
+                        note: row[3] || '',
+                        image: row[4] || '',
                         tags: tags,
-                        status: (item.status || item.Status || '').trim().toLowerCase(),
+                        status: (row[6] || '').toString().trim().toLowerCase(),
                         variants: [],
                         selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: item.category || item.Category || classifyItem(name)
+                        aiType: row[9] || classifyItem(name)
                     };
                 }
 
-                const stock = parseInt(item.stock || item.Stock) || 0;
-                const price = parseFloat(item.price || item.Price) || 0;
-                const size = item.size || item.Size || 'Standard';
-                const sold = parseInt(item.sold || item.Sold || item.sold_count) || 0;
+                const size = row[1] || 'Standard';
+                const price = parseFloat(row[2]) || 0;
+                const stock = parseInt(row[7]) || 0;
+                const sold = parseInt(row[8]) || 0;
 
                 grouped[name].variants.push({ size, price, stock, sold_count: sold });
                 grouped[name].totalSold += sold;

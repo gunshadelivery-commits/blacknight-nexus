@@ -488,15 +488,42 @@ function printLabel(idx) {
 
 
 // --- PRODUCT MANAGEMENT ---
-function loadProducts() {
-    Papa.parse(PRODUCTS_CSV_URL + "&t=" + Date.now(), {
-        download: true, header: true, skipEmptyLines: true,
-        complete: (results) => { rawProducts = results.data; renderProductsTable(); }
-    });
+async function loadProducts() {
+    try {
+        const res = await fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`);
+        const data = await res.json();
+        console.log("Admin Data Fetched:", data);
+        if (!data || data.error || data.length < 1) {
+            rawProducts = [];
+        } else {
+            // แปลง Array เป็น Object เพื่อความสะดวกในการ Render
+            const headers = data[0];
+            rawProducts = data.slice(1).map(row => {
+                return {
+                    name: row[0],
+                    size: row[1],
+                    price: row[2],
+                    note: row[3],
+                    image: row[4],
+                    tags: row[5],
+                    status: row[6],
+                    stock: row[7],
+                    sold_count: row[8],
+                    category: row[9] || "อื่นๆ"
+                };
+            });
+        }
+        renderProductsTable();
+    } catch (err) {
+        console.error("Load Products Error:", err);
+        showToast("โหลดข้อมูลสินค้าล้มเหลว", "error");
+    }
 }
 
 function renderProductsTable() {
-    const body = document.getElementById('productTableBody'); body.innerHTML = "";
+    const body = document.getElementById('productTableBody'); 
+    if(!body) return;
+    body.innerHTML = "";
     const grouped = {};
     rawProducts.forEach(p => {
         if(!p.name) return;

@@ -1,9 +1,9 @@
 /**
- * BLACKNIGHT-NEXUS CENTRAL BACKEND V.19
- * 🕵️‍♂️ VERSION CHECKER: ถ้าตัวนี้ยังขึ้น Error เดิม แสดงว่าเรียกผิดไฟล์แน่นอน!
+ * BLACKNIGHT-NEXUS CENTRAL BACKEND V.21 (PRO)
+ * 🚀 ปรับปรุง: ระบบ updateProduct แบบ Single-Action เพื่อความแม่นยำสูง
  */
 
-const GAS_VERSION = "V19-I-AM-HERE";
+const GAS_VERSION = "V21-PRO-SYNC";
 const SPREADSHEET_ID = "11p5OmXlmYoSvrjatX1JTRKlM6QcRnJdBIxm1EwqM0Sw";
 const SHEET_PRODUCTS = "Blacknight69 - Product List";
 const SHEET_ORDERS = "Orders";
@@ -13,38 +13,41 @@ function getSS() {
   try {
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     if (ss) return ss;
-    throw new Error("openById returned null");
-  } catch (e) {
-    var ss2 = SpreadsheetApp.getActiveSpreadsheet();
-    if (ss2) return ss2;
-    throw new Error("หาไฟล์ Google Sheets ไม่เจอ: " + e.toString());
-  }
+  } catch (e) {}
+  return SpreadsheetApp.getActiveSpreadsheet();
 }
 
 function doGet(e) {
   try {
     const action = e.parameter.action;
-    
-    // 🔥 จุดเช็คเวอร์ชัน
     if (action === "checkVersion") return sendResponse({ version: GAS_VERSION });
 
     const ss = getSS();
+    if (action === "getProducts") {
+      const sheet = ss.getSheetByName(SHEET_PRODUCTS);
+      if (!sheet) return sendResponse({ error: "Sheet not found" });
+      const values = sheet.getDataRange().getValues();
+      // แปลงเป็น JSON Array เพื่อให้หน้าร้านใช้งานง่าย
+      const headers = values[0];
+      const data = values.slice(1).map(row => {
+        let obj = {};
+        headers.forEach((h, i) => { obj[h] = row[i]; });
+        return obj;
+      });
+      return sendResponse(data);
+    }
+
     if (action === "getBank") {
       let sheet = ss.getSheetByName(SHEET_BANK);
-      if (!sheet) {
-        sheet = ss.insertSheet(SHEET_BANK);
-        sheet.appendRow(["Name", "Bank", "Number", "QR", "Status"]);
-      }
-      return sendResponse(sheet.getDataRange().getValues());
+      return sendResponse(sheet ? sheet.getDataRange().getValues() : []);
     }
     
-    // ... ส่วนอื่นๆ เหมือนเดิม ...
-    if (action === "getProducts") return sendResponse(ss.getSheetByName(SHEET_PRODUCTS).getDataRange().getValues());
-    if (action === "getOrders") return sendResponse(ss.getSheetByName(SHEET_ORDERS).getDataRange().getValues());
-
-    return sendResponse({ error: "Invalid action: " + action });
+    if (action === "getOrders") {
+      let sheet = ss.getSheetByName(SHEET_ORDERS);
+      return sendResponse(sheet ? sheet.getDataRange().getValues() : []);
+    }
   } catch (err) {
-    return sendResponse({ error: "V19 doGet Error: " + err.toString() });
+    return sendResponse({ error: err.toString() });
   }
 }
 
@@ -53,30 +56,64 @@ function doPost(e) {
     const ss = getSS();
     const data = JSON.parse(e.postData.contents);
     const action = data.action;
+    const sheet = ss.getSheetByName(SHEET_PRODUCTS);
 
-    if (action === "saveBank") {
-      let sheet = ss.getSheetByName(SHEET_BANK) || ss.insertSheet(SHEET_BANK);
-      sheet.clear();
-      if (data.settings && data.settings.length > 0) {
-        sheet.getRange(1, 1, data.settings.length, data.settings[0].length).setValues(data.settings);
-      } else {
-        sheet.appendRow(["Name", "Bank", "Number", "QR", "Status"]);
+    // ✅ ฟังชันใหม่: อัปเดตสินค้าทีเดียวจบ (ลบของเก่าทิ้งแล้วแอดใหม่)
+    if (action === "updateProduct" || action === "addProduct") {
+      const rows = sheet.getDataRange().getValues();
+      const targetName = data.oldName || data.name;
+      
+      // 1. ลบของเดิมทิ้ง (ถ้ามี)
+      for (let i = rows.length - 1; i >= 1; i--) {
+        if (rows[i][0] == targetName) {
+          sheet.deleteRow(i + 1);
+        }
+      }
+      
+      // 2. เพิ่มใหม่ทั้งหมด (รวม Variants)
+      if (data.variants && data.variants.length > 0) {
+        data.variants.forEach(v => {
+          sheet.appendRow([
+            data.name, 
+            v.size || "Standard", 
+            v.price || 0, 
+            data.note || "", 
+            data.image || "", 
+            data.tags || "", 
+            (parseInt(v.stock) > 0 ? "มีของ" : "หมด"), 
+            v.stock || 0, 
+            v.sold || 0,
+            data.category || "อื่นๆ"
+          ]);
+        });
       }
       SpreadsheetApp.flush();
-      return sendResponse({ result: "success", version: GAS_VERSION });
+      return sendResponse({ result: "success" });
+    }
+
+    if (action === "deleteProduct") {
+      const rows = sheet.getDataRange().getValues();
+      for (let i = rows.length - 1; i >= 1; i--) {
+        if (rows[i][0] == data.name) sheet.deleteRow(i + 1);
+      }
+      return sendResponse({ result: "success" });
+    }
+
+    if (action === "saveBank") {
+      let bSheet = ss.getSheetByName(SHEET_BANK) || ss.insertSheet(SHEET_BANK);
+      bSheet.clear();
+      if (data.settings) bSheet.getRange(1, 1, data.settings.length, data.settings[0].length).setValues(data.settings);
+      return sendResponse({ result: "success" });
     }
 
     if (action === "log") {
-      const sheet = ss.getSheetByName(SHEET_ORDERS);
-      sheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
-      SpreadsheetApp.flush();
-      return sendResponse({ result: "success", version: GAS_VERSION });
+      const oSheet = ss.getSheetByName(SHEET_ORDERS);
+      oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
+      return sendResponse({ result: "success" });
     }
 
-    return sendResponse({ result: "success", version: GAS_VERSION });
-
   } catch (err) {
-    return sendResponse({ error: "V19 doPost Error: " + err.toString() });
+    return sendResponse({ error: err.toString() });
   }
 }
 

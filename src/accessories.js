@@ -69,23 +69,23 @@ function loadProductsFromSheet(callback) {
                         aiType: item["หมวดหมู่"] || classifyItem(item.name)
                     };
                 }
-                
-                const stock = parseInt(item.stock) || 0;
-                const sold = parseInt(item.sold_count) || 0;
-                
-                grouped[item.name].variants.push({
-                    size: item.size || 'Standard',
-                    price: parseFloat(item.price) || 0,
-                    stock: stock,
-                    sold: sold
-                });
-                grouped[item.name].totalSold += sold;
+
+                const stock = parseInt(item.stock || item.Stock) || 0;
+                const price = parseFloat(item.price || item.Price) || 0;
+                const size = item.size || item.Size || 'Standard';
+                const sold = parseInt(item.sold || item.Sold || item.sold_count) || 0;
+
+                grouped[name].variants.push({ size, price, stock, sold_count: sold });
+                grouped[name].totalSold += sold;
             });
 
             products = Object.values(grouped);
-            if (callback) callback();
-        }
-    });
+            renderProducts();
+        })
+        .catch(err => {
+            console.error("Fetch Accessories Error:", err);
+            showToast("โหลดข้อมูลสินค้าล้มเหลว", "error");
+        });
 }
 
 function renderProducts(filter = "") {

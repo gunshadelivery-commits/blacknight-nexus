@@ -658,29 +658,15 @@ async function saveProduct() {
     }
 
     try {
-        if(isEditMode) {
-            // สำหรับ Edit Mode: ลบของเก่าออกก่อนแล้วแอดใหม่ (วิธีที่ง่ายและชัวร์ที่สุด)
-            // หรือส่งไปจัดการที่ GAS ทีเดียว
-            showToast("กำลังอัปเดตข้อมูล...", "success");
-            
-            // ลบของเดิมก่อน
-            const oldVariants = rawProducts.filter(p => p.name === oldProductName);
-            for(let v of oldVariants) {
-                await fetch(GAS_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ action: "deleteProduct", name: oldProductName.trim(), size: v.size.toString().trim() }) 
-                });
-            }
-        }
+        showToast(isEditMode ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกสินค้า...", "success");
 
-        // ส่งข้อมูลเข้า GAS แบบ Bundle
+        // ส่งข้อมูลเข้า GAS แบบ Bundle ทีเดียวจบ (Atomic Update)
         const response = await fetch(GAS_URL, { 
             method: 'POST', 
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({ 
-                action: "addProduct", 
+                action: "updateProduct", 
+                oldName: isEditMode ? oldProductName : name,
                 name: name, 
                 category: category, 
                 note: note, 

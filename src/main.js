@@ -66,52 +66,49 @@ function handleLogoClick() {
 }
 
 function loadProductsFromSheet(callback) {
-    const cacheBuster = (SHEET_CSV_URL.includes('?') ? '&' : '?') + `nocache=${Math.random()}&t=${Date.now()}`;
-    Papa.parse(SHEET_CSV_URL + cacheBuster, {
-        download: true, header: true,
-        complete: function (results) {
-            console.log("Sheet Data Fetched:", results);
-            if (!results || !results.data || results.data.length === 0) {
-                console.error("No data found in sheet");
+    fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+            console.log("GAS Product Data Fetched:", data);
+            if (!data || data.error || data.length === 0) {
+                console.error("No data found or error:", data?.error);
                 showToast("ไม่พบข้อมูลสินค้า", "error");
                 return;
             }
-            const data = results.data;
+            
             const grouped = {};
-
             data.forEach(item => {
-                if (!item.name || item.name.trim() === "") return;
-                if (!grouped[item.name]) {
+                const name = item.name || item.Name;
+                if (!name || name.trim() === "") return;
+                
+                if (!grouped[name]) {
                     let tags = [];
-                    if (item.tags) tags = item.tags.split(',').map(t => t.trim()).filter(t => t !== '');
-                    grouped[item.name] = {
-                        name: item.name,
-                        note: item.note || '',
-                        image: item.image || '',
+                    const rawTags = item.tags || item.Tags || "";
+                    if (rawTags) tags = rawTags.split(',').map(t => t.trim()).filter(t => t !== '');
+                    
+                    grouped[name] = {
+                        name: name,
+                        note: item.note || item.Note || '',
+                        image: item.image || item.Image || '',
                         tags: tags,
-                        status: (item.status || '').trim().toLowerCase(),
+                        status: (item.status || item.Status || '').trim().toLowerCase(),
                         variants: [],
                         selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: item["category"] || item["หมวดหมู่"] || classifyItem(item.name)
+                        aiType: item.category || item.Category || classifyItem(name)
                     };
                 }
 
-                const stock = parseInt(item.stock) || 0;
-                const sold = parseInt(item.sold_count) || 0;
+                const stock = parseInt(item.stock || item.Stock) || 0;
+                const price = parseFloat(item.price || item.Price) || 0;
+                const size = item.size || item.Size || 'Standard';
+                const sold = parseInt(item.sold || item.Sold || item.sold_count) || 0;
 
-                grouped[item.name].variants.push({
-                    size: item.size || 'Standard',
-                    price: parseFloat(item.price) || 0,
-                    stock: stock,
-                    sold: sold
-                });
-                grouped[item.name].totalSold += sold;
+                grouped[name].variants.push({ size, price, stock, sold_count: sold });
+                grouped[name].totalSold += sold;
             });
 
             products = Object.values(grouped);
-            console.log("Processed Products:", products);
-            if (callback) callback();
         },
         error: function(err) {
             console.error("PapaParse Fetch Error:", err);

@@ -60,8 +60,9 @@ function loadProductsFromSheet() {
                 const name = row[0];
                 const cat = row[9] || "";
                 
-                // เฉพาะหมวดหมู่ Accessories เท่านั้น
-                if (cat.toLowerCase() !== "accessories" && cat !== "อุปกรณ์") return;
+                // กรองเฉพาะหมวดหมู่ ของเล่น และ เจลหล่อลื่น
+                const allowedCats = ["ของเล่น", "เจลหล่อลื่น"];
+                if (!allowedCats.includes(cat)) return;
                 if (!name || name.trim() === "") return;
                 
                 if (!grouped[name]) {

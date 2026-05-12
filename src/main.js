@@ -2,6 +2,7 @@ import './style.css';
 import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
+import { showToast, classifyItem } from './utils.js';
 
 let products = []; // Keyed by Name
 let cart = [];
@@ -9,29 +10,6 @@ let currentCategory = "All";
 let currentLineUrl = "";
 let selectedPaymentMethod = "transfer"; // "transfer" or "cod"
 const COD_FEE = 50;
-
-// --- GENERIC CATEGORY CLASSIFIER ---
-function classifyItem(name) {
-    const n = name.toLowerCase();
-    if (["phone", "laptop", "watch", "tech", "gadget"].some(s => n.includes(s))) return "Electronics";
-    if (["shirt", "pants", "dress", "bag", "shoe"].some(i => n.includes(i))) return "Fashion";
-    if (["chair", "table", "lamp", "sofa", "bed"].some(h => n.includes(h))) return "Home";
-    return "Other";
-}
-
-// --- CUSTOM UI: TOAST ---
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    const icon = type === 'success' ? '✨' : '❌';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-    container.appendChild(toast);
-    setTimeout(() => {
-        toast.classList.add('hide');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
 
 // --- CUSTOM UI: PULL TO REFRESH ---
 let touchStart = 0;
@@ -65,10 +43,36 @@ function handleLogoClick() {
     logoClickTimeout = setTimeout(() => { logoClickCount = 0; }, 2000);
 }
 
+document.addEventListener('click', event => {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+
+    const action = button.dataset.action;
+    const productName = button.dataset.productName ? decodeURIComponent(button.dataset.productName) : null;
+    const variantIndex = button.dataset.variantIndex ? parseInt(button.dataset.variantIndex, 10) : NaN;
+
+    if (action === 'select-variant' && productName && !Number.isNaN(variantIndex)) {
+        selectVariant(productName, variantIndex);
+    }
+
+    if (action === 'add-to-cart' && productName && !Number.isNaN(variantIndex)) {
+        addToCart(productName, variantIndex);
+    }
+});
+
 function loadProductsFromSheet(callback) {
     fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            return res.json();
+        })
         .then(data => {
+            console.log("GAS Raw Data Fetched:", data);
+            if (!data || data.error || data.length < 2) {
+                console.error("No data found or error:", data?.error);
+                showToast("ไม่พบข้อมูลสินค้า", "error");
+                return;
+            }
             console.log("GAS Raw Data Fetched:", data);
             if (!data || data.error || data.length < 2) {
                 console.error("No data found or error:", data?.error);
@@ -196,7 +200,7 @@ function renderProducts(filter = "") {
                 <!-- VARIANT SELECTOR -->
                 <div class="mt-3 flex flex-wrap gap-1">
                     ${p.variants.map((v, vIdx) => `
-                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-white/20 border-white/40 text-white' : 'bg-black/20 text-white/30 border-white/5'} ${v.stock <= 0 ? 'opacity-20' : ''}">
+                        <button data-action="select-variant" data-product-name="${encodeURIComponent(p.name)}" data-variant-index="${vIdx}" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-white/20 border-white/40 text-white' : 'bg-black/20 text-white/30 border-white/5'} ${v.stock <= 0 ? 'opacity-20' : ''}">
                             ${v.size}
                         </button>
                     `).join('')}
@@ -206,7 +210,7 @@ function renderProducts(filter = "") {
 
                 <div class="mt-3 flex items-center justify-between">
                     <p class="font-bold text-white text-sm">${variant.price.toLocaleString()} ฿</p>
-                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-white/10 text-white p-2 rounded-xl hover:bg-white/20 transition-all disabled:opacity-10">
+                    <button data-action="add-to-cart" data-product-name="${encodeURIComponent(p.name)}" data-variant-index="${p.selectedVariantIdx}" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-white/10 text-white p-2 rounded-xl hover:bg-white/20 transition-all disabled:opacity-10">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </button>
                 </div>
@@ -239,7 +243,7 @@ function switchCategory(cat) {
 
 function selectVariant(pName, vIdx) {
     const product = products.find(p => p.name === pName);
-    if (product) {
+    if (product && Number.isInteger(vIdx) && product.variants[vIdx]) {
         product.selectedVariantIdx = vIdx;
         const searchInput = document.getElementById('searchInput');
         renderProducts(searchInput ? searchInput.value : "");
@@ -396,9 +400,15 @@ function previewPaymentQR(qrUrl) {
 function goToCheckout() { 
     loadAndDisplayPaymentMethods();
     updatePaymentMethod('transfer'); // Reset to default
-    document.getElementById('checkoutModal').classList.remove('hidden'); 
+    const checkoutModal = document.getElementById('checkoutModal');
+    checkoutModal.classList.remove('hidden');
+    checkoutModal.classList.add('flex');
 }
-function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
+function closeCheckout() { 
+    const checkoutModal = document.getElementById('checkoutModal');
+    checkoutModal.classList.add('hidden');
+    checkoutModal.classList.remove('flex');
+}
 
 function updatePaymentMethod(method) {
     selectedPaymentMethod = method;
@@ -459,6 +469,7 @@ async function submitOrder() {
 
     // Validation
     if (!data.name || !data.phone || !data.address) return showToast("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง", "error");
+    if (!/^(\+66|0)[0-9]{9,10}$/.test(data.phone)) return showToast("เบอร์โทรศัพท์ไม่ถูกต้อง (เช่น 0812345678 หรือ +66812345678)", "error");
     if (selectedPaymentMethod === 'transfer' && !data.slip) return showToast("กรุณาแนบสลิปโอนเงิน", "error");
 
     btn.disabled = true;
@@ -469,37 +480,54 @@ async function submitOrder() {
         
         // 1. Upload Slip (only for transfer)
         if (selectedPaymentMethod === 'transfer') {
-            const formData = new FormData(); 
-            formData.append('image', data.slip);
-            const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
-            const imgData = await imgRes.json();
-            if (!imgData.success) throw new Error("Upload Fail");
-            slipUrl = imgData.data.url;
+            try {
+                const formData = new FormData(); 
+                formData.append('image', data.slip);
+                const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
+                if (!imgRes.ok) throw new Error(`Upload failed: ${imgRes.status}`);
+                const imgData = await imgRes.json();
+                if (!imgData.success) throw new Error("Upload response invalid");
+                slipUrl = imgData.data.url;
+            } catch (error) {
+                console.error("Slip upload error:", error);
+                showToast("อัปโหลดสลิปล้มเหลว กรุณาลองใหม่", "error");
+                btn.disabled = false;
+                btn.innerHTML = "ยืนยันการสั่งซื้อ";
+                return;
+            }
         }
 
         // 2. Log to Sheet
-        let orderItems = cart.map(i => `${i.name} [${i.size}] x${i.qty}`).join(', ');
-        let itemsArray = cart.map(i => ({ name: i.name, size: i.size, qty: i.qty }));
-        let subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+        try {
+            let orderItems = cart.map(i => `${i.name} [${i.size}] x${i.qty}`).join(', ');
+            let itemsArray = cart.map(i => ({ name: i.name, size: i.size, qty: i.qty }));
+            let subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 
-        await fetch(GAS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-                action: "log", 
-                name: data.name, 
-                phone: data.phone, 
-                address: data.address,
-                mapUrl: "-", 
-                items: orderItems, 
-                itemsArray: itemsArray, 
-                total: finalTotal, 
-                slipUrl: slipUrl, 
-                paymentMethod: data.paymentMethod,
-                status: "รอดำเนินการ"
-            })
-        });
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
+                    action: "log", 
+                    name: data.name, 
+                    phone: data.phone, 
+                    address: data.address,
+                    mapUrl: "-", 
+                    items: orderItems, 
+                    itemsArray: itemsArray, 
+                    total: finalTotal, 
+                    slipUrl: slipUrl, 
+                    paymentMethod: data.paymentMethod,
+                    status: "รอดำเนินการ"
+                })
+            });
+        } catch (error) {
+            console.error("Order logging error:", error);
+            showToast("บันทึกออเดอร์ล้มเหลว กรุณาติดต่อแอดมิน", "error");
+            btn.disabled = false;
+            btn.innerHTML = "ยืนยันการสั่งซื้อ";
+            return;
+        }
 
         // 3. Premium LINE Message
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} [${i.size}] x${i.qty}`).join('\n');
@@ -517,7 +545,9 @@ ${itemsDetail}
 
         // --- CELEBRATION ---
         document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
-        document.getElementById('successModal').classList.remove('hidden');
+        const successModal = document.getElementById('successModal');
+        successModal.classList.remove('hidden');
+        successModal.classList.add('flex');
 
         // Build direct OA URL
         currentLineUrl = buildLineUrl(lineMsg);

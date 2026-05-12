@@ -20,23 +20,9 @@ function getSS() {
 function initSheets() {
   const ss = getSS();
   let pSheet = ss.getSheetByName(SHEET_PRODUCTS);
-  const expectedHeaders = ["name", "size", "price", "note", "image", "tags", "status", "stock", "sold", "category"];
   if (!pSheet) {
     pSheet = ss.insertSheet(SHEET_PRODUCTS);
-    pSheet.appendRow(expectedHeaders);
-  } else {
-    const headerRange = pSheet.getRange(1, 1, 1, pSheet.getLastColumn());
-    const headers = headerRange.getValues()[0];
-    let needsUpdate = false;
-    for (let i = 0; i < expectedHeaders.length; i++) {
-      if (headers[i] !== expectedHeaders[i]) {
-        headers[i] = expectedHeaders[i];
-        needsUpdate = true;
-      }
-    }
-    if (needsUpdate) {
-      pSheet.getRange(1, 1, 1, expectedHeaders.length).setValues([headers]);
-    }
+    pSheet.appendRow(["name", "size", "price", "note", "image", "tags", "status", "stock", "sold", "category"]);
   }
 }
 
@@ -74,20 +60,6 @@ function doPost(e) {
     }
 
     if (action === "updateProduct" || action === "addProduct") {
-      const expectedHeaders = ["name", "size", "price", "note", "image", "tags", "status", "stock", "sold", "category"];
-      const currentHeaderRange = sheet.getRange(1, 1, 1, sheet.getLastColumn());
-      const currentHeaders = currentHeaderRange.getValues()[0];
-      let needsHeaderUpdate = false;
-      for (let i = 0; i < expectedHeaders.length; i++) {
-        if (currentHeaders[i] !== expectedHeaders[i]) {
-          currentHeaders[i] = expectedHeaders[i];
-          needsHeaderUpdate = true;
-        }
-      }
-      if (needsHeaderUpdate) {
-        sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([currentHeaders]);
-      }
-
       const rows = sheet.getDataRange().getValues();
       const targetName = data.oldName || data.name;
       

@@ -148,9 +148,9 @@
     <div class="max-w-md mx-auto px-4 mt-8 relative z-20">
         <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="categoryTabs">
             <button onclick="switchCategory('All')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-active" id="tab-All">ทั้งหมด</button>
-            <button onclick="switchCategory('ผลิตภัณฑ์เพื่อสุขภาพ')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive" id="tab-ผลิตภัณฑ์เพื่อสุขภาพ">🏥 สุขภาพ</button>
-            <button onclick="switchCategory('ของเล่น')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive" id="tab-ของเล่น">🧸 ของเล่น</button>
-            <button onclick="switchCategory('เจลหล่อลื่น')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive" id="tab-เจลหล่อลื่น">💧 เจลหล่อลื่น</button>
+            <button onclick="switchCategory('Electronics')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive" id="tab-Electronics">💻 Electronics</button>
+            <button onclick="switchCategory('Fashion')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive" id="tab-Fashion">👕 Fashion</button>
+            <button onclick="switchCategory('Home')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive" id="tab-Home">🏠 Home</button>
         </div>
     </div>
 
@@ -166,7 +166,7 @@
     </main>
 
     <!-- SUCCESS CELEBRATION MODAL -->
-    <div id="successModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div id="successModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="glass-card rounded-[3rem] p-8 w-full max-w-sm text-center shadow-2xl animate-in zoom-in duration-500 border border-white/10">
             <div class="text-7xl mb-6 scale-up-center">🥳</div>
             <h2 class="text-3xl font-extrabold text-white mb-2">สั่งซื้อสำเร็จ!</h2>
@@ -206,7 +206,7 @@
     </div>
 
     <!-- CHECKOUT MODAL -->
-    <div id="checkoutModal" class="fixed inset-0 z-[70] bg-black/80 hidden backdrop-blur-md items-center justify-center p-4">
+    <div id="checkoutModal" class="fixed inset-0 z-[70] bg-black/80 hidden backdrop-blur-md flex items-center justify-center p-4">
         <div class="glass-card w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300 border border-white/10">
             <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
                 <h3 class="text-xl font-bold text-white">รายละเอียดการจัดส่ง</h3>

@@ -4,8 +4,8 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [],
-  // ตั้งค่า Base สำคัญมากสำหรับรันบน GitHub Pages (ชื่อ repository ของคุณ)
-  base: '/blacknight-nexus/',
+  // ตั้งค่า Base สำหรับรันบน Cloudflare Pages root domain
+  base: '/',
   publicDir: 'image', // กำหนดให้โฟลเดอร์ image เป็นโฟลเดอร์ public
   build: {
     rollupOptions: {

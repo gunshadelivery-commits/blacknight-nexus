@@ -1,0 +1,5 @@
+name = "nighthub"
+compatibility_date = "2026-05-12"
+
+[site]
+bucket = "dist"

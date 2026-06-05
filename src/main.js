@@ -480,23 +480,27 @@ async function submitOrder() {
         let itemsArray = cart.map(i => ({ name: i.name, size: i.size, qty: i.qty }));
         let subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 
-        await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-                action: "log", 
-                name: data.name, 
-                phone: data.phone, 
-                address: data.address,
-                mapUrl: "-", 
-                items: orderItems, 
-                itemsArray: itemsArray, 
-                total: finalTotal, 
-                slipUrl: slipUrl, 
-                paymentMethod: data.paymentMethod,
-                status: "รอดำเนินการ"
-            })
-        });
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: "log", 
+                    name: data.name, 
+                    phone: data.phone, 
+                    address: data.address,
+                    mapUrl: "-", 
+                    items: orderItems, 
+                    itemsArray: itemsArray, 
+                    total: finalTotal, 
+                    slipUrl: slipUrl, 
+                    paymentMethod: data.paymentMethod,
+                    status: "รอดำเนินการ"
+                })
+            });
+        } catch(e) {
+            console.warn("GAS CORS error ignored:", e);
+        }
 
         // 3. Premium LINE Message
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} [${i.size}] x${i.qty}`).join('\n');

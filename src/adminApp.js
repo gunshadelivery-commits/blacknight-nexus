@@ -249,7 +249,34 @@ function processSales() {
         const status = (getVal(["สถานะ", "status"]) || "").toString().trim();
         const total = parseFloat(getVal(["ยอดรวม", "total", "ราคา", "price"]) || 0);
         const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
-        const orderDate = dateRaw ? new Date(dateRaw) : new Date();
+        let orderDate = new Date();
+        if (dateRaw) {
+            const str = dateRaw.toString().trim();
+            const datePart = str.split(',')[0].trim();
+            if (datePart.includes('/')) {
+                const parts = datePart.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    let year = parseInt(parts[2].split(' ')[0], 10);
+                    if (year > 2500) year -= 543;
+                    
+                    let hours = 0, minutes = 0, seconds = 0;
+                    const timePart = str.includes(',') ? str.split(',')[1].trim() : (str.split(' ')[1] || "");
+                    if (timePart) {
+                        const tParts = timePart.split(':');
+                        hours = parseInt(tParts[0] || 0, 10);
+                        minutes = parseInt(tParts[1] || 0, 10);
+                        seconds = parseInt(tParts[2] || 0, 10);
+                    }
+                    orderDate = new Date(year, month, day, hours, minutes, seconds);
+                } else {
+                    orderDate = new Date(dateRaw);
+                }
+            } else {
+                orderDate = new Date(dateRaw);
+            }
+        }
         const items = getVal(["รายการสินค้า", "items", "รายการ"]);
 
         // นับสถิติ (เฉพาะที่ชำระเงินแล้ว)

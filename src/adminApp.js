@@ -336,25 +336,25 @@ function renderOrdersTable() {
                         </span>
                     </div>
                 </td>
-                <td class="px-6 py-4 w-[180px] text-right">
-                    <div class="flex justify-end gap-2">
+                <td class="px-6 py-4 w-[250px] text-right">
+                    <div class="flex justify-end gap-2 flex-wrap">
                         <button onclick="window.printLabel(${rawOrders.indexOf(order)})" 
-                                class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg hover:bg-slate-900 transition active:scale-95 shadow-md">
+                                class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition active:scale-95 shadow-md">
                             🖨️ ปริ้น
                         </button>
                         <a href="${slip}" target="_blank" 
-                           class="flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
-                            ดูสลิป
+                           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
+                            📄 ดูสลิป
                         </a>
                         ${status === 'รอดำเนินการ' || status === 'เก็บเงินปลายทาง' ? `
                         <button onclick="window.updateConfirm(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
-                                class="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
-                            รับยอด
+                                class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
+                            ✅ รับยอด
                         </button>` : ''}
                         ${status !== 'อยู่ระหว่างจัดส่ง' ? `
                         <button onclick="window.updateStatusToTransit(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
-                                class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
-                            จัดส่ง
+                                class="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
+                            🚚 จัดส่ง
                         </button>` : ''}
                     </div>
                 </td>
@@ -406,16 +406,17 @@ async function updateConfirm(btn, name, slip) {
     
     showToast("อัปเดตเรียบร้อย กรุณารอข้อมูลอัปเดตสักครู่", "success");
     
-    // --- OPTIMISTIC UI: ซ่อนปุ่มรับยอด แต่ยังคงปุ่มดูสลิปไว้ ---
+    // Optimistic Update Local Data
+    updateLocalOrderStatus(name, slip, "ชำระเงินแล้ว");
+    
     parent.innerHTML = `
         <a href="${slip}" target="_blank" 
-           class="flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
-            ดูสลิป
+           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
+            📄 ดูสลิป
         </a>
-        <span class="text-[10px] text-emerald-600 font-bold ml-1">ยืนยันแล้ว</span>
+        <span class="text-xs text-emerald-600 font-bold ml-2">✅ ยืนยันแล้ว</span>
     `;
     
-    // หน่วงเวลาโหลดข้อมูลใหม่เพื่อให้ Google Sheets มีเวลาอัปเดต CSV
     setTimeout(loadData, 5000);
 }
 
@@ -447,15 +448,43 @@ window.updateStatusToTransit = async function(btn, name, slip) {
     
     showToast("อัปเดตเรียบร้อย กรุณารอข้อมูลอัปเดตสักครู่", "success");
     
+    // Optimistic Update Local Data
+    updateLocalOrderStatus(name, slip, "อยู่ระหว่างจัดส่ง");
+    
     parent.innerHTML = `
         <a href="${slip}" target="_blank" 
-           class="flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
-            ดูสลิป
+           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
+            📄 ดูสลิป
         </a>
-        <span class="text-[10px] text-blue-600 font-bold ml-1">อยู่ระหว่างจัดส่ง</span>
+        <span class="text-xs text-blue-600 font-bold ml-2">🚚 อยู่ระหว่างจัดส่ง</span>
     `;
     
     setTimeout(loadData, 5000);
+}
+
+function updateLocalOrderStatus(name, slip, newStatus) {
+    if (!rawOrders) return;
+    const orderIndex = rawOrders.findIndex(o => {
+        const keys = Object.keys(o);
+        const getV = targets => {
+            for(let t of targets){if(o[t]!==undefined) return o[t];}
+            const f = keys.find(k=>targets.some(x=>k.toLowerCase().includes(x.toLowerCase())));
+            if(f) return o[f];
+            if(targets.includes("ชื่อ")) return o[keys[1]];
+            if(targets.includes("สลิป")) return o[keys[7]];
+            return "";
+        };
+        const oName = (getV(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").toString().trim();
+        const oSlip = (getV(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+        return oName === name && oSlip === slip;
+    });
+    
+    if (orderIndex > -1) {
+        const keys = Object.keys(rawOrders[orderIndex]);
+        const statusKey = keys.find(k => ["สถานะ", "status"].some(t => k.toLowerCase().includes(t.toLowerCase()))) || keys[8] || "สถานะ";
+        rawOrders[orderIndex][statusKey] = newStatus;
+        updateDashboard(); // Refresh total sales count
+    }
 }
 
 function printLabel(idx) {

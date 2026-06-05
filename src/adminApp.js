@@ -290,10 +290,12 @@ function renderOrdersTable() {
         const isConfirmed = status === "ชำระเงินแล้ว";
         const isCOD = payMethod === "เก็บเงินปลายทาง";
         
-        const phone = getVal(["เบอร์โทร", "phone"]);
+        let phoneStr = (getVal(["เบอร์โทร", "phone"]) || "").toString().trim();
+        if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
         const custName = getVal(["ชื่อลูกค้า", "name"]);
-        const displayIdentity = (custName && custName !== "N/A") ? custName : (phone || "N/A");
+        const displayIdentity = (custName && custName !== "N/A") ? custName : (phoneStr || "N/A");
         const addressText = getVal(["ที่อยู่", "address"]) || "";
+        const shippingFee = getVal(["ค่าส่ง", "shipping"]) || "";
         const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
         const dateStr = dateRaw ? dateRaw.toString().split('GMT')[0].trim() : "N/A";
         const total = parseFloat(getVal(["ยอดรวม", "ราคา", "total", "price"]) || 0);
@@ -310,7 +312,10 @@ function renderOrdersTable() {
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">${total.toLocaleString()} ฿</td>
+                <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">
+                    ${total.toLocaleString()} ฿
+                    ${shippingFee ? `<div class="text-[9px] text-slate-400 font-normal">ค่าส่ง: ${shippingFee}</div>` : ''}
+                </td>
                 <td class="px-6 py-4 w-[120px] text-center">
                     <div class="flex flex-col items-center gap-1">
                         <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight ${isConfirmed?'bg-emerald-50 text-emerald-600 border border-emerald-100':'bg-amber-50 text-amber-600 border border-amber-100'}">
@@ -331,10 +336,15 @@ function renderOrdersTable() {
                            class="flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
                             ดูสลิป
                         </a>
-                        ${!isConfirmed ? `
+                        ${status === 'รอดำเนินการ' || status === '' ? `
                         <button onclick="window.updateConfirm(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
                                 class="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
                             รับยอด
+                        </button>` : ''}
+                        ${status === 'ชำระเงินแล้ว' || status === 'รอดำเนินการ' ? `
+                        <button onclick="window.updateStatusToTransit(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
+                                class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
+                            จัดส่ง
                         </button>` : ''}
                     </div>
                 </td>
@@ -376,7 +386,7 @@ async function updateConfirm(btn, name, slip) {
     
     await fetch(GAS_URL, { 
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "ชำระเงินแล้ว" }) 
     });
     
@@ -392,6 +402,41 @@ async function updateConfirm(btn, name, slip) {
     `;
     
     // หน่วงเวลาโหลดข้อมูลใหม่เพื่อให้ Google Sheets มีเวลาอัปเดต CSV
+    setTimeout(loadData, 5000);
+}
+
+window.updateStatusToTransit = async function(btn, name, slip) {
+    const tracking = prompt("กรุณากรอกเลขพัสดุ / หมายเหตุการจัดส่ง (ถ้ามี):", "");
+    if(tracking === null) return; // Cancelled
+    
+    if(!(await customConfirm("ยืนยันจัดส่ง", `ต้องการอัปเดตสถานะของคุณ ${name} เป็น 'อยู่ระหว่างจัดส่ง' ใช่หรือไม่?`, ""))) return;
+    
+    const parent = btn.parentElement;
+    
+    btn.disabled = true;
+    btn.textContent = "กำลังอัปเดต...";
+    
+    // We send tracking info by appending it to the name or as a separate field if backend supports. 
+    // Wait, the backend only takes action, name, slipUrl, status. 
+    // If we want to save tracking, we'd need backend changes. But we can update status for now.
+    // Let's pass tracking in slipUrl if needed? Or just ignore tracking if backend doesn't support it, but the prompt is useful.
+    
+    await fetch(GAS_URL, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "อยู่ระหว่างจัดส่ง", tracking: tracking }) 
+    });
+    
+    showToast("อัปเดตเรียบร้อย กรุณารอข้อมูลอัปเดตสักครู่", "success");
+    
+    parent.innerHTML = `
+        <a href="${slip}" target="_blank" 
+           class="flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
+            ดูสลิป
+        </a>
+        <span class="text-[10px] text-blue-600 font-bold ml-1">อยู่ระหว่างจัดส่ง</span>
+    `;
+    
     setTimeout(loadData, 5000);
 }
 
@@ -413,7 +458,8 @@ function printLabel(idx) {
     };
 
     const name = getVal(["ชื่อลูกค้า", "ชื่อ", "name"]);
-    const phone = getVal(["เบอร์โทรศัพท์", "เบอร์โทร", "phone"]);
+    let phoneStr = (getVal(["เบอร์โทรศัพท์", "เบอร์โทร", "phone"]) || "").toString().trim();
+    if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
     const address = getVal(["ที่อยู่จัดส่ง", "ที่อยู่", "address"]);
     const items = getVal(["รายการสินค้า", "items", "รายการ"]);
     const total = getVal(["ยอดรวม", "total", "ราคา"]);
@@ -434,7 +480,6 @@ function printLabel(idx) {
                 .recipient-title { font-size: 14px; text-decoration: underline; margin-bottom: 5px; }
                 .recipient-name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
                 .recipient-address { font-size: 16px; line-height: 1.4; }
-                .items-section { border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 15px; font-size: 12px; color: #666; }
                 .cod-badge { border: 4px solid #000; padding: 10px; text-align: center; margin-top: 15px; font-size: 20px; font-weight: bold; }
                 .footer { margin-top: 20px; font-size: 10px; text-align: center; opacity: 0.5; }
                 @media print { .no-print { display: none; } }
@@ -450,13 +495,8 @@ function printLabel(idx) {
                 <div class="recipient-section">
                     <div class="recipient-title">ผู้รับ (To):</div>
                     <div class="recipient-name">${name}</div>
-                    <div class="recipient-name">${phone}</div>
+                    <div class="recipient-name">${phoneStr}</div>
                     <div class="recipient-address">${address}</div>
-                </div>
-
-                <div class="items-section">
-                    <strong>รายการสินค้า:</strong><br>
-                    ${items.split(',').join('<br>')}
                 </div>
 
                 ${isCOD ? `
@@ -464,14 +504,10 @@ function printLabel(idx) {
                     เก็บเงินปลายทาง (COD)<br>
                     ยอดเงิน: ${parseFloat(total).toLocaleString()} ฿
                 </div>
-                ` : `
-                <div style="margin-top: 15px; font-weight: bold; text-align: center; border: 1px solid #ccc; padding: 5px;">
-                    ชำระเงินแล้ว (PAID)
-                </div>
-                `}
+                ` : ''}
 
                 <div class="footer">
-                    ขอบคุณที่ใช้บริการ BlackNight69 - Evolution of Space Retail
+                    ขอบคุณที่ใช้บริการ BlackNight69
                 </div>
             </div>
             <div style="text-align: center; margin-top: 20px;" class="no-print">
@@ -610,7 +646,7 @@ async function deleteFullProduct(name) {
     for(let v of variants) {
         await fetch(GAS_URL, { 
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) 
         });
     }

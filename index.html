@@ -9,17 +9,17 @@
 
     <!-- Open Graph / Facebook / LINE -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://blacknight69.vercel.app/">
+    <meta property="og:url" content="https://blacknight69.com/">
     <meta property="og:title" content="BlackNight69 | Evolution of Space Retail">
     <meta property="og:description" content="สัมผัสประสบการณ์ช้อปปิ้งที่เหนือระดับกับ BlackNight69 สินค้าคุณภาพส่งตรงถึงมือคุณ">
-    <meta property="og:image" content="https://blacknight69.vercel.app/og-image.jpg">
+    <meta property="og:image" content="https://blacknight69.com/og-image.jpg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://blacknight69.vercel.app/">
+    <meta property="twitter:url" content="https://blacknight69.com/">
     <meta property="twitter:title" content="BlackNight69 | Evolution of Space Retail">
     <meta property="twitter:description" content="สัมผัสประสบการณ์ช้อปปิ้งที่เหนือระดับกับ BlackNight69 สินค้าคุณภาพส่งตรงถึงมือคุณ">
-    <meta property="twitter:image" content="https://blacknight69.vercel.app/og-image.jpg">
+    <meta property="twitter:image" content="https://blacknight69.com/og-image.jpg">
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
@@ -28,7 +28,7 @@
       "@type": "Store",
       "name": "BlackNight69",
       "description": "ร้านค้าออนไลน์ระดับพรีเมียม",
-      "url": "https://blacknight69.vercel.app/",
+      "url": "https://blacknight69.com/",
       "telephone": "+66 123 456 789",
       "address": {
         "@type": "PostalAddress",
@@ -99,7 +99,7 @@
 
     <!-- NAVBAR -->
     <nav class="glass-card text-white shadow-lg sticky top-0 z-50 border-b border-white/5">
-        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2 cursor-pointer" onclick="handleLogoClick()">
                 <span class="text-xl">🛍️</span>
                 <div class="flex flex-col">
@@ -131,7 +131,7 @@
     </header>
 
     <!-- SEARCH & FILTER -->
-    <div class="max-w-md mx-auto px-4 relative z-20 -mt-10">
+    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 relative z-20 -mt-10">
         <div class="glass-card rounded-[2rem] p-1.5 flex items-center shadow-2xl">
             <input type="text" id="searchInput" onkeyup="renderProducts(this.value)" placeholder="ค้นหาสินค้าที่คุณต้องการ..." 
                 class="flex-1 bg-transparent border-none focus:ring-0 px-5 py-3 text-sm placeholder:text-white/40 text-white outline-none">
@@ -145,7 +145,7 @@
     </div>
 
     <!-- CATEGORY TABS -->
-    <div class="max-w-md mx-auto px-4 mt-8 relative z-20">
+    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-8 relative z-20">
         <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="categoryTabs">
             <button onclick="switchCategory('All')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-active" id="tab-All">ทั้งหมด</button>
             <button onclick="switchCategory('Electronics')" class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive" id="tab-Electronics">💻 Electronics</button>
@@ -155,14 +155,8 @@
     </div>
 
     <!-- PRODUCT LIST -->
-    <main class="max-w-md mx-auto px-4 mt-8 relative z-20">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                <span class="w-2 h-8 bg-white/40 rounded-full"></span>
-                รายการสินค้าวันนี้
-            </h2>
-        </div>
-        <div id="productList" class="grid grid-cols-2 gap-4"></div>
+    <main class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-8 relative z-20">
+        <div id="productList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
     </main>
 
     <!-- SUCCESS CELEBRATION MODAL -->
@@ -201,7 +195,10 @@
                 <span>ยอดรวมสินค้า</span>
                 <span id="cartSubtotal" class="font-bold text-white text-lg">0.00 ฿</span>
             </div>
-            <button onclick="goToCheckout()" id="checkoutBtn" disabled class="w-full bg-white text-black py-4 rounded-2xl font-bold shadow-xl hover:bg-white/90 transition disabled:opacity-10 disabled:cursor-not-allowed">สั่งซื้อสินค้า</button>
+            <button onclick="goToCheckout()" id="checkoutBtn" disabled class="btn-checkout btn-checkout-with-icon" title="คลิกเพื่อไปยังหน้าชำระเงิน">
+                <span>🛒</span>
+                <span>สั่งซื้อสินค้า</span>
+            </button>
         </div>
     </div>
 

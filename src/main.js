@@ -69,9 +69,7 @@ function loadProductsFromSheet(callback) {
     fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
-            console.log("GAS Raw Data Fetched:", data);
             if (!data || data.error || data.length < 2) {
-                console.error("No data found or error:", data?.error);
                 showToast("ไม่พบข้อมูลสินค้า", "error");
                 return;
             }
@@ -484,8 +482,7 @@ async function submitOrder() {
 
         await fetch(GAS_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: "log", 
                 name: data.name, 

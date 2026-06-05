@@ -30,6 +30,54 @@
         .toast.error { background: #ef4444; border: 1px solid #dc2626; }
         .toast.hide { animation: slideOut 0.3s forwards; }
         @keyframes slideOut { to { transform: translateY(-20px); opacity: 0; } }
+        
+        /* ============================================================
+           GUNSHA CHECKOUT BUTTON - Primary Green Design
+           ============================================================ */
+        .btn-checkout {
+            width: 100%;
+            background: linear-gradient(to bottom right, #22c55e, #16a34a);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            border-radius: 1rem;
+            font-weight: bold;
+            font-size: 1.125rem;
+            box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.2);
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-checkout:hover:not(:disabled) {
+            background: linear-gradient(to bottom right, #16a34a, #15803d);
+            box-shadow: 0 20px 25px -5px rgba(34, 197, 94, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-checkout:active:not(:disabled) {
+            transform: scale(0.95);
+            box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.2);
+        }
+
+        .btn-checkout:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3), 0 10px 15px -3px rgba(34, 197, 94, 0.2);
+        }
+
+        .btn-checkout:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: linear-gradient(to bottom right, #22c55e, #16a34a);
+        }
+
+        .btn-checkout-with-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
     </style>
 </head>
 <body class="pb-24">
@@ -37,7 +85,7 @@
     <div id="toast-container"></div>
     <!-- NAVBAR -->
     <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
-        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="text-xl">📦</span>
                 <div class="flex flex-col">
@@ -53,7 +101,7 @@
     </nav>
 
     <!-- BANNER -->
-    <div class="max-w-md mx-auto px-4 mt-4">
+    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-4">
         <div class="bg-gradient-to-br from-indigo-800 to-indigo-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-indigo-100">
             <div class="relative z-10">
                 <h2 class="text-2xl font-bold mb-1">คอลเลกชันใหม่ ✨</h2>
@@ -64,7 +112,7 @@
     </div>
 
     <!-- CATEGORY TABS -->
-    <div class="max-w-md mx-auto px-4 mt-6 overflow-x-auto no-scrollbar flex gap-2" id="categoryTabs">
+    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-6 overflow-x-auto no-scrollbar flex gap-2" id="categoryTabs">
         <button onclick="switchCategory('All')" class="category-tab category-tab-active" id="tab-All">ทั้งหมด</button>
         <button onclick="switchCategory('Electronics')" class="category-tab category-tab-inactive" id="tab-Electronics">💻 Electronics</button>
         <button onclick="switchCategory('Fashion')" class="category-tab category-tab-inactive" id="tab-Fashion">👕 Fashion</button>
@@ -72,7 +120,7 @@
     </div>
 
     <!-- PRODUCT LIST -->
-    <div class="max-w-md mx-auto px-4 mt-6 grid grid-cols-2 gap-4" id="productList">
+    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="productList">
         <!-- Loading Skeleton -->
         <div class="bg-white rounded-3xl p-3 animate-pulse border border-slate-50">
             <div class="aspect-square bg-slate-100 rounded-2xl mb-3"></div>
@@ -104,7 +152,10 @@
                     <span class="text-slate-500 font-medium">ยอดรวมทั้งหมด</span>
                     <span id="cartTotal" class="text-2xl font-black text-slate-800">0 ฿</span>
                 </div>
-                <button onclick="goToCheckout()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 hover:bg-slate-800 transition active:scale-95">ไปที่หน้าชำระเงิน 🚀</button>
+                <button onclick="goToCheckout()" class="btn-checkout btn-checkout-with-icon" title="คลิกเพื่อไปยังหน้าชำระเงิน">
+                    <span>🛒</span>
+                    <span>ไปที่หน้าชำระเงิน</span>
+                </button>
             </div>
         </div>
     </div>

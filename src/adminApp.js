@@ -376,8 +376,7 @@ async function updateConfirm(btn, name, slip) {
     
     await fetch(GAS_URL, { 
         method: 'POST', 
-        mode: 'no-cors', // วิธีที่ชัวร์ที่สุดสำหรับส่งอย่างเดียวไม่ต้องรอผลบนมือถือ
-        headers: { 'Content-Type': 'text/plain' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "ชำระเงินแล้ว" }) 
     });
     
@@ -611,8 +610,7 @@ async function deleteFullProduct(name) {
     for(let v of variants) {
         await fetch(GAS_URL, { 
             method: 'POST', 
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) 
         });
     }
@@ -886,8 +884,7 @@ async function savePromptpay() {
 
         await fetch(GAS_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
         });
 
@@ -924,8 +921,7 @@ async function deletePromptpay(idx) {
         try {
             await fetch(GAS_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
             });
             showToast("ลบและซิงค์ข้อมูลสำเร็จ!", "success");

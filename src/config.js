@@ -9,23 +9,23 @@ export const SHOP_NAME = "BlackNight69";
 export const SHOP_VERSION = "3.0.0";
 export const SHOP_TAGLINE = "พรีเมียมทุกระดับ ประทับใจทุกชิ้น 🚀";
 
-// --- Google Sheets CSV URL (Product List) ---
-export const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/11p5OmXlmYoSvrjatX1JTRKlM6QcRnJdBIxm1EwqM0Sw/gviz/tq?tqx=out:csv&sheet=Blacknight69%20-%20Product%20List";
+// --- Google Sheets CSV URL (Product List) - from environment ---
+export const SHEET_CSV_URL = import.meta.env.VITE_SHEET_CSV_URL || "";
 
-// --- Google Sheets Orders CSV URL ---
-export const ORDERS_CSV_URL = "https://docs.google.com/spreadsheets/d/11p5OmXlmYoSvrjatX1JTRKlM6QcRnJdBIxm1EwqM0Sw/gviz/tq?tqx=out:csv&sheet=Orders";
+// --- Google Sheets Orders CSV URL - from environment ---
+export const ORDERS_CSV_URL = import.meta.env.VITE_ORDERS_CSV_URL || "";
 
-// --- Google Apps Script (GAS) Web App URL ---
-export const GAS_URL = "https://script.google.com/macros/s/AKfycbzLAzNLSWbqwi07DiCKEw0Ml8kfUPTrRforHKLPy9RWzKc5JmB-b8mW2gcfBfrgkKbZCQ/exec";
+// --- Google Apps Script (GAS) Web App URL - from environment ---
+export const GAS_URL = import.meta.env.VITE_GAS_URL || "";
 
-// --- LINE OA ID ---
-export const LINE_OA_ID = "@165jrxwa";
+// --- LINE OA ID - from environment ---
+export const LINE_OA_ID = import.meta.env.VITE_LINE_OA_ID || "";
 
-// --- ImgBB API Key ---
-export const IMGBB_API_KEY = "467157500c7b535f4c9839accf416565";
+// --- ImgBB API Key - from environment (NEVER hardcode!) ---
+export const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "";
 
-// --- Admin Password ---
-export const ADMIN_PASSWORD = "gunsha888";
+// --- Admin Password - from environment (should use proper auth in production!) ---
+export const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "";
 
 // ============================================================
 // ฟังก์ชันช่วยเหลือ (Helper Functions)

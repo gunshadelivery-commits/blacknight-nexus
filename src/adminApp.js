@@ -152,12 +152,65 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- DASHBOARD DATA ---
 function loadData() {
     if (!ORDERS_CSV_URL) return;
-    // เพิ่มตัวล้าง Cache ด้วยเลขสุ่มที่เปลี่ยนทุกครั้งที่โหลด
     const cacheBuster = `&nocache=${Math.random()}&t=${Date.now()}`;
     Papa.parse(ORDERS_CSV_URL + cacheBuster, {
         download: true, header: true, skipEmptyLines: true,
-        complete: (results) => { rawOrders = results.data; processSales(); }
+        complete: (results) => { 
+            rawOrders = results.data; 
+            applyLocalOrderUpdates();
+            processSales(); 
+        }
     });
+}
+
+function applyLocalOrderUpdates() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('localOrderUpdates') || '{}');
+        const now = Date.now();
+        let changed = false;
+        
+        rawOrders.forEach(o => {
+            const keys = Object.keys(o);
+            const getV = targets => {
+                for(let t of targets){if(o[t]!==undefined) return o[t];}
+                const f = keys.find(k=>targets.some(x=>k.toLowerCase().includes(x.toLowerCase())));
+                if(f) return o[f];
+                if(targets.includes("ชื่อ")) return o[keys[1]];
+                if(targets.includes("สลิป")) return o[keys[7]];
+                return "";
+            };
+            const name = (getV(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").toString().trim();
+            const slip = (getV(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+            const key = name + "|" + slip;
+            
+            if (stored[key]) {
+                // If it's been over 15 mins, discard the cache
+                if (now - stored[key].timestamp > 15 * 60 * 1000) {
+                    delete stored[key];
+                    changed = true;
+                    return;
+                }
+                
+                const statusKey = keys.find(k => ["สถานะ", "status"].some(t => k.toLowerCase().includes(t.toLowerCase()))) || keys[8] || "สถานะ";
+                const csvStatus = (o[statusKey] || "").toString().trim();
+                
+                // If CSV caught up to our local state (or surpassed it), clear cache
+                if (csvStatus === stored[key].status || (csvStatus === "อยู่ระหว่างจัดส่ง" && stored[key].status === "ชำระเงินแล้ว")) {
+                    delete stored[key];
+                    changed = true;
+                } else {
+                    // Apply local override
+                    o[statusKey] = stored[key].status;
+                }
+            }
+        });
+        
+        if (changed) {
+            localStorage.setItem('localOrderUpdates', JSON.stringify(stored));
+        }
+    } catch(e) {
+        console.error("Failed to apply local updates", e);
+    }
 }
 
 function processSales() {
@@ -483,7 +536,15 @@ function updateLocalOrderStatus(name, slip, newStatus) {
         const keys = Object.keys(rawOrders[orderIndex]);
         const statusKey = keys.find(k => ["สถานะ", "status"].some(t => k.toLowerCase().includes(t.toLowerCase()))) || keys[8] || "สถานะ";
         rawOrders[orderIndex][statusKey] = newStatus;
-        updateDashboard(); // Refresh total sales count
+        
+        // Save to localStorage to persist across reloads while Sheets cache updates
+        try {
+            const stored = JSON.parse(localStorage.getItem('localOrderUpdates') || '{}');
+            stored[name + "|" + slip] = { status: newStatus, timestamp: Date.now() };
+            localStorage.setItem('localOrderUpdates', JSON.stringify(stored));
+        } catch(e) {}
+
+        processSales(); // Refresh total sales count
     }
 }
 

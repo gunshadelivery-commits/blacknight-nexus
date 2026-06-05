@@ -285,10 +285,21 @@ function renderOrdersTable() {
             return "";
         };
 
-        const status = (getVal(["สถานะ", "status"]) || "รอดำเนินการ").toString().trim();
-        const payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "โอนเงิน").toString().trim();
+        let rawStatus = (getVal(["สถานะ", "status"]) || "").toString().trim();
+        let slip = (getVal(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+        let payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "").toString().trim();
+        
+        let isCOD = slip.includes("COD") || rawStatus.includes("เก็บเงินปลายทาง") || payMethod.includes("เก็บเงินปลายทาง");
+        if (isCOD) payMethod = "เก็บเงินปลายทาง";
+        else if (payMethod === "") payMethod = "โอนเงิน";
+
+        // Handle shifted columns where status holds payment method
+        let status = rawStatus;
+        if (rawStatus === "เก็บเงินปลายทาง" || rawStatus === "COD" || rawStatus === "") {
+            status = "รอดำเนินการ";
+        }
+        
         const isConfirmed = status === "ชำระเงินแล้ว";
-        const isCOD = payMethod === "เก็บเงินปลายทาง";
         
         let phoneStr = (getVal(["เบอร์โทร", "phone"]) || "").toString().trim();
         if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
@@ -299,7 +310,6 @@ function renderOrdersTable() {
         const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
         const dateStr = dateRaw ? dateRaw.toString().split('GMT')[0].trim() : "N/A";
         const total = parseFloat(getVal(["ยอดรวม", "ราคา", "total", "price"]) || 0);
-        const slip = getVal(["ลิงก์สลิป", "slipUrl", "slip"]);
         
         body.innerHTML += `
             <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-50">
@@ -336,12 +346,12 @@ function renderOrdersTable() {
                            class="flex items-center gap-1 px-2.5 py-1.5 bg-white text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
                             ดูสลิป
                         </a>
-                        ${status === 'รอดำเนินการ' || status === '' ? `
+                        ${status === 'รอดำเนินการ' || status === 'เก็บเงินปลายทาง' ? `
                         <button onclick="window.updateConfirm(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
                                 class="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
                             รับยอด
                         </button>` : ''}
-                        ${status === 'ชำระเงินแล้ว' || status === 'รอดำเนินการ' ? `
+                        ${status !== 'อยู่ระหว่างจัดส่ง' ? `
                         <button onclick="window.updateStatusToTransit(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
                                 class="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
                             จัดส่ง
@@ -457,14 +467,22 @@ function printLabel(idx) {
         return "";
     };
 
-    const name = getVal(["ชื่อลูกค้า", "ชื่อ", "name"]);
+    const nameRaw = (getVal(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").trim();
+    let name = nameRaw;
+    if (name && !name.startsWith("คุณ")) {
+        name = "คุณ " + name;
+    }
+    
     let phoneStr = (getVal(["เบอร์โทรศัพท์", "เบอร์โทร", "phone"]) || "").toString().trim();
     if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
     const address = getVal(["ที่อยู่จัดส่ง", "ที่อยู่", "address"]);
     const items = getVal(["รายการสินค้า", "items", "รายการ"]);
     const total = getVal(["ยอดรวม", "total", "ราคา"]);
-    const payMethod = getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "โอนเงิน";
-    const isCOD = payMethod === "เก็บเงินปลายทาง";
+    
+    let rawStatus = (getVal(["สถานะ", "status"]) || "").toString().trim();
+    let slip = (getVal(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+    let payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "").toString().trim();
+    let isCOD = slip.includes("COD") || rawStatus.includes("เก็บเงินปลายทาง") || payMethod.includes("เก็บเงินปลายทาง");
 
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`

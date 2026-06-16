@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# ไม่ให้ crawler เข้าหน้า Admin
+Disallow: /admin.html
+Disallow: /admin/
+
+# Sitemap
+Sitemap: https://blacknight69.com/sitemap.xml

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlackNight69 - Evolution of Space Retail 🚀</title>
+    <meta name="description"
+        content="BlackNight69 - ร้านค้าอวกาศสุดล้ำ รวมสินค้าพรีเมียมทุกหมวดหมู่ ส่งไว ทั่วไทย พร้อมสินค้าเฉพาะกลุ่ม 18+ สำหรับสมาชิกเท่านั้น">
+    <meta name="keywords"
+        content="BlackNight69, ช้อปปิ้งออนไลน์, สินค้าพรีเมียม, ของเล่นผู้ใหญ่, สินค้า 18+, เซ็กซี่, อุปกรณ์ 18+, ร้านค้าเฉพาะกลุ่ม, ความลับ, ส่งไว, ร้านค้าอวกาศ">
+
+    <!-- Open Graph / Facebook / LINE -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://blacknight69.com/">
+    <meta property="og:title" content="BlackNight69 | Evolution of Space Retail">
+    <meta property="og:description"
+        content="สัมผัสประสบการณ์ช้อปปิ้งที่เหนือระดับกับ BlackNight69 สินค้าคุณภาพส่งตรงถึงมือคุณ">
+    <meta property="og:image" content="https://blacknight69.com/og-image.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://blacknight69.com/">
+    <meta property="twitter:title" content="BlackNight69 | Evolution of Space Retail">
+    <meta property="twitter:description"
+        content="สัมผัสประสบการณ์ช้อปปิ้งที่เหนือระดับกับ BlackNight69 สินค้าคุณภาพส่งตรงถึงมือคุณ">
+    <meta property="twitter:image" content="https://blacknight69.com/og-image.jpg">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org/",
+      "@type": "Store",
+      "name": "BlackNight69",
+      "description": "ร้านค้าออนไลน์ระดับพรีเมียม",
+      "url": "https://blacknight69.com/",
+      "telephone": "+66 123 456 789",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Bangkok",
+        "addressCountry": "TH"
+      }
+    }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .cart-open {
+            transform: translateX(0);
+        }
+
+        .cart-closed {
+            transform: translateX(100%);
+        }
+
+        /* Premium Glassmorphism & UI */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-title {
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+        }
+
+        .bloom-effect {
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4));
+        }
+
+        /* Smooth Scroll Reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .category-active {
+            background: rgba(255, 255, 255, 0.25) !important;
+            color: white !important;
+            box-shadow: 0 8px 32px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .category-inactive {
+            background: rgba(0, 0, 0, 0.3) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        /* Toast Styles */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .toast {
+            pointer-events: auto;
+            padding: 12px 20px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background: #6366f1;
+            border: 1px solid #4f46e5;
+        }
+
+        .toast.error {
+            background: #ef4444;
+            border: 1px solid #dc2626;
+        }
+
+        .toast.hide {
+            animation: slideOut 0.3s forwards;
+        }
+
+        @keyframes slideOut {
+            to {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        /* Skeleton Shimmer */
+        .skeleton {
+            background: #f1f5f9;
+            background-image: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Image Animations */
+        .img-fade-in {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .img-loaded {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="bg-black min-h-screen pb-20 text-white">
+    <!-- FULL PAGE STATIC BACKGROUND -->
+    <div id="static-bg" class="fixed inset-0 z-0 pointer-events-none bg-cover bg-center bg-no-repeat opacity-40"
+        style="background-image: url('/bg-space.jpg');"></div>
+    <div class="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-black via-black/80 to-black"></div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- PULL TO REFRESH MARKER -->
+    <div id="ptr-marker" class="flex items-center justify-center">
+        <div class="flex items-center gap-2 text-slate-400">
+            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                </path>
+            </svg>
+            <span class="text-sm font-bold">กำลังอัปเดตข้อมูล...</span>
+        </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="glass-card text-white shadow-lg sticky top-0 z-50 border-b border-white/5">
+        <div
+            class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="handleLogoClick()">
+                <span class="text-xl">🛍️</span>
+                <div class="flex flex-col">
+                    <h1 class="text-lg font-bold leading-none text-white">BlackNight69</h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- User Auth Area -->
+                <div id="authArea" class="text-xs font-bold flex items-center gap-3">
+                    <a href="login.html"
+                        class="bg-white text-black px-4 py-2 rounded-full hover:bg-white/90 transition shadow-lg hidden sm:block">เข้าสู่ระบบ</a>
+                </div>
+
+                <button id="cartBtn" onclick="toggleCart()" class="relative p-2 hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span id="cartCountBadge"
+                        class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO / PROMO WITH DYNAMIC BACKGROUND -->
+    <header id="hero-header"
+        class="px-4 py-24 text-center pb-36 relative overflow-hidden transition-all duration-1000 bg-transparent">
+        <!-- Blurred Background Layer (Optional extra depth) -->
+        <div id="hero-bg"
+            class="absolute inset-0 z-0 bg-cover bg-center scale-110 blur-md opacity-5 transition-all duration-1000">
+        </div>
+
+        <div class="relative z-10 space-y-4">
+            <h2 class="text-6xl font-black mb-2 tracking-tighter text-white drop-shadow-lg hero-title animate-pulse">
+                BlackNight69</h2>
+            <p class="text-white text-base opacity-80 font-medium tracking-widest uppercase bloom-effect">Evolution of
+                Space Retail</p>
+            <p class="text-white/60 text-sm max-w-sm mx-auto mt-4 px-4">ร้านค้าพิเศษเฉพาะสมาชิก
+                สมัครเพื่อดูราคาและเข้าถึงไอเทมลับทั้งหมด</p>
+            <div class="w-16 h-1 bg-white/30 mx-auto rounded-full overflow-hidden">
+                <div id="scroll-progress" class="w-0 h-full bg-white transition-all duration-300"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SEARCH & FILTER -->
+    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 relative z-20 -mt-10">
+        <div class="glass-card rounded-[2rem] p-1.5 flex items-center shadow-2xl">
+            <input type="text" id="searchInput" onkeyup="renderProducts(this.value)"
+                placeholder="ค้นหาสินค้าที่คุณต้องการ..."
+                class="flex-1 bg-transparent border-none focus:ring-0 px-5 py-3 text-sm placeholder:text-white/40 text-white outline-none">
+            <button onclick="renderProducts(document.getElementById('searchInput').value)"
+                class="w-12 h-12 bg-white/20 text-white rounded-2xl flex items-center justify-center hover:bg-white/30 transition shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- CATEGORY TABS -->
+    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-8 relative z-20">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="categoryTabs">
+            <button onclick="switchCategory('All')"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-active"
+                id="tab-All">ทั้งหมด</button>
+        </div>
+    </div>
+
+    <!-- PRODUCT LIST -->
+    <main class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-8 relative z-20">
+        <div id="productList"
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
+    </main>
+
+    <!-- SUCCESS CELEBRATION MODAL -->
+    <div id="successModal"
+        class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div
+            class="glass-card rounded-[3rem] p-8 w-full max-w-sm text-center shadow-2xl animate-in zoom-in duration-500 border border-white/10">
+            <div class="text-7xl mb-6 scale-up-center">🥳</div>
+            <h2 class="text-3xl font-extrabold text-white mb-2">สั่งซื้อสำเร็จ!</h2>
+            <p class="text-white/60 mb-8 px-4 text-sm">ระบบกำลังพาคุณไปแจ้งเตือนในแอป LINE เพื่อยืนยันออเดอร์...</p>
+            <div class="bg-white/10 p-4 rounded-2xl mb-8 flex justify-center items-center gap-2">
+                <span class="text-white/60 font-bold">ยอดโอน:</span>
+                <span id="finalOrderTotal" class="text-xl font-black text-white">0.toLocaleString() ฿</span>
+            </div>
+            <div class="flex flex-col gap-3">
+                <button onclick="window.redirectToLine()"
+                    class="w-full bg-white text-black py-4 rounded-2xl font-bold text-lg shadow-xl hover:bg-white/90 transition">แจ้งชำระเงินใน
+                    LINE</button>
+                <button onclick="location.reload()"
+                    class="w-full bg-white/10 text-white py-3 rounded-2xl font-bold text-sm hover:bg-white/20 transition">กลับไปหน้าแรก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CART SIDEBAR (OVERLAY) -->
+    <div id="cartOverlay"
+        class="fixed inset-0 bg-black/60 z-[60] hidden backdrop-blur-sm transition-opacity duration-300"
+        onclick="toggleCart()"></div>
+    <div id="cartSidebar"
+        class="fixed top-0 right-0 h-full w-[85%] max-w-sm glass-card z-[60] shadow-2xl transition-transform duration-300 transform translate-x-full flex flex-col border-l border-white/5">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 text-white">
+            <h3 class="text-xl font-bold flex items-center gap-2">ตะกร้าสินค้า <span id="cartTotalCount"
+                    class="text-sm font-normal opacity-50">(0)</span></h3>
+            <button onclick="toggleCart()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- Cart items will be here -->
+        </div>
+
+        <div class="p-6 pb-24 border-t border-white/10 bg-black/40 space-y-4">
+            <div class="flex justify-between items-center text-white/60 text-sm">
+                <span>ยอดรวมสินค้า</span>
+                <span id="cartSubtotal" class="font-bold text-white text-lg">0.00 ฿</span>
+            </div>
+            <button onclick="goToCheckout()" id="checkoutBtn" disabled class="btn-checkout btn-checkout-with-icon"
+                title="คลิกเพื่อไปยังหน้าชำระเงิน">
+                <span>🛒</span>
+                <span>สั่งซื้อสินค้า</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkoutModal"
+        class="fixed inset-0 z-[70] bg-black/80 hidden backdrop-blur-md flex items-center justify-center p-4">
+        <div
+            class="glass-card w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300 border border-white/10">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <h3 class="text-xl font-bold text-white">รายละเอียดการจัดส่ง</h3>
+                <button onclick="closeCheckout()" class="p-2 hover:bg-white/10 rounded-full text-white/50"><svg
+                        class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6">
+                <!-- PAYMENT METHODS -->
+                <div class="space-y-3">
+                    <label
+                        class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">วิธีชำระเงิน
+                        *</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="paymentMethod" value="transfer" checked class="peer hidden"
+                                onchange="window.updatePaymentMethod('transfer')">
+                            <div
+                                class="p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/20 transition-all">
+                                <div class="text-xl mb-1">🏦</div>
+                                <div class="text-xs font-bold text-white">โอนเงิน</div>
+                                <div class="text-[9px] text-white/40">ไม่มีค่าธรรมเนียม</div>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer group">
+                            <input type="radio" name="paymentMethod" value="cod" class="peer hidden"
+                                onchange="window.updatePaymentMethod('cod')">
+                            <div
+                                class="p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/20 transition-all">
+                                <div class="text-xl mb-1">🚚</div>
+                                <div class="text-xs font-bold text-white">เก็บเงินปลายทาง</div>
+                                <div class="text-[9px] text-white/40">+50 บาท</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- PAYMENT DETAILS SECTION (Show for Transfer) -->
+                <div id="paymentDetailsSection" class="bg-indigo-500/10 border-2 border-indigo-500/20 rounded-3xl p-6">
+                    <h4 class="text-sm font-bold text-indigo-300 mb-4 flex items-center gap-2">
+                        <span class="text-lg">💳</span> ข้อมูลการโอนเงิน
+                    </h4>
+                    <div id="paymentMethodsContainer" class="space-y-3 text-white">
+                        <!-- Payment methods will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- FORM -->
+                <div class="space-y-4">
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5 mb-6">
+                        <p class="text-xs text-white/60 font-medium flex items-center gap-2">
+                            <span class="text-lg">⚡</span> ระบุเบอร์โทรและแนบสลิปเพื่อยืนยันออเดอร์
+                        </p>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">ชื่อ-นามสกุล
+                            ผู้รับ *</label>
+                        <input type="text" id="custName"
+                            class="w-full bg-white/5 border-2 border-white/10 rounded-2xl px-4 py-3 text-white focus:border-white/30 outline-none transition"
+                            placeholder="ระบุชื่อผู้รับสินค้า">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">เบอร์โทรศัพท์
+                            *</label>
+                        <input type="tel" id="custPhone"
+                            class="w-full bg-white/5 border-2 border-white/10 rounded-2xl px-4 py-3 text-white focus:border-white/30 outline-none transition"
+                            placeholder="08x-xxx-xxxx">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">ที่อยู่จัดส่งโดยละเอียด
+                            *</label>
+                        <textarea id="custAddress" rows="3"
+                            class="w-full bg-white/5 border-2 border-white/10 rounded-2xl px-4 py-3 text-white focus:border-white/30 outline-none transition text-sm"
+                            placeholder="บ้านเลขที่, ซอย, ถนน, ตำบล, อำเภอ, จังหวัด, รหัสไปรษณีย์"></textarea>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 ml-1">แนบหลักฐานการโอนเงิน
+                            *</label>
+                        <div class="bg-white/5 border-2 border-dashed border-white/10 rounded-3xl p-8 text-center cursor-pointer hover:bg-white/10 transition group"
+                            onclick="document.getElementById('slipInput').click()">
+                            <input type="file" id="slipInput" accept="image/*" class="hidden"
+                                onchange="previewSlip(this)">
+                            <div id="slipPreview" class="flex flex-col items-center">
+                                <svg class="w-12 h-12 text-white/20 group-hover:text-white/40 mb-2" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p class="text-sm text-white/40 font-medium group-hover:text-white/60">
+                                    กดเพื่อแนบสลิปโอนเงิน</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-white/10 bg-black/40">
+                <button onclick="submitOrder()" id="confirmBtn"
+                    class="w-full bg-white text-black py-4 rounded-2xl font-black text-lg shadow-xl hover:bg-white/90 transition flex items-center justify-center gap-2">ยืนยันและสั่งซื้อ</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 glass-card border-t border-white/5 flex justify-around items-center py-3 z-50 shadow-2xl backdrop-blur-xl">
+        <a href="index.html" class="flex flex-col items-center gap-1 active group">
+            <span class="text-xl opacity-20 group-[.active]:opacity-100 transition-opacity">🏠</span>
+            <span
+                class="text-[9px] font-bold text-white/20 group-[.active]:text-white transition-colors uppercase tracking-widest">Home</span>
+        </a>
+        <a href="#" class="flex flex-col items-center gap-1 group">
+            <span class="text-xl opacity-20 group-[.active]:opacity-100 transition-opacity">📦</span>
+            <span
+                class="text-[9px] font-bold text-white/20 group-[.active]:text-white transition-colors uppercase tracking-widest">Catalog</span>
+        </a>
+    </nav>
+
+    <!-- SCRIPTS -->
+    <script type="module" src="./src/main.js"></script>
+    <script type="module">
+        import { getAuthSession, clearAuthSession } from './src/auth.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const authArea = document.getElementById('authArea');
+            const user = getAuthSession();
+
+            if (user) {
+                authArea.innerHTML = `
+                    <span class="text-white/60 hidden sm:inline">สวัสดี, <span class="text-white">${user.name}</span></span>
+                    <button id="logoutBtn" class="bg-white/10 text-white px-4 py-2 rounded-full hover:bg-white/20 transition border border-white/10">ออกจากระบบ</button>
+                `;
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    clearAuthSession();
+                    window.location.reload();
+                });
+
+                // Show Cart Button if logged in
+                const cartBtn = document.getElementById('cartBtn');
+                if (cartBtn) cartBtn.classList.remove('hidden');
+
+            } else {
+                authArea.innerHTML = `
+                    <a href="login.html" class="bg-white text-black px-4 py-1.5 rounded-full hover:bg-white/90 transition shadow-lg">เข้าสู่ระบบ</a>
+                `;
+            }
+        });
+    </script>
+</body>
+
+</html>

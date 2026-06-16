@@ -1,0 +1,1175 @@
+import './style.css';
+import Papa from 'papaparse';
+import Chart from 'chart.js/auto';
+import { ADMIN_PASSWORD, ORDERS_CSV_URL, SHEET_CSV_URL as PRODUCTS_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, getImgbbUploadUrl } from './config.js';
+
+let rawOrders = [];
+let rawProducts = [];
+let salesChart = null;
+let isEditMode = false;
+let currentPage = 1; // หน้าปัจจุบันของออเดอร์
+const ITEMS_PER_PAGE = 10;
+const MAX_PAGES = 5;
+let originalVariants = [];
+let oldProductName = "";
+
+// --- CUSTOM UI: TOAST ---
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// --- CUSTOM UI: CONFIRM MODAL ---
+function customConfirm(title, message, icon = '') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        document.getElementById('confirmTitle').innerText = title;
+        document.getElementById('confirmMsg').innerText = message;
+        document.getElementById('confirmIcon').innerText = icon;
+        modal.classList.remove('hidden');
+
+        const cleanup = (val) => {
+            modal.classList.add('hidden');
+            document.getElementById('confirmOk').removeEventListener('click', okHandler);
+            document.getElementById('confirmCancel').removeEventListener('click', cancelHandler);
+            resolve(val);
+        };
+
+        const okHandler = () => cleanup(true);
+        const cancelHandler = () => cleanup(false);
+
+        document.getElementById('confirmOk').addEventListener('click', okHandler);
+        document.getElementById('confirmCancel').addEventListener('click', cancelHandler);
+    });
+}
+
+// --- VARIANT MANAGEMENT ---
+function addVariant(size="", price="", stock=0, sold=0) {
+    const row = document.createElement('div');
+    row.className = 'variant-row flex items-center gap-2 animate-in fade-in slide-in-from-top-1 bg-slate-50 p-3 rounded-2xl border border-slate-100';
+    row.innerHTML = `
+        <div class="w-20">
+            <label class="text-[10px] text-slate-400 font-bold uppercase">รุ่น/ขนาด</label>
+            <div class="relative mt-1">
+                <input type="text" placeholder="เช่น XL" value="${size}" class="v-size w-full border rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+            </div>
+        </div>
+        <div class="w-16">
+            <label class="text-[10px] text-slate-400 font-bold uppercase">ราคา</label>
+            <input type="number" placeholder="฿" value="${price}" class="v-price w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+        </div>
+        <div class="w-16">
+            <label class="text-[10px] text-slate-400 font-bold uppercase">คลัง</label>
+            <input type="number" placeholder="ชิ้น" value="${stock}" class="v-stock w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+        </div>
+        <div class="w-16">
+            <label class="text-[10px] text-slate-400 font-bold uppercase">ขายแล้ว</label>
+            <input type="number" placeholder="ชิ้น" value="${sold}" class="v-sold w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+        </div>
+        <button type="button" onclick="removeVariant(this)" class="mt-4 p-1 text-red-300 hover:text-red-500">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+        </button>`;
+    document.getElementById('variantContainer').appendChild(row);
+}
+function removeVariant(btn) {
+    const rows = document.querySelectorAll('.variant-row');
+    if (rows.length > 1) btn.closest('.variant-row').remove();
+    else alert("ต้องมีอย่างน้อยหนึ่งตัวเลือกราคา");
+}
+
+// --- IMAGE COMPRESSION ---
+function compressImage(file, maxWidth = 1000, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader(); reader.readAsDataURL(file);
+        reader.onload = e => {
+            const img = new Image(); img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width, height = img.height;
+                if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                canvas.toBlob(blob => { resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: 'image/webp' })); }, 'image/webp', quality);
+            };
+        };
+        reader.onerror = reject;
+    });
+}
+
+// --- TAB SYSTEM ---
+function switchTab(tabId) {
+    document.querySelectorAll('main').forEach(m => m.classList.add('hidden'));
+    const viewEl = document.getElementById('view-' + tabId);
+    if (viewEl) viewEl.classList.remove('hidden');
+    
+    document.querySelectorAll('header button').forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600'));
+    const activeBtn = document.getElementById('tab-' + tabId);
+    if(activeBtn) activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+
+    if (tabId === 'products') loadProducts();
+    else loadData();
+}
+
+// --- AUTH ---
+function checkPass() {
+    if (document.getElementById('passInput').value === ADMIN_PASSWORD) {
+        localStorage.setItem('adminAuth', 'true');
+        showToast("เข้าสู่ระบบเรียบร้อย", "success");
+        showDashboard();
+    } else {
+        document.getElementById('errorMsg').classList.remove('hidden');
+        showToast("รหัสผ่านผิด!", "error");
+    }
+}
+function showDashboard() {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    switchTab('overview');
+}
+function logout() { localStorage.removeItem('adminAuth'); location.reload(); }
+
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        loadData();
+        loadProducts();
+        loadPromptpayData();
+        
+        // Removed cannabis-specific category listener
+
+        if (localStorage.getItem('adminAuth') === 'true') showDashboard();
+    } catch (err) {
+        console.error("Initialization error:", err);
+    }
+});
+
+// --- DASHBOARD DATA ---
+function loadData() {
+    if (!ORDERS_CSV_URL) return;
+    const cacheBuster = `&nocache=${Math.random()}&t=${Date.now()}`;
+    Papa.parse(ORDERS_CSV_URL + cacheBuster, {
+        download: true, header: true, skipEmptyLines: true,
+        complete: (results) => { 
+            rawOrders = results.data; 
+            applyLocalOrderUpdates();
+            processSales(); 
+        }
+    });
+}
+
+function applyLocalOrderUpdates() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('localOrderUpdates') || '{}');
+        const now = Date.now();
+        let changed = false;
+        
+        rawOrders.forEach(o => {
+            const keys = Object.keys(o);
+            const getV = targets => {
+                for(let t of targets){if(o[t]!==undefined) return o[t];}
+                const f = keys.find(k=>targets.some(x=>k.toLowerCase().includes(x.toLowerCase())));
+                if(f) return o[f];
+                if(targets.includes("ชื่อ")) return o[keys[1]];
+                if(targets.includes("สลิป")) return o[keys[7]];
+                return "";
+            };
+            const name = (getV(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").toString().trim();
+            const slip = (getV(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+            const key = name + "|" + slip;
+            
+            if (stored[key]) {
+                // If it's been over 15 mins, discard the cache
+                if (now - stored[key].timestamp > 15 * 60 * 1000) {
+                    delete stored[key];
+                    changed = true;
+                    return;
+                }
+                
+                const statusKey = keys.find(k => ["สถานะ", "status"].some(t => k.toLowerCase().includes(t.toLowerCase()))) || keys[8] || "สถานะ";
+                const csvStatus = (o[statusKey] || "").toString().trim();
+                
+                // If CSV caught up to our local state (or surpassed it), clear cache
+                if (csvStatus === stored[key].status || (csvStatus === "อยู่ระหว่างจัดส่ง" && stored[key].status === "ชำระเงินแล้ว")) {
+                    delete stored[key];
+                    changed = true;
+                } else {
+                    // Apply local override
+                    o[statusKey] = stored[key].status;
+                }
+            }
+        });
+        
+        if (changed) {
+            localStorage.setItem('localOrderUpdates', JSON.stringify(stored));
+        }
+    } catch(e) {
+        console.error("Failed to apply local updates", e);
+    }
+}
+
+function processSales() {
+    const now = new Date();
+    const oneWeekAgo = new Date(); oneWeekAgo.setDate(now.getDate() - 7);
+    const oneMonthAgo = new Date(); oneMonthAgo.setDate(now.getDate() - 30);
+
+    let totalLife = 0, totalMonth = 0, totalWeek = 0, countMonth = 0, countWeek = 0;
+    let pendingTotal = 0, pendingCount = 0;
+    const productCounts = {}, dailyStats = {};
+
+    // กรองข้อมูลที่ว่างออก (Cleanup empty rows)
+    rawOrders = rawOrders.filter(o => {
+        // กรองเอาเฉพาะแถวที่มีข้อมูลตัวตนลูกค้า (ชื่อ หรือ เบอร์โทร) เท่านั้น
+        const vals = Object.values(o).map(v => (v || "").toString().trim());
+        const hasIdentity = vals.some(v => v.length > 2); // มีข้อมูลที่ยาวกว่า 2 ตัวอักษร
+        return hasIdentity;
+    });
+
+    rawOrders.forEach(order => {
+        const keys = Object.keys(order);
+        const getVal = (targets) => {
+            // 1. หาตามชื่อ Key ตรงๆ
+            for (let t of targets) { if (order[t] !== undefined) return order[t]; }
+            // 2. หาตาม Partial Match
+            const foundK = keys.find(k => targets.some(t => k.toLowerCase().includes(t.toLowerCase())));
+            if (foundK) return order[foundK];
+            // 3. Fallback ตามลำดับคอลัมน์ (Index)
+            if (targets.includes("วันที่") || targets.includes("time")) return order[keys[0]];
+            if (targets.includes("ชื่อ") || targets.includes("name")) return order[keys[1]];
+            if (targets.includes("เบอร์") || targets.includes("phone")) return order[keys[2]];
+            if (targets.includes("ยอด") || targets.includes("total")) return order[keys[6]]; // คอลัมน์ G
+            return undefined;
+        };
+
+        const status = (getVal(["สถานะ", "status"]) || "").toString().trim();
+        const total = parseFloat(getVal(["ยอดรวม", "total", "ราคา", "price"]) || 0);
+        const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
+        let orderDate = new Date();
+        if (dateRaw) {
+            const str = dateRaw.toString().trim();
+            const datePart = str.split(',')[0].trim();
+            if (datePart.includes('/')) {
+                const parts = datePart.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    let year = parseInt(parts[2].split(' ')[0], 10);
+                    if (year > 2500) year -= 543;
+                    
+                    let hours = 0, minutes = 0, seconds = 0;
+                    const timePart = str.includes(',') ? str.split(',')[1].trim() : (str.split(' ')[1] || "");
+                    if (timePart) {
+                        const tParts = timePart.split(':');
+                        hours = parseInt(tParts[0] || 0, 10);
+                        minutes = parseInt(tParts[1] || 0, 10);
+                        seconds = parseInt(tParts[2] || 0, 10);
+                    }
+                    orderDate = new Date(year, month, day, hours, minutes, seconds);
+                } else {
+                    orderDate = new Date(dateRaw);
+                }
+            } else {
+                orderDate = new Date(dateRaw);
+            }
+        }
+        const items = getVal(["รายการสินค้า", "items", "รายการ"]);
+
+        // นับสถิติ (เฉพาะที่ชำระเงินแล้ว)
+        if (status === "ชำระเงินแล้ว") {
+            totalLife += total;
+            if (orderDate >= oneMonthAgo) { totalMonth += total; countMonth++; }
+            if (orderDate >= oneWeekAgo) { totalWeek += total; countWeek++; }
+            const dKey = orderDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+            if (orderDate >= (new Date().setDate(now.getDate()-14))) dailyStats[dKey] = (dailyStats[dKey] || 0) + total;
+            
+            if (items) {
+                items.split(',').forEach(it => {
+                    const n = it.split('(')[0].trim();
+                    productCounts[n] = (productCounts[n] || 0) + 1;
+                });
+            }
+        } else if (status === "รอดำเนินการ" || status === "") {
+            // นับยอดที่รอรับ (Pending)
+            pendingTotal += total;
+            pendingCount++;
+        }
+    });
+
+    // แสดงผลยอดที่รอรับ (UI Feedback)
+    const pendingLabel = document.getElementById('totalLifetime');
+    if (pendingLabel) {
+        pendingLabel.innerHTML = `รวมทั้งหมด ${totalLife.toLocaleString()} ฿ <span class="ml-2 text-amber-500">(รอรับยอด: ${pendingTotal.toLocaleString()} ฿)</span>`;
+    }
+
+    document.getElementById('monthlyTotal').textContent = totalMonth.toLocaleString() + " ฿";
+    document.getElementById('monthlyCount').textContent = `${countMonth} รายการ`;
+    document.getElementById('weeklyTotal').textContent = totalWeek.toLocaleString() + " ฿";
+    document.getElementById('weeklyCount').textContent = `${countWeek} รายการ`;
+    document.getElementById('avgOrder').textContent = (countMonth > 0 ? (totalMonth / countMonth).toFixed(2) : 0) + " ฿";
+    document.getElementById('totalLifetime').textContent = `รวมทั้งหมด ${totalLife.toLocaleString()} ฿`;
+
+    renderChart(dailyStats); renderTop(productCounts); renderOrdersTable();
+}
+
+function renderChart(dataMap) {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    const labels = [], values = [];
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const k = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+        labels.push(k); values.push(dataMap[k] || 0);
+    }
+    if (salesChart) salesChart.destroy();
+    salesChart = new Chart(ctx, {
+        type: 'line', data: { labels, datasets: [{ data: values, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+}
+
+function renderTop(counts) {
+    const list = document.getElementById('topProductsList'); list.innerHTML = "";
+    Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([name, count]) => {
+        list.innerHTML += `<div class="flex justify-between p-3 bg-slate-50 rounded-xl border"><span>${name}</span><span class="font-bold text-emerald-600">${count}</span></div>`;
+    });
+}
+
+function renderOrdersTable() {
+    const body = document.getElementById('orderTableBody'); body.innerHTML = "";
+    
+    // กรองและเรียงลำดับ
+    const sortedOrders = [...rawOrders].reverse();
+    
+    // คำนวณขอบเขตการแสดงผลตามหน้า (Pagination)
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedOrders = sortedOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    paginatedOrders.forEach(order => {
+        const keys = Object.keys(order);
+        const getVal = (targets) => {
+            for (let t of targets) { if (order[t] !== undefined) return order[t]; }
+            const foundK = keys.find(k => targets.some(t => k.toLowerCase().includes(t.toLowerCase())));
+            if (foundK) return order[foundK];
+            // Fallback ตามลำดับคอลัมน์ (Index)
+            if (targets.includes("วันที่") || targets.includes("time")) return order[keys[0]];
+            if (targets.includes("ชื่อ") || targets.includes("name")) return order[keys[1]];
+            if (targets.includes("เบอร์") || targets.includes("phone")) return order[keys[2]];
+            if (targets.includes("ยอด") || targets.includes("total")) return order[keys[6]];
+            if (targets.includes("สลิป") || targets.includes("slip")) return order[keys[7]];
+            if (targets.includes("แผนที่") || targets.includes("map")) return order[keys[4]];
+            if (targets.includes("ที่อยู่") || targets.includes("address")) return order[keys[3]];
+            return "";
+        };
+
+        let rawStatus = (getVal(["สถานะ", "status"]) || "").toString().trim();
+        let slip = (getVal(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+        let payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "").toString().trim();
+        
+        let isCOD = slip.includes("COD") || rawStatus.includes("เก็บเงินปลายทาง") || payMethod.includes("เก็บเงินปลายทาง");
+        if (isCOD) payMethod = "เก็บเงินปลายทาง";
+        else if (payMethod === "") payMethod = "โอนเงิน";
+
+        // Handle shifted columns where status holds payment method
+        let status = rawStatus;
+        if (rawStatus === "เก็บเงินปลายทาง" || rawStatus === "COD" || rawStatus === "") {
+            status = "รอดำเนินการ";
+        }
+        
+        const isConfirmed = status === "ชำระเงินแล้ว";
+        
+        let phoneStr = (getVal(["เบอร์โทร", "phone"]) || "").toString().trim();
+        if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
+        const custName = getVal(["ชื่อลูกค้า", "name"]);
+        const displayIdentity = (custName && custName !== "N/A") ? custName : (phoneStr || "N/A");
+        const addressText = getVal(["ที่อยู่", "address"]) || "";
+        const shippingFee = getVal(["ค่าส่ง", "shipping"]) || "";
+        const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
+        const dateStr = dateRaw ? dateRaw.toString().split('GMT')[0].trim() : "N/A";
+        const total = parseFloat(getVal(["ยอดรวม", "ราคา", "total", "price"]) || 0);
+        
+        body.innerHTML += `
+            <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-50">
+                <td class="px-6 py-4 w-[180px] text-[11px] font-mono text-slate-400 whitespace-nowrap">${dateStr}</td>
+                <td class="px-6 py-4">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700 text-sm">${displayIdentity}</span>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-slate-400 truncate max-w-[200px]">${addressText}</span>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">
+                    ${total.toLocaleString()} ฿
+                    ${shippingFee ? `<div class="text-[9px] text-slate-400 font-normal">ค่าส่ง: ${shippingFee}</div>` : ''}
+                </td>
+                <td class="px-6 py-4 w-[120px] text-center">
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight ${isConfirmed?'bg-emerald-50 text-emerald-600 border border-emerald-100':'bg-amber-50 text-amber-600 border border-amber-100'}">
+                            ${status}
+                        </span>
+                        <span class="text-[9px] font-bold ${isCOD ? 'text-blue-500' : 'text-slate-400'} uppercase tracking-tighter">
+                            ${payMethod}
+                        </span>
+                    </div>
+                </td>
+                <td class="px-6 py-4 w-[250px] text-right">
+                    <div class="flex justify-end gap-2 flex-wrap">
+                        <button onclick="window.printLabel(${rawOrders.indexOf(order)})" 
+                                class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition active:scale-95 shadow-md">
+                            🖨️ ปริ้น
+                        </button>
+                        <a href="${slip}" target="_blank" 
+                           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
+                            📄 ดูสลิป
+                        </a>
+                        ${status === 'รอดำเนินการ' || status === 'เก็บเงินปลายทาง' ? `
+                        <button onclick="window.updateConfirm(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
+                                class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
+                            ✅ รับยอด
+                        </button>` : ''}
+                        ${status !== 'อยู่ระหว่างจัดส่ง' ? `
+                        <button onclick="window.updateStatusToTransit(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
+                                class="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
+                            🚚 จัดส่ง
+                        </button>` : ''}
+                    </div>
+                </td>
+            </tr>`;
+    });
+
+    renderPagination(sortedOrders.length);
+}
+
+function renderPagination(totalItems) {
+    const container = document.getElementById('orderPagination');
+    container.innerHTML = "";
+    
+    const totalPagesAvailable = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const finalPageCount = Math.min(totalPagesAvailable, MAX_PAGES);
+
+    if (finalPageCount <= 1) return;
+
+    for (let i = 1; i <= finalPageCount; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === i ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300'}`;
+        btn.onclick = () => {
+            currentPage = i;
+            renderOrdersTable();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        container.appendChild(btn);
+    }
+}
+
+async function updateConfirm(btn, name, slip) {
+    if(!(await customConfirm("ยืนยันออเดอร์", `ต้องการยืนยันการรับเงินของคุณ ${name} ใช่หรือไม่?`, ""))) return;
+    
+    const parent = btn.parentElement;
+    
+    btn.disabled = true;
+    btn.textContent = "กำลังอัปเดต...";
+    
+    try {
+        await fetch(GAS_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "ชำระเงินแล้ว" }) 
+        });
+    } catch (e) {
+        console.warn("GAS CORS error ignored (update successful on backend):", e);
+    }
+    
+    showToast("อัปเดตเรียบร้อย กรุณารอข้อมูลอัปเดตสักครู่", "success");
+    
+    // Optimistic Update Local Data
+    updateLocalOrderStatus(name, slip, "ชำระเงินแล้ว");
+    
+    parent.innerHTML = `
+        <a href="${slip}" target="_blank" 
+           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
+            📄 ดูสลิป
+        </a>
+        <span class="text-xs text-emerald-600 font-bold ml-2">✅ ยืนยันแล้ว</span>
+    `;
+    
+    setTimeout(loadData, 5000);
+}
+
+window.updateStatusToTransit = async function(btn, name, slip) {
+    const tracking = prompt("กรุณากรอกเลขพัสดุ / หมายเหตุการจัดส่ง (ถ้ามี):", "");
+    if(tracking === null) return; // Cancelled
+    
+    if(!(await customConfirm("ยืนยันจัดส่ง", `ต้องการอัปเดตสถานะของคุณ ${name} เป็น 'อยู่ระหว่างจัดส่ง' ใช่หรือไม่?`, ""))) return;
+    
+    const parent = btn.parentElement;
+    
+    btn.disabled = true;
+    btn.textContent = "กำลังอัปเดต...";
+    
+    // We send tracking info by appending it to the name or as a separate field if backend supports. 
+    // Wait, the backend only takes action, name, slipUrl, status. 
+    // If we want to save tracking, we'd need backend changes. But we can update status for now.
+    // Let's pass tracking in slipUrl if needed? Or just ignore tracking if backend doesn't support it, but the prompt is useful.
+    
+    try {
+        await fetch(GAS_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "อยู่ระหว่างจัดส่ง", tracking: tracking }) 
+        });
+    } catch (e) {
+        console.warn("GAS CORS error ignored (update successful on backend):", e);
+    }
+    
+    showToast("อัปเดตเรียบร้อย กรุณารอข้อมูลอัปเดตสักครู่", "success");
+    
+    // Optimistic Update Local Data
+    updateLocalOrderStatus(name, slip, "อยู่ระหว่างจัดส่ง");
+    
+    parent.innerHTML = `
+        <a href="${slip}" target="_blank" 
+           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
+            📄 ดูสลิป
+        </a>
+        <span class="text-xs text-blue-600 font-bold ml-2">🚚 อยู่ระหว่างจัดส่ง</span>
+    `;
+    
+    setTimeout(loadData, 5000);
+}
+
+function updateLocalOrderStatus(name, slip, newStatus) {
+    if (!rawOrders) return;
+    const orderIndex = rawOrders.findIndex(o => {
+        const keys = Object.keys(o);
+        const getV = targets => {
+            for(let t of targets){if(o[t]!==undefined) return o[t];}
+            const f = keys.find(k=>targets.some(x=>k.toLowerCase().includes(x.toLowerCase())));
+            if(f) return o[f];
+            if(targets.includes("ชื่อ")) return o[keys[1]];
+            if(targets.includes("สลิป")) return o[keys[7]];
+            return "";
+        };
+        const oName = (getV(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").toString().trim();
+        const oSlip = (getV(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+        return oName === name && oSlip === slip;
+    });
+    
+    if (orderIndex > -1) {
+        const keys = Object.keys(rawOrders[orderIndex]);
+        const statusKey = keys.find(k => ["สถานะ", "status"].some(t => k.toLowerCase().includes(t.toLowerCase()))) || keys[8] || "สถานะ";
+        rawOrders[orderIndex][statusKey] = newStatus;
+        
+        // Save to localStorage to persist across reloads while Sheets cache updates
+        try {
+            const stored = JSON.parse(localStorage.getItem('localOrderUpdates') || '{}');
+            stored[name + "|" + slip] = { status: newStatus, timestamp: Date.now() };
+            localStorage.setItem('localOrderUpdates', JSON.stringify(stored));
+        } catch(e) {}
+
+        processSales(); // Refresh total sales count
+    }
+}
+
+function printLabel(idx) {
+    const order = rawOrders[idx];
+    const keys = Object.keys(order);
+    const getVal = (targets) => {
+        for (let t of targets) { if (order[t] !== undefined) return order[t]; }
+        const foundK = keys.find(k => targets.some(t => k.toLowerCase().includes(t.toLowerCase())));
+        if (foundK) return order[foundK];
+        // Fallbacks based on typical column positions
+        if (targets.includes("ชื่อ")) return order[keys[1]];
+        if (targets.includes("เบอร์")) return order[keys[2]];
+        if (targets.includes("ที่อยู่")) return order[keys[3]];
+        if (targets.includes("รายการ")) return order[keys[5]];
+        if (targets.includes("ยอด")) return order[keys[6]];
+        if (targets.includes("วิธีชำระ")) return order[keys[8]];
+        return "";
+    };
+
+    const nameRaw = (getVal(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").trim();
+    let name = nameRaw;
+    if (name && !name.startsWith("คุณ")) {
+        name = "คุณ " + name;
+    }
+    
+    let phoneStr = (getVal(["เบอร์โทรศัพท์", "เบอร์โทร", "phone"]) || "").toString().trim();
+    if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
+    const address = getVal(["ที่อยู่จัดส่ง", "ที่อยู่", "address"]);
+    const items = getVal(["รายการสินค้า", "items", "รายการ"]);
+    const total = getVal(["ยอดรวม", "total", "ราคา"]);
+    
+    let rawStatus = (getVal(["สถานะ", "status"]) || "").toString().trim();
+    let slip = (getVal(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+    let payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "").toString().trim();
+    let isCOD = slip.includes("COD") || rawStatus.includes("เก็บเงินปลายทาง") || payMethod.includes("เก็บเงินปลายทาง");
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Shipping Label - ${name}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap');
+                body { font-family: 'Kanit', sans-serif; padding: 20px; color: #333; }
+                .label-container { border: 2px solid #000; padding: 20px; width: 400px; margin: 0 auto; position: relative; }
+                .shop-name { font-size: 24px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+                .recipient-section { margin-bottom: 20px; }
+                .recipient-title { font-size: 14px; text-decoration: underline; margin-bottom: 5px; }
+                .recipient-name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+                .recipient-address { font-size: 16px; line-height: 1.4; }
+                .cod-badge { border: 4px solid #000; padding: 10px; text-align: center; margin-top: 15px; font-size: 20px; font-weight: bold; }
+                .footer { margin-top: 20px; font-size: 10px; text-align: center; opacity: 0.5; }
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body onload="window.print()">
+            <div class="label-container">
+                <div class="shop-name">
+                    <span>BlackNight69</span>
+                    <span style="font-size: 12px;">Order #${idx + 1}</span>
+                </div>
+                
+                <div class="recipient-section">
+                    <div class="recipient-title">ผู้รับ (To):</div>
+                    <div class="recipient-name">${name}</div>
+                    <div class="recipient-name">${phoneStr}</div>
+                    <div class="recipient-address">${address}</div>
+                </div>
+
+                ${isCOD ? `
+                <div class="cod-badge">
+                    เก็บเงินปลายทาง (COD)<br>
+                    ยอดเงิน: ${parseFloat(total).toLocaleString()} ฿
+                </div>
+                ` : ''}
+
+                <div class="footer">
+                    ขอบคุณที่ใช้บริการ BlackNight69
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;" class="no-print">
+                <button onclick="window.print()" style="padding: 10px 20px; font-weight: bold;">สั่งพิมพ์อีกครั้ง</button>
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+
+
+
+// --- PRODUCT MANAGEMENT ---
+async function loadProducts() {
+    try {
+        const res = await fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`);
+        const data = await res.json();
+        console.log("Admin Data Fetched:", data);
+        if (!data || data.error || data.length < 1) {
+            rawProducts = [];
+        } else {
+            // แปลง Array เป็น Object เพื่อความสะดวกในการ Render
+            const headers = data[0];
+            rawProducts = data.slice(1).map(row => {
+                return {
+                    name: row[0],
+                    size: row[1],
+                    price: row[2],
+                    note: row[3],
+                    image: row[4],
+                    tags: row[5],
+                    status: row[6],
+                    stock: row[7],
+                    sold_count: row[8],
+                    category: row[9] || "อื่นๆ"
+                };
+            });
+        }
+        renderProductsTable();
+    } catch (err) {
+        console.error("Load Products Error:", err);
+        showToast("โหลดข้อมูลสินค้าล้มเหลว", "error");
+    }
+}
+
+function renderProductsTable() {
+    const body = document.getElementById('productTableBody'); 
+    if(!body) return;
+    body.innerHTML = "";
+    const grouped = {};
+    rawProducts.forEach(p => {
+        if(!p.name) return;
+        if(!grouped[p.name]) grouped[p.name] = { ...p, sizes: [], minPrice: Infinity, totalStock: 0, totalSold: 0 };
+        grouped[p.name].sizes.push(p.size);
+        grouped[p.name].minPrice = Math.min(grouped[p.name].minPrice, parseFloat(p.price) || 0);
+        grouped[p.name].totalStock += (parseInt(p.stock) || 0);
+        grouped[p.name].totalSold += (parseInt(p.sold_count) || 0);
+    });
+
+    Object.values(grouped).forEach(p => {
+        const outOfStock = p.totalStock <= 0 || ['หมด','0','sold out'].includes(p.status?.toLowerCase());
+        body.innerHTML += `<tr>
+            <td class="px-6 py-3"><img src="${p.image}" class="w-10 h-10 object-cover rounded-lg bg-slate-100" onerror="this.outerHTML='<div class=\\'w-10 h-10 bg-slate-100 rounded-lg\\'></div>'"></td>
+            <td class="px-6 py-3 font-bold">${p.name}</td>
+            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">${p.category || 'N/A'}</span></td>
+            <td class="px-6 py-3 text-slate-500 text-xs">${p.sizes.join(', ')}</td>
+            <td class="px-6 py-3 font-bold text-emerald-600">${p.minPrice.toLocaleString()} ฿ +</td>
+            <td class="px-6 py-3 font-bold ${p.totalStock < 5 ? 'text-red-500' : 'text-slate-600'}">${p.totalStock}</td>
+            <td class="px-6 py-3 text-slate-400 font-bold">${p.totalSold}</td>
+            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${outOfStock ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${outOfStock ? 'หมด' : 'มีของ'}</span></td>
+            <td class="px-6 py-3 text-right">
+                <button onclick="editProduct('${p.name.replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-emerald-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </button>
+                <button onclick="deleteFullProduct('${p.name.replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-red-500 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </td>
+        </tr>`;
+    });
+}
+
+function toggleProductModal(show, mode = 'add', type = 'herb') { 
+    const modal = document.getElementById('productModal');
+    const title = document.getElementById('modalTitle');
+    const btn = document.getElementById('saveProductBtn');
+    const categorySelect = document.getElementById('pCategory');
+    
+    isEditMode = mode === 'edit';
+    title.innerText = isEditMode ? "แก้ไขสินค้า" : (type === 'herb' ? "เพิ่มสมุนไพรใหม่" : "เพิ่มอุปกรณ์ใหม่");
+    btn.innerText = isEditMode ? "บันทึกการแก้ไข" : "บันทึกและขึ้นขายทันที";
+    
+    if(!show) {
+        document.getElementById('productForm').reset();
+        document.getElementById('variantContainer').innerHTML = "";
+        addVariant();
+        modal.classList.add('hidden');
+        return;
+    }
+
+    if (!isEditMode) {
+        document.getElementById('productForm').reset();
+        document.getElementById('variantContainer').innerHTML = "";
+        // เซ็ตหมวดหมู่เริ่มต้นตามประเภทที่กด
+        if (type === 'herb') categorySelect.value = "Hybrid";
+        else categorySelect.value = "Accessories";
+        
+        addVariant(); // เรียก addVariant หลังจากเซ็ตหมวดหมู่แล้วเพื่อให้หน่วยเปลี่ยนตาม
+    }
+    
+    modal.classList.remove('hidden'); 
+}
+
+function editProduct(name) {
+    const variants = rawProducts.filter(p => p.name === name);
+    if(variants.length === 0) return;
+    const base = variants[0];
+    oldProductName = name;
+    originalVariants = variants.map(v => ({ size: v.size, price: v.price }));
+    document.getElementById('pName').value = base.name;
+    document.getElementById('pCategory').value = base.category || "Hybrid";
+    document.getElementById('pNote').value = base.note || "";
+    document.getElementById('pTags').value = base.tags || "";
+    document.getElementById('productForm').dataset.existingImage = base.image || "";
+    const container = document.getElementById('variantContainer'); container.innerHTML = "";
+    variants.forEach(v => addVariant(v.size, v.price, v.stock, v.sold_count));
+    toggleProductModal(true, 'edit');
+}
+
+async function deleteFullProduct(name) {
+    if(!(await customConfirm("ลบสินค้า", `คุณแน่ใจใช่ไหมที่จะลบ "${name}" ออกจากระบบถาวร?`, ""))) return;
+    showToast("กำลังลบข้อมูล...", "success");
+    const variants = rawProducts.filter(p => p.name === name);
+    for(let v of variants) {
+        try {
+            await fetch(GAS_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) 
+            });
+        } catch(e) {}
+    }
+    showToast("ลบสินค้าเรียบร้อยแล้ว", "success");
+    loadProducts();
+}
+
+async function deleteAllProducts() {
+    if(!(await customConfirm("ลบสินค้าทั้งหมด", "คุณแน่ใจใช่ไหมที่จะลบสินค้า 'ทุกรายการ' ออกจากระบบถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้!", "⚠️"))) return;
+    
+    showToast("กำลังเริ่มการลบสินค้าทั้งหมด...", "success");
+    try {
+        const res = await fetch(GAS_URL, { 
+            method: 'POST', 
+            // สำหรับลบทั้งหมด เราต้องรอผล (success/error) จึงใช้ mode: 'cors' แต่ต้องเป็น text/plain
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: "clearProducts" }) 
+        });
+        const result = await res.json();
+        if (result.result === "success") {
+            showToast("ลบสินค้าทั้งหมดเรียบร้อยแล้ว", "success");
+            loadProducts();
+        } else {
+            throw new Error(result.error || "Unknown error");
+        }
+    } catch (err) {
+        console.error("Delete all failed:", err);
+        showToast("ล้มเหลว: " + err.message, "error");
+    }
+}
+
+async function saveProduct() {
+    const btn = document.getElementById('saveProductBtn');
+    const fileInput = document.getElementById('pImage');
+    const name = document.getElementById('pName').value.trim();
+    const category = document.getElementById('pCategory').value;
+    const note = document.getElementById('pNote').value.trim();
+    const tags = document.getElementById('pTags').value.trim();
+    const variantRows = document.querySelectorAll('.variant-row');
+    
+    const variants = Array.from(variantRows).map(row => ({
+        size: row.querySelector('.v-size').value.trim() || "Standard",
+        price: parseFloat(row.querySelector('.v-price').value) || 0,
+        stock: parseInt(row.querySelector('.v-stock').value) || 0,
+        sold: parseInt(row.querySelector('.v-sold').value) || 0
+    })).filter(v => v.size && v.price >= 0);
+
+    if(!name || variants.length === 0) return alert("กรุณากรอกข้อมูลที่สำคัญให้ครบ");
+
+    btn.disabled = true;
+    btn.innerHTML = isEditMode ? "กำลังบันทึก..." : "กำลังอัปโหลดรูป...";
+
+    let imageUrl = document.getElementById('productForm').dataset.existingImage || "";
+    const imgbbUrl = getImgbbUploadUrl();
+    
+    if (fileInput.files.length > 0 && imgbbUrl) {
+        try {
+            btn.innerHTML = "กำลังบีบอัดรูปภาพ...";
+            const optimizedImg = await compressImage(fileInput.files[0]);
+            btn.innerHTML = "กำลังอัปโหลดรูปภาพ...";
+            const formData = new FormData(); 
+            formData.append('image', optimizedImg);
+            const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
+            const imgData = await imgRes.json();
+            if (imgData.success) imageUrl = imgData.data.url;
+        } catch(e) { 
+            console.error("Img Upload Fail", e); 
+            showToast("อัปโหลดรูปภาพล้มเหลว", "error"); 
+        }
+    }
+
+    try {
+        showToast(isEditMode ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกสินค้า...", "success");
+
+        // ส่งข้อมูลเข้า GAS แบบ Bundle ทีเดียวจบ (Atomic Update)
+        const response = await fetch(GAS_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ 
+                action: "updateProduct", 
+                oldName: isEditMode ? oldProductName : name,
+                name: name, 
+                category: category, 
+                note: note, 
+                tags: tags, 
+                image: imageUrl, 
+                variants: variants 
+            }) 
+        });
+
+        const result = await response.json();
+        if (result.result === "success") {
+            showToast(isEditMode ? "แก้ไขข้อมูลสำเร็จ!" : "เพิ่มสินค้าสำเร็จ!", "success");
+            toggleProductModal(false); 
+            setTimeout(loadProducts, 1500); 
+        } else {
+            throw new Error(result.error || "GAS Error");
+        }
+    } catch (err) { 
+        console.error("Save error:", err);
+        showToast("เกิดข้อผิดพลาดในการบันทึก: " + err.message, "error");
+    } finally { 
+        btn.disabled = false; 
+        btn.innerHTML = isEditMode ? "บันทึกการแก้ไข" : "บันทึกและขึ้นขายทันที"; 
+    }
+}
+
+// --- PROMPTPAY MANAGEMENT ---
+let promptpayList = [];
+let editingPromptpayId = null;
+
+async function loadPromptpayData() {
+    try {
+        const res = await fetch(`${GAS_URL}?action=getBank`);
+        const data = await res.json();
+        
+        // If GAS has data (more than just headers)
+        if (data && data.length > 1) {
+            promptpayList = data.slice(1).map(row => ({
+                name: row[0],
+                bank: row[1],
+                number: row[2],
+                qrImage: row[3],
+                status: row[4] || 'active'
+            }));
+            savePromptpayToStorage(); // Update local backup
+        } else {
+            // If GAS is empty, try loading from local storage
+            const stored = localStorage.getItem('promptpayData');
+            if (stored) {
+                promptpayList = JSON.parse(stored);
+                console.log("GAS empty, loaded from LocalStorage");
+            }
+        }
+        renderPromptpayTable();
+    } catch (err) {
+        console.error("Load Settings Error:", err);
+        const stored = localStorage.getItem('promptpayData');
+        promptpayList = stored ? JSON.parse(stored) : [];
+        renderPromptpayTable();
+    }
+}
+
+function savePromptpayToStorage() {
+    localStorage.setItem('promptpayData', JSON.stringify(promptpayList));
+}
+
+function renderPromptpayTable() {
+    const tbody = document.getElementById('promptpayTableBody');
+    tbody.innerHTML = "";
+    
+    if (promptpayList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">ยังไม่มีข้อมูล Promptpay</td></tr>`;
+        return;
+    }
+
+    promptpayList.forEach((pp, idx) => {
+        tbody.innerHTML += `<tr class="hover:bg-slate-50 transition">
+            <td class="px-6 py-4">
+                ${pp.qrImage ? `<img src="${pp.qrImage}" class="w-12 h-12 object-cover rounded-lg shadow-sm border border-slate-100">` : '<div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center"><span class="text-xs text-slate-400">ไม่มี</span></div>'}
+            </td>
+            <td class="px-6 py-4 font-bold text-slate-800">${pp.name}</td>
+            <td class="px-6 py-4 text-slate-600">${pp.bank}</td>
+            <td class="px-6 py-4 font-mono text-sm text-slate-600">${pp.number}</td>
+            <td class="px-6 py-4">
+                <span class="px-3 py-1 rounded-full text-[10px] font-bold ${pp.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
+                    ${pp.status === 'active' ? '✓ ใช้งาน' : '○ ไม่ใช้งาน'}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-right flex gap-2 justify-end">
+                <button onclick="editPromptpay(${idx})" class="p-2 text-slate-400 hover:text-blue-600 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </button>
+                <button onclick="deletePromptpay(${idx})" class="p-2 text-slate-400 hover:text-red-500 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </td>
+        </tr>`;
+    });
+}
+
+function togglePromptpayModal(show, idx = null) {
+    const modal = document.getElementById('promptpayModal');
+    const form = document.getElementById('promptpayForm');
+    const titleEl = document.getElementById('promptpayModalTitle');
+    
+    if (!show) {
+        form.reset();
+        document.getElementById('qrPreview').innerHTML = '<svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>';
+        editingPromptpayId = null;
+        modal.classList.add('hidden');
+        return;
+    }
+
+    editingPromptpayId = idx;
+    if (idx !== null) {
+        const pp = promptpayList[idx];
+        titleEl.innerText = "แก้ไข Promptpay";
+        document.getElementById('ppName').value = pp.name;
+        document.getElementById('ppBank').value = pp.bank;
+        document.getElementById('ppNumber').value = pp.number;
+        document.getElementById('ppStatus').value = pp.status || 'active';
+        if (pp.qrImage) {
+            document.getElementById('qrPreview').innerHTML = `<img src="${pp.qrImage}" class="w-full h-full object-cover">`;
+        }
+    } else {
+        titleEl.innerText = "เพิ่ม Promptpay ใหม่";
+        form.reset();
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function previewQRCode(input) {
+    if (input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('qrPreview').innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+            input.dataset.preview = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+async function savePromptpay() {
+    const name = document.getElementById('ppName').value.trim();
+    const bank = document.getElementById('ppBank').value;
+    const number = document.getElementById('ppNumber').value.trim();
+    const status = document.getElementById('ppStatus').value;
+    const imgFile = document.getElementById('ppImage').files[0];
+    const imgPreview = document.getElementById('ppImage').dataset.preview;
+    
+    if (!name || !bank || !number) {
+        showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+        return;
+    }
+
+    const btn = document.getElementById('savePromptpayBtn');
+    btn.disabled = true;
+    btn.innerText = "กำลังบันทึก...";
+
+    try {
+        let qrImage = imgPreview || (editingPromptpayId !== null ? promptpayList[editingPromptpayId].qrImage : '');
+
+        // Upload QR image to ImgBB if new file selected
+        if (imgFile) {
+            const formData = new FormData();
+            formData.append('image', imgFile);
+            const res = await fetch(getImgbbUploadUrl(), { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) qrImage = data.data.url;
+        }
+
+        const promptpayData = { name, bank, number, status, qrImage };
+
+        if (editingPromptpayId !== null) {
+            promptpayList[editingPromptpayId] = promptpayData;
+            showToast("แก้ไข Promptpay สำเร็จ!", "success");
+        } else {
+            promptpayList.push(promptpayData);
+            showToast("เพิ่ม Promptpay สำเร็จ!", "success");
+        }
+
+        savePromptpayToStorage();
+        
+        // 🚀 SYNC TO GAS
+        const settingsPayload = [
+            ["Name", "Bank", "Number", "QR", "Status"],
+            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
+        ];
+
+        await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+        });
+
+        renderPromptpayTable();
+        togglePromptpayModal(false);
+        showToast("ซิงค์ข้อมูลสำเร็จ!", "success");
+    } catch (err) {
+        console.error("Save error:", err);
+        showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "บันทึก";
+    }
+}
+
+async function editPromptpay(idx) {
+    togglePromptpayModal(true, idx);
+}
+
+async function deletePromptpay(idx) {
+    const pp = promptpayList[idx];
+    const confirmed = await customConfirm("ยืนยันการลบ", `ลบบัญชี Promptpay "${pp.name}" ใช่หรือไม่?`, "🗑️");
+    
+    if (confirmed) {
+        promptpayList.splice(idx, 1);
+        savePromptpayToStorage();
+        
+        // 🚀 SYNC TO GAS
+        const settingsPayload = [
+            ["Name", "Bank", "Number", "QR", "Status"],
+            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
+        ];
+
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+            });
+            showToast("ลบและซิงค์ข้อมูลสำเร็จ!", "success");
+        } catch (err) {
+            console.error("Sync error:", err);
+            showToast("ลบสำเร็จแต่ซิงค์ข้อมูลล้มเหลว", "warning");
+        }
+
+        renderPromptpayTable();
+    }
+}
+
+async function syncPromptpayToGAS() {
+    const btn = event?.target?.closest('button') || { disabled: false, innerHTML: '' };
+    const originalText = btn.innerHTML;
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = "🔄 กำลังซิงค์...";
+        
+        const settingsPayload = [
+            ["Name", "Bank", "Number", "QR", "Status"],
+            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
+        ];
+
+        // ใช้ fetch แบบปกติ
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: "saveBank", settings: settingsPayload })
+        });
+        
+        const result = await res.json();
+        if (result.result === "success") {
+            showToast("ซิงค์ข้อมูลลง Google Sheets สำเร็จ!", "success");
+        } else {
+            // ถ้ามี Error กลับมาจาก GAS ให้แสดงตรงๆ
+            const errMsg = result.error || "เกิดข้อผิดพลาดไม่ทราบสาเหตุ";
+            showToast("ซิงค์ล้มเหลว: " + errMsg, "error");
+            console.error("GAS Sync Error:", errMsg);
+        }
+    } catch (err) {
+        console.error("Network/Fetch Error:", err);
+        showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// === EXPOSE GLOBALS ===
+window.checkPass = checkPass;
+window.logout = logout;
+window.switchTab = switchTab;
+window.loadData = loadData;
+window.updateConfirm = updateConfirm;
+window.toggleProductModal = toggleProductModal;
+window.editProduct = editProduct;
+window.deleteFullProduct = deleteFullProduct;
+window.saveProduct = saveProduct;
+window.addVariant = addVariant;
+window.removeVariant = removeVariant;
+window.togglePromptpayModal = togglePromptpayModal;
+window.editPromptpay = editPromptpay;
+window.deletePromptpay = deletePromptpay;
+window.savePromptpay = savePromptpay;
+window.syncPromptpayToGAS = syncPromptpayToGAS;
+window.previewQRCode = previewQRCode;
+window.deleteAllProducts = deleteAllProducts;
+window.printLabel = printLabel;

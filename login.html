@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - BlackNight69</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .hero-title { text-shadow: 0 0 30px rgba(255, 255, 255, 0.6); }
+        .loader { border: 2px solid rgba(255,255,255,0.1); border-left-color: #ffffff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-black min-h-screen flex items-center justify-center text-white relative overflow-hidden">
+    <!-- Background accents -->
+    <div class="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-indigo-900/30 blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/4"></div>
+    <div class="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-blue-900/20 blur-[100px] pointer-events-none translate-y-1/3 -translate-x-1/4"></div>
+
+    <div class="w-full max-w-md px-6 relative z-10">
+        <!-- Logo -->
+        <div class="text-center mb-10">
+            <a href="index.html" class="inline-block hover:scale-105 transition-transform cursor-pointer">
+                <h1 class="text-4xl font-bold tracking-tight text-white mb-1 hero-title">BlackNight<span class="text-indigo-400">69</span></h1>
+                <p class="text-xs uppercase tracking-widest text-white/50">Evolution of Space Retail</p>
+            </a>
+        </div>
+
+        <!-- Login Card -->
+        <div class="glass-card rounded-[2rem] p-8 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-2">เข้าสู่ระบบ</h2>
+            <p class="text-sm text-white/50 mb-6">ยินดีต้อนรับกลับสู่ห้วงอวกาศของเรา</p>
+
+            <div id="errorBox" class="hidden mb-6 px-4 py-3 rounded-xl bg-red-500/20 border border-red-500/50 text-red-200 text-sm flex items-center gap-2"></div>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-white/50 mb-2 pl-1">อีเมล</label>
+                    <input type="email" id="emailInput" required placeholder="you@example.com" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-white/30 outline-none transition placeholder:text-white/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-white/50 mb-2 pl-1">รหัสผ่าน</label>
+                    <input type="password" id="passwordInput" required placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-white/30 outline-none transition placeholder:text-white/20">
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-white text-black py-3.5 rounded-xl font-bold mt-4 hover:bg-white/90 transition shadow-lg flex items-center justify-center gap-2">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+
+        <p class="text-center mt-8 text-sm text-white/50">
+            ยังไม่มีบัญชี? <a href="register.html" class="text-white font-bold hover:text-indigo-400 transition-colors underline-offset-4 hover:underline">สมัครสมาชิก</a>
+        </p>
+    </div>
+
+    <script type="module">
+        import { loginUser, setAuthSession, isLoggedIn } from './src/auth.js';
+        
+        // Redirect if already logged in
+        if (isLoggedIn()) {
+            window.location.href = 'index.html';
+        }
+
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorBox = document.getElementById('errorBox');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+
+            if (!email || !password) {
+                showError('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const data = await loginUser(email, password);
+                if (data.error) {
+                    showError(data.error);
+                } else if (data.result === 'success') {
+                    // Success
+                    setAuthSession({ name: data.name, email: data.email, token: data.token });
+                    window.location.href = 'index.html';
+                } else {
+                    showError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+                }
+            } catch (err) {
+                showError('การเชื่อมต่อล้มเหลว');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function showError(msg) {
+            errorBox.textContent = '❌ ' + msg;
+            errorBox.classList.remove('hidden');
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-70');
+                submitBtn.innerHTML = '<span class="loader"></span> กำลังตรวจสอบ...';
+                errorBox.classList.add('hidden');
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70');
+                submitBtn.innerHTML = 'เข้าสู่ระบบ';
+            }
+        }
+    </script>
+</body>
+</html>

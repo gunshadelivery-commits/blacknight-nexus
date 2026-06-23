@@ -182,7 +182,7 @@ function renderProducts(filter = "") {
                          onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
                     <div class="absolute top-2 left-2 flex flex-col gap-1">
                         ${p.tags.length ? `<span class="bg-indigo-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">${p.tags[0]}</span>` : ''}
-                        ${p.totalSold > 0 ? `<span class="bg-orange-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">SOLD ${p.totalSold}+</span>` : ''}
+                        ${p.totalSold > 0 ? `<span class="bg-orange-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">ขายแล้ว ${p.totalSold}+</span>` : ''}
                     </div>
                     ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span></div>` : ''}
                 </div>

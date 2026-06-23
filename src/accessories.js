@@ -120,7 +120,7 @@ function renderProducts(filter = "") {
 
         card.innerHTML = `
             <div class="aspect-square bg-slate-50 rounded-2xl mb-3 relative overflow-hidden">
-                <img src="${p.image}" class="w-full h-full object-cover ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-50' : ''}" onerror="this.outerHTML='<span class=\\'text-3xl flex items-center justify-center h-full\\'>📦</span>';" />
+                <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-50' : ''}" onerror="this.outerHTML='<span class=\\'text-3xl flex items-center justify-center h-full\\'>📦</span>';" />
                 ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">หมด</span></div>` : ''}
             </div>
             <div class="flex-1 flex flex-col">

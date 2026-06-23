@@ -1,36 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <!-- หน้าหลัก -->
+  <!-- หน้าแรก — ร้านของเล่นผู้ใหญ่ อุปกรณ์คู่รัก -->
   <url>
     <loc>https://blacknight69.com/</loc>
-    <lastmod>2026-06-16</lastmod>
+    <lastmod>2026-06-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- หน้า Login -->
-  <url>
-    <loc>https://blacknight69.com/login.html</loc>
-    <lastmod>2026-06-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <!-- หน้า Register -->
-  <url>
-    <loc>https://blacknight69.com/register.html</loc>
-    <lastmod>2026-06-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <!-- หน้า Accessories -->
+  <!-- หน้าสินค้า อุปกรณ์เสริมความสุข -->
   <url>
     <loc>https://blacknight69.com/accessories.html</loc>
-    <lastmod>2026-06-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- หน้าสมัครสมาชิก -->
+  <url>
+    <loc>https://blacknight69.com/register.html</loc>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- หน้าเข้าสู่ระบบ -->
+  <url>
+    <loc>https://blacknight69.com/login.html</loc>
+    <lastmod>2026-06-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
   </url>
 
 </urlset>

@@ -174,9 +174,10 @@ function renderProducts(filter = "") {
 
             card.innerHTML = `
                 <div class="h-32 bg-white/5 flex items-center justify-center relative overflow-hidden">
-                    <img src="${p.image}" 
-                         ${priorityAttr} 
-                         class="w-full h-full object-cover img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}" 
+                    <img src="${p.image}"
+                         alt="${p.name}"
+                         ${priorityAttr}
+                         class="w-full h-full object-cover img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
                          onload="this.classList.add('img-loaded')"
                          onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
                     <div class="absolute top-2 left-2 flex flex-col gap-1">
@@ -364,7 +365,7 @@ function updateCartUI() {
             subtotal += item.price * item.qty;
             return `
                 <div class="flex gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <img src="${item.image}" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='📦';">
+                    <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='📦';">
                     <div class="flex-1">
                         <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${item.size}</p>
@@ -420,7 +421,7 @@ async function loadAndDisplayPaymentMethods() {
                 <div class="flex gap-4">
                     ${pp.qrImage ? `
                         <div class="flex-shrink-0">
-                            <img src="${pp.qrImage}" class="w-20 h-20 object-cover rounded-xl border border-white/10 shadow-lg">
+                            <img src="${pp.qrImage}" alt="QR Code โอนเงิน ${pp.name} ${pp.bank}" class="w-20 h-20 object-cover rounded-xl border border-white/10 shadow-lg">
                         </div>
                     ` : ''}
                     <div class="flex-1">

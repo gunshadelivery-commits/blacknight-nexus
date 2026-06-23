@@ -167,6 +167,51 @@ function doPost(e) {
       return sendResponse({ result: "success" });
     }
 
+    // ===== UPDATE ORDER STATUS (รับยอด / จัดส่ง) =====
+    if (action === "updateStatus") {
+      const oSheet = ss.getSheetByName(SHEET_ORDERS);
+      if (!oSheet) return sendResponse({ error: "Orders sheet missing" });
+
+      const rows = oSheet.getDataRange().getValues();
+      const headers = rows[0];
+
+      // หา index ของ column ที่ต้องการ (รองรับทั้ง header ภาษาไทยและอังกฤษ)
+      const findCol = (targets) => {
+        const idx = headers.findIndex(h =>
+          targets.some(t => h.toString().toLowerCase().includes(t.toLowerCase()))
+        );
+        return idx;
+      };
+
+      const nameIdx  = findCol(["ชื่อลูกค้า", "ชื่อ", "name"]);
+      const slipIdx  = findCol(["ลิงก์สลิป", "slipUrl", "slip"]);
+      const statusIdx = findCol(["สถานะ", "status"]);
+
+      // ถ้าไม่พบ column สถานะ ให้ใช้ column ที่ 10 (index 9) ตามที่ log ใส่ไว้
+      const sCol = statusIdx !== -1 ? statusIdx : 9;
+      const nCol = nameIdx  !== -1 ? nameIdx  : 1;
+      const slCol = slipIdx !== -1 ? slipIdx  : 7;
+
+      let found = false;
+      for (let i = 1; i < rows.length; i++) {
+        const rowName = (rows[i][nCol] || "").toString().trim();
+        const rowSlip = (rows[i][slCol] || "").toString().trim();
+        if (rowName === (data.name || "").trim() && rowSlip === (data.slipUrl || "").trim()) {
+          oSheet.getRange(i + 1, sCol + 1).setValue(data.status);
+          // บันทึกเลขพัสดุถ้ามี
+          if (data.tracking) {
+            const trackIdx = findCol(["tracking", "เลขพัสดุ", "หมายเหตุ"]);
+            if (trackIdx !== -1) oSheet.getRange(i + 1, trackIdx + 1).setValue(data.tracking);
+          }
+          found = true;
+          break;
+        }
+      }
+
+      SpreadsheetApp.flush();
+      return sendResponse(found ? { result: "success" } : { error: "Order not found" });
+    }
+
   } catch (err) {
     return sendResponse({ error: "GAS doPost Error: " + err.toString() });
   }

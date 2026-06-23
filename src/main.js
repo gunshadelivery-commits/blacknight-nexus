@@ -192,7 +192,6 @@ function renderProducts(filter = "") {
                         <p class="text-[10px] text-white/40 mt-1 line-clamp-1">${p.note}</p>
                     </div>
                     
-                    ${isLoggedIn() ? `
                     <div class="mt-3 flex flex-wrap gap-1">
                         ${p.variants.map((v, vIdx) => `
                             <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-white/20 border-white/40 text-white' : 'bg-black/20 text-white/30 border-white/5'} ${v.stock <= 0 ? 'opacity-20' : ''}">
@@ -201,20 +200,12 @@ function renderProducts(filter = "") {
                         `).join('')}
                     </div>
                     ${variant.stock > 0 && variant.stock <= 5 ? `<p class="text-[9px] text-red-400 font-bold mt-2">🔥 Only ${variant.stock} left!</p>` : ''}
-                    ` : `<div class="mt-3"><span class="text-[10px] text-white/40 italic">🔒 สมัครสมาชิกเพื่อดูรุ่นและขนาด</span></div>`}
 
                     <div class="mt-3 flex items-center justify-between">
-                        ${isLoggedIn() ? `
                         <p class="font-bold text-white text-sm">${variant.price.toLocaleString()} ฿</p>
                         <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-white/10 text-white p-2 rounded-xl hover:bg-white/20 transition-all disabled:opacity-10">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
-                        ` : `
-                        <p class="font-bold text-white/30 text-sm tracking-widest blur-[2px]">??? ฿</p>
-                        <a href="login.html" class="bg-indigo-500 text-white px-3 py-1.5 rounded-xl hover:bg-indigo-600 transition-all text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-1">
-                            🔒 ดูราคา
-                        </a>
-                        `}
                     </div>
                 </div>
             `;
@@ -244,7 +235,6 @@ function switchCategory(cat) {
 }
 
 function selectVariant(pName, vIdx) {
-    if (!isLoggedIn()) return;
     const product = products.find(p => p.name === pName);
     if (product) {
         product.selectedVariantIdx = vIdx;
@@ -284,23 +274,14 @@ function openProductDetails(pName) {
     const priceEl = document.getElementById('modalProductPrice');
     const actionEl = document.getElementById('modalActionContainer');
     
-    if (isLoggedIn()) {
-        priceEl.textContent = `${variant.price.toLocaleString()} ฿`;
-        actionEl.innerHTML = `
-            <button onclick="window.addToCart('${product.name.replace(/'/g, "\\'")}', ${product.selectedVariantIdx}); window.closeProductDetails();" 
-                    ${isOutOfStock ? 'disabled' : ''} 
-                    class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-white/90 transition shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-                ${isOutOfStock ? 'สินค้าหมด' : 'เพิ่มลงตะกร้า'}
-            </button>
-        `;
-    } else {
-        priceEl.innerHTML = `<span class="blur-[4px] opacity-50 select-none tracking-widest">??? ฿</span>`;
-        actionEl.innerHTML = `
-            <a href="login.html" class="block w-full text-center bg-indigo-500 text-white py-4 rounded-2xl font-bold hover:bg-indigo-600 transition shadow-xl shadow-indigo-500/20">
-                🔒 เข้าสู่ระบบเพื่อสั่งซื้อ
-            </a>
-        `;
-    }
+    priceEl.textContent = `${variant.price.toLocaleString()} ฿`;
+    actionEl.innerHTML = `
+        <button onclick="window.addToCart('${product.name.replace(/'/g, "\\'")}', ${product.selectedVariantIdx}); window.closeProductDetails();"
+                ${isOutOfStock ? 'disabled' : ''}
+                class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-white/90 transition shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+            ${isOutOfStock ? 'สินค้าหมด' : 'เพิ่มลงตะกร้า'}
+        </button>
+    `;
 
     modal.classList.remove('cart-closed');
     modal.classList.add('cart-open');
@@ -319,10 +300,6 @@ function changeProductImage(src) {
 }
 
 function addToCart(pName, vIdx) {
-    if (!isLoggedIn()) {
-        window.location.href = 'login.html';
-        return;
-    }
     const product = products.find(p => p.name === pName);
     if (!product) return;
     const variant = product.variants[vIdx];

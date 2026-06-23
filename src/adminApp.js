@@ -185,7 +185,7 @@ function applyLocalOrderUpdates() {
             
             if (stored[key]) {
                 // If it's been over 15 mins, discard the cache
-                if (now - stored[key].timestamp > 15 * 60 * 1000) {
+                if (now - stored[key].timestamp > 24 * 60 * 60 * 1000) {
                     delete stored[key];
                     changed = true;
                     return;

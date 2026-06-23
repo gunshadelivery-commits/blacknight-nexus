@@ -297,7 +297,7 @@
                         class="bg-white text-black px-4 py-2 rounded-full hover:bg-white/90 transition shadow-lg hidden sm:block">เข้าสู่ระบบ</a>
                 </div>
 
-                <button id="cartBtn" onclick="toggleCart()" class="relative p-2 hidden">
+                <button id="cartBtn" onclick="toggleCart()" class="relative p-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -571,13 +571,13 @@
                     window.location.reload();
                 });
 
-                // Show Cart Button if logged in
-                const cartBtn = document.getElementById('cartBtn');
-                if (cartBtn) cartBtn.classList.remove('hidden');
+                // Pre-fill checkout form with user's data
+                const custNameEl = document.getElementById('custName');
+                if (custNameEl && user.name) custNameEl.value = user.name;
 
             } else {
                 authArea.innerHTML = `
-                    <a href="login.html" class="bg-white text-black px-4 py-1.5 rounded-full hover:bg-white/90 transition shadow-lg">เข้าสู่ระบบ</a>
+                    <a href="login.html" class="bg-white/10 text-white px-4 py-1.5 rounded-full hover:bg-white/20 transition border border-white/10 text-xs">เข้าสู่ระบบ</a>
                 `;
             }
         });

@@ -58,6 +58,8 @@ jobs:
         run: npm run build
       - name: Add CNAME for custom domain
         run: echo "blacknight69.com" > ./dist/CNAME
+      - name: Copy static SEO files to dist
+        run: cp sitemap.xml robots.txt llms.txt ./dist/
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact

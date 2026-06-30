@@ -1,7 +1,7 @@
 import './style.css';
 import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
-import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
+import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
 import { isLoggedIn } from './auth.js';
 
 let products = [];
@@ -275,12 +275,21 @@ function openProductDetails(pName) {
     const actionEl = document.getElementById('modalActionContainer');
     
     priceEl.textContent = `${variant.price.toLocaleString()} ฿`;
+    const lineMsg = `สนใจสินค้า: ${product.name} (${variant.size}) ราคา ${variant.price.toLocaleString()} ฿`;
     actionEl.innerHTML = `
-        <button onclick="window.addToCart('${product.name.replace(/'/g, "\\'")}', ${product.selectedVariantIdx}); window.closeProductDetails();"
-                ${isOutOfStock ? 'disabled' : ''}
-                class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-white/90 transition shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
-            ${isOutOfStock ? 'สินค้าหมด' : 'เพิ่มลงตะกร้า'}
-        </button>
+        <div class="flex flex-col gap-3">
+            <button onclick="window.addToCart('${product.name.replace(/'/g, "\\'")}', ${product.selectedVariantIdx}); window.closeProductDetails();"
+                    ${isOutOfStock ? 'disabled' : ''}
+                    class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-white/90 transition shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                ${isOutOfStock ? '❌ สินค้าหมด' : '🛒 เพิ่มลงตะกร้า'}
+            </button>
+            ${!isOutOfStock ? `
+            <a href="${buildLineUrl(lineMsg)}" target="_blank"
+               class="w-full bg-[#06C755] text-white py-4 rounded-2xl font-bold hover:bg-[#05b34c] transition shadow-xl shadow-green-900/30 text-sm text-center flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.84 1.38 5.38 3.56 7.12L4.5 22l3.78-1.98C9.37 20.63 10.66 21 12 21c5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg>
+                ทัก LINE สั่งด่วน
+            </a>` : ''}
+        </div>
     `;
 
     modal.classList.remove('cart-closed');
@@ -443,10 +452,10 @@ function previewPaymentQR(qrUrl) {
     document.body.appendChild(modal);
 }
 
-function goToCheckout() { 
+function goToCheckout() {
     loadAndDisplayPaymentMethods();
-    updatePaymentMethod('transfer');
-    document.getElementById('checkoutModal').classList.remove('hidden'); 
+    updatePaymentMethod('cod'); // COD เป็น default — ลด friction (ไม่ต้องโอนก่อน)
+    document.getElementById('checkoutModal').classList.remove('hidden');
 }
 function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
 

@@ -322,9 +322,15 @@
             <h1 class="text-6xl font-black mb-2 tracking-tighter text-white drop-shadow-lg hero-title animate-pulse">
                 BlackNight69</h1>
             <p class="text-white text-base opacity-80 font-medium tracking-widest uppercase bloom-effect">ของเล่นผู้ใหญ่ · อุปกรณ์คู่รัก · สินค้าเพื่อสุขภาพทางเพศ</p>
-            <p class="text-white/60 text-sm max-w-sm mx-auto mt-4 px-4">ร้านค้าพิเศษเฉพาะสมาชิก 18+ บรรจุภัณฑ์มิดชิด ส่งไวทั่วไทย
-                สมัครเพื่อดูราคาและเข้าถึงสินค้าทั้งหมด</p>
-            <div class="w-16 h-1 bg-white/30 mx-auto rounded-full overflow-hidden">
+            <p class="text-white/60 text-sm max-w-sm mx-auto mt-4 px-4">บรรจุภัณฑ์มิดชิด ไม่มีใครรู้ข้างใน 🔒 ส่งทั่วไทย ได้ของภายใน 1-2 วัน</p>
+
+            <!-- Urgency badges -->
+            <div class="flex flex-wrap justify-center gap-2 mt-4">
+                <span class="bg-red-500/80 backdrop-blur-sm text-white text-xs font-bold px-4 py-1.5 rounded-full animate-pulse">🔥 สินค้าขายดี วันนี้มีของพร้อมส่ง</span>
+                <span class="bg-white/10 backdrop-blur-sm text-white text-xs font-bold px-4 py-1.5 rounded-full border border-white/20">📦 ส่งด่วน Kerry / Flash</span>
+            </div>
+
+            <div class="w-16 h-1 bg-white/30 mx-auto rounded-full overflow-hidden mt-4">
                 <div id="scroll-progress" class="w-0 h-full bg-white transition-all duration-300"></div>
             </div>
         </div>
@@ -518,6 +524,25 @@
         </div>
     </section>
 
+    <!-- FLOATING LINE BUTTON -->
+    <div id="floatingLineBtn" class="fixed bottom-6 right-5 z-[80] flex flex-col items-end gap-2">
+        <!-- Tooltip -->
+        <div id="lineTooltip" class="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none whitespace-nowrap">
+            ทัก LINE สั่งด่วน 💬
+        </div>
+        <!-- Button -->
+        <a id="lineFloatLink" href="#" target="_blank"
+           class="w-16 h-16 bg-[#06C755] rounded-full shadow-2xl shadow-green-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-200 border-4 border-white/20 relative"
+           onmouseenter="document.getElementById('lineTooltip').style.opacity='1'"
+           onmouseleave="document.getElementById('lineTooltip').style.opacity='0'">
+            <!-- Ping animation -->
+            <span class="absolute inset-0 rounded-full bg-[#06C755] animate-ping opacity-30"></span>
+            <svg class="w-8 h-8 text-white relative z-10" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.03 2 11c0 2.84 1.38 5.38 3.56 7.12L4.5 22l3.78-1.98C9.37 20.63 10.66 21 12 21c5.52 0 10-4.03 10-9S17.52 2 12 2zm0 16c-1.1 0-2.14-.2-3.1-.56l-.22-.08-2.3 1.2.62-2.27-.16-.23C5.38 14.73 4 12.95 4 11c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8z"/>
+            </svg>
+        </a>
+    </div>
+
     <!-- SUCCESS CELEBRATION MODAL -->
     <div id="successModal"
         class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
@@ -596,7 +621,7 @@
                         *</label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="relative cursor-pointer group">
-                            <input type="radio" name="paymentMethod" value="transfer" checked class="peer hidden"
+                            <input type="radio" name="paymentMethod" value="transfer" class="peer hidden"
                                 onchange="window.updatePaymentMethod('transfer')">
                             <div
                                 class="p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/20 transition-all">
@@ -606,7 +631,7 @@
                             </div>
                         </label>
                         <label class="relative cursor-pointer group">
-                            <input type="radio" name="paymentMethod" value="cod" class="peer hidden"
+                            <input type="radio" name="paymentMethod" value="cod" checked class="peer hidden"
                                 onchange="window.updatePaymentMethod('cod')">
                             <div
                                 class="p-4 rounded-2xl border-2 border-white/10 bg-white/5 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-500/20 transition-all">
@@ -704,6 +729,12 @@
         initAgeGate();
     </script>
     <script type="module" src="./src/main.js"></script>
+    <script type="module">
+        import { getLineOaUrl } from './src/config.js';
+        // เซต LINE floating button href
+        const lineBtn = document.getElementById('lineFloatLink');
+        if (lineBtn) lineBtn.href = getLineOaUrl();
+    </script>
     <script type="module">
         import { getAuthSession, clearAuthSession } from './src/auth.js';
 

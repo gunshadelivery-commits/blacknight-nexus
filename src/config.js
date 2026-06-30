@@ -47,6 +47,17 @@ export function buildLineUrl(message) {
 }
 
 /**
+ * สร้าง URL สำหรับเปิด LINE OA chat ตรงๆ (ไม่มี pre-filled message)
+ */
+export function getLineOaUrl() {
+    if (LINE_OA_ID) {
+        const encodedId = encodeURIComponent(LINE_OA_ID);
+        return `https://line.me/R/ti/p/${encodedId}`;
+    }
+    return "https://line.me";
+}
+
+/**
  * สร้าง ImgBB Upload URL
  * @returns {string} ImgBB API endpoint with key
  */

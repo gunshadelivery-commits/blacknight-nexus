@@ -500,6 +500,7 @@ async function submitOrder() {
     const data = {
         name: document.getElementById('custName').value.trim(),
         phone: document.getElementById('custPhone').value.trim(),
+        email: (document.getElementById('custEmail')?.value || '').trim(),
         address: document.getElementById('custAddress').value.trim(),
         slip: document.getElementById('slipInput').files[0],
         paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'
@@ -532,15 +533,16 @@ async function submitOrder() {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
-                    action: "log", 
-                    name: data.name, 
-                    phone: data.phone, 
+                    action: "log",
+                    name: data.name,
+                    phone: data.phone,
+                    email: data.email,
                     address: data.address,
-                    mapUrl: "-", 
-                    items: orderItems, 
-                    itemsArray: itemsArray, 
-                    total: finalTotal, 
-                    slipUrl: slipUrl, 
+                    mapUrl: "-",
+                    items: orderItems,
+                    itemsArray: itemsArray,
+                    total: finalTotal,
+                    slipUrl: slipUrl,
                     paymentMethod: data.paymentMethod,
                     status: "รอดำเนินการ"
                 })

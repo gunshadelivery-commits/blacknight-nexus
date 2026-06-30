@@ -3,12 +3,16 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V23-AUTH";
+const GAS_VERSION = "V24-MAIL";
 const SPREADSHEET_ID = "11p5OmXlmYoSvrjatX1JTRKlM6QcRnJdBIxm1EwqM0Sw";
 const SHEET_PRODUCTS = "Blacknight69 - Product List";
 const SHEET_ORDERS = "Orders";
 const SHEET_BANK = "BankAccounts";
 const SHEET_USERS = "Users";
+
+// --- อีเมลแจ้งเตือนออเดอร์ใหม่ (ใส่หลายอีเมลได้ คั่นด้วย ,) ---
+const NOTIFY_EMAIL = "ped.siraphob@gmail.com";
+const SHOP_NAME = "BlackNight69";
 
 function getSS() {
   try {
@@ -164,6 +168,17 @@ function doPost(e) {
       if (oSheet) {
         oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
       }
+      // แจ้งเตือนอีเมลเมื่อมีออเดอร์ใหม่ (ไม่ให้ error เรื่องอีเมลทำให้บันทึกออเดอร์ล้มเหลว)
+      try {
+        notifyNewOrder(data);          // แจ้งเตือนร้าน
+      } catch (mailErr) {
+        Logger.log("Email notify (shop) failed: " + mailErr.toString());
+      }
+      try {
+        sendCustomerConfirmation(data); // ใบยืนยันส่งให้ลูกค้า (ถ้ามีอีเมล)
+      } catch (custErr) {
+        Logger.log("Email confirm (customer) failed: " + custErr.toString());
+      }
       return sendResponse({ result: "success" });
     }
 
@@ -219,4 +234,137 @@ function doPost(e) {
 
 function sendResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * ▶️ ฟังก์ชันทดสอบ/ขออนุญาตส่งอีเมล
+ * เลือกฟังก์ชันนี้ใน editor แล้วกด Run หนึ่งครั้ง
+ * - ครั้งแรกจะมีหน้าต่างขออนุญาต (Authorization required) ให้กดอนุญาตจนจบ
+ * - ถ้าสำเร็จจะมีอีเมลทดสอบส่งไปที่ NOTIFY_EMAIL ทันที
+ */
+function testEmail() {
+  notifyNewOrder({
+    name: "ทดสอบส่งเมล (Run จาก Editor)",
+    phone: "0800000000",
+    address: "ที่อยู่ทดสอบ",
+    items: "สินค้าทดสอบ x1",
+    itemsArray: [{ name: "สินค้าทดสอบ", size: "-", qty: 1 }],
+    total: 999,
+    slipUrl: "-",
+    paymentMethod: "ทดสอบ"
+  });
+  Logger.log("ส่งอีเมลทดสอบไปที่ " + NOTIFY_EMAIL + " เรียบร้อย");
+}
+
+/** ▶️ ทดสอบใบยืนยันออเดอร์ฝั่งลูกค้า (ส่งเข้า NOTIFY_EMAIL เพื่อดูหน้าตา) */
+function testCustomerEmail() {
+  sendCustomerConfirmation({
+    name: "คุณลูกค้าทดสอบ",
+    phone: "0899999999",
+    email: NOTIFY_EMAIL,
+    address: "123 ที่อยู่ทดสอบ",
+    itemsArray: [{ name: "สินค้าทดสอบ A", size: "3.5g", qty: 2 }],
+    total: 1590,
+    paymentMethod: "โอนเงิน"
+  });
+  Logger.log("ส่งใบยืนยันทดสอบไปที่ " + NOTIFY_EMAIL + " เรียบร้อย");
+}
+
+/** ส่งอีเมลแจ้งเตือนเมื่อมีออเดอร์ใหม่ */
+function notifyNewOrder(data) {
+  if (!NOTIFY_EMAIL) return;
+
+  const total = (typeof data.total === "number")
+    ? data.total.toLocaleString()
+    : data.total;
+
+  // รองรับทั้งรายการแบบ string และ itemsArray
+  let itemsHtml = "";
+  if (Array.isArray(data.itemsArray) && data.itemsArray.length) {
+    itemsHtml = data.itemsArray
+      .map(i => "<li>" + i.name + " [" + (i.size || "-") + "] x" + i.qty + "</li>")
+      .join("");
+    itemsHtml = "<ul>" + itemsHtml + "</ul>";
+  } else {
+    itemsHtml = "<p>" + (data.items || "-") + "</p>";
+  }
+
+  const slipHtml = (data.slipUrl && /^https?:\/\//.test(data.slipUrl))
+    ? '<a href="' + data.slipUrl + '">ดูสลิป/หลักฐาน</a>'
+    : (data.slipUrl || "-");
+
+  const subject = "🛒 ออเดอร์ใหม่ " + SHOP_NAME + " - " + (data.name || "ลูกค้า") + " (" + total + " บาท)";
+
+  const htmlBody =
+    '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;">' +
+      '<h2 style="margin:0 0 12px;">✨ มีออเดอร์ใหม่เข้ามา!</h2>' +
+      '<table cellpadding="6" style="border-collapse:collapse;">' +
+        '<tr><td><b>👤 ผู้รับ</b></td><td>' + (data.name || "-") + '</td></tr>' +
+        '<tr><td><b>📞 เบอร์</b></td><td>' + (data.phone || "-") + '</td></tr>' +
+        '<tr><td><b>🏠 ที่อยู่</b></td><td>' + (data.address || "-") + '</td></tr>' +
+        '<tr><td><b>💳 วิธีชำระ</b></td><td>' + (data.paymentMethod || "-") + '</td></tr>' +
+        '<tr><td><b>💰 ยอดรวม</b></td><td>' + total + ' บาท</td></tr>' +
+        '<tr><td><b>🖼️ หลักฐาน</b></td><td>' + slipHtml + '</td></tr>' +
+      '</table>' +
+      '<h3 style="margin:16px 0 4px;">🛒 รายการสินค้า</h3>' +
+      itemsHtml +
+      '<p style="color:#888;font-size:12px;margin-top:16px;">บันทึกเมื่อ ' + new Date().toLocaleString("th-TH") + '</p>' +
+    '</div>';
+
+  MailApp.sendEmail({
+    to: NOTIFY_EMAIL,
+    subject: subject,
+    htmlBody: htmlBody
+  });
+}
+
+/** สร้าง HTML รายการสินค้า (ใช้ร่วมกัน) */
+function buildItemsHtml(data) {
+  if (Array.isArray(data.itemsArray) && data.itemsArray.length) {
+    return "<ul>" + data.itemsArray
+      .map(i => "<li>" + i.name + " [" + (i.size || "-") + "] x" + i.qty + "</li>")
+      .join("") + "</ul>";
+  }
+  return "<p>" + (data.items || "-") + "</p>";
+}
+
+/** ส่งอีเมลใบยืนยันออเดอร์ให้ลูกค้า (เฉพาะเมื่อลูกค้ากรอกอีเมล) */
+function sendCustomerConfirmation(data) {
+  var email = (data.email || "").trim();
+  // ส่งเฉพาะเมื่อมีอีเมลที่อยู่ในรูปแบบถูกต้อง
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
+
+  const total = (typeof data.total === "number")
+    ? data.total.toLocaleString()
+    : data.total;
+
+  const itemsHtml = buildItemsHtml(data);
+  const subject = "✅ ยืนยันการสั่งซื้อจาก " + SHOP_NAME + " (ยอดรวม " + total + " บาท)";
+
+  const htmlBody =
+    '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:560px;">' +
+      '<h2 style="margin:0 0 4px;">ขอบคุณสำหรับการสั่งซื้อ 🙏</h2>' +
+      '<p style="margin:0 0 16px;color:#555;">สวัสดีคุณ ' + (data.name || "ลูกค้า") +
+        ' เราได้รับออเดอร์ของคุณเรียบร้อยแล้ว และกำลังดำเนินการตรวจสอบ</p>' +
+      '<table cellpadding="6" style="border-collapse:collapse;">' +
+        '<tr><td><b>👤 ชื่อผู้รับ</b></td><td>' + (data.name || "-") + '</td></tr>' +
+        '<tr><td><b>📞 เบอร์</b></td><td>' + (data.phone || "-") + '</td></tr>' +
+        '<tr><td><b>🏠 ที่อยู่จัดส่ง</b></td><td>' + (data.address || "-") + '</td></tr>' +
+        '<tr><td><b>💳 วิธีชำระ</b></td><td>' + (data.paymentMethod || "-") + '</td></tr>' +
+        '<tr><td><b>💰 ยอดรวม</b></td><td><b>' + total + ' บาท</b></td></tr>' +
+      '</table>' +
+      '<h3 style="margin:16px 0 4px;">🛒 รายการสินค้า</h3>' +
+      itemsHtml +
+      '<p style="margin-top:16px;color:#555;">ทางร้านจะติดต่อกลับเพื่อยืนยันการจัดส่งอีกครั้ง ' +
+        'หากมีข้อสงสัยสามารถตอบกลับอีเมลนี้ได้เลย</p>' +
+      '<p style="color:#888;font-size:12px;margin-top:16px;">' + SHOP_NAME +
+        ' • ' + new Date().toLocaleString("th-TH") + '</p>' +
+    '</div>';
+
+  MailApp.sendEmail({
+    to: email,
+    subject: subject,
+    htmlBody: htmlBody,
+    name: SHOP_NAME
+  });
 }

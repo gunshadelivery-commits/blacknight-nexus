@@ -319,6 +319,7 @@ async function submitOrder() {
     const btn = document.getElementById('submitOrderBtn');
     const name = document.getElementById('custName').value.trim();
     const phone = document.getElementById('custPhone').value.trim();
+    const email = (document.getElementById('custEmail')?.value || '').trim();
     const address = document.getElementById('custAddress').value.trim();
     const slip = document.getElementById('slipInput').files[0];
 
@@ -347,7 +348,7 @@ async function submitOrder() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: "log", name, phone, address, mapUrl: "-", 
+                action: "log", name, phone, email, address, mapUrl: "-",
                 items: orderItems, itemsArray: itemsArray, total: finalTotal, slipUrl: slipUrl, 
                 paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน',
                 status: "รอดำเนินการ"

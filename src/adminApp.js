@@ -757,8 +757,7 @@ function toggleProductModal(show, mode = 'add', type = 'herb') {
         document.getElementById('productForm').reset();
         document.getElementById('variantContainer').innerHTML = "";
         // เซ็ตหมวดหมู่เริ่มต้นตามประเภทที่กด
-        if (type === 'herb') categorySelect.value = "Hybrid";
-        else categorySelect.value = "Accessories";
+        categorySelect.value = "ดิลโด้";
         
         addVariant(); // เรียก addVariant หลังจากเซ็ตหมวดหมู่แล้วเพื่อให้หน่วยเปลี่ยนตาม
     }

@@ -147,6 +147,51 @@
             color: rgba(255, 255, 255, 0.6) !important;
         }
 
+        /* Premium Card */
+        .premium-card {
+            background: linear-gradient(135deg, rgba(30,20,5,0.85) 0%, rgba(60,40,5,0.7) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            box-shadow: 0 0 18px 2px rgba(251, 191, 36, 0.12), inset 0 1px 0 rgba(255,220,100,0.1);
+            position: relative;
+        }
+        .premium-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 1.5rem;
+            background: linear-gradient(120deg, rgba(251,191,36,0.06) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .premium-card > * { position: relative; z-index: 1; }
+
+        /* Premium Badge */
+        .premium-badge {
+            background: linear-gradient(90deg, #b8860b 0%, #ffd700 50%, #b8860b 100%);
+            background-size: 200% auto;
+            animation: shimmer-badge 2.5s linear infinite;
+            color: #1a0f00;
+            font-weight: 900;
+            letter-spacing: 0.03em;
+            border: 1px solid rgba(255,215,0,0.5);
+            box-shadow: 0 2px 8px rgba(251,191,36,0.4);
+        }
+        @keyframes shimmer-badge {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Premium Category Tab */
+        .tab-premium-active {
+            background: linear-gradient(90deg, #b8860b, #ffd700, #b8860b) !important;
+            background-size: 200% auto !important;
+            animation: shimmer-badge 2.5s linear infinite !important;
+            color: #1a0f00 !important;
+            font-weight: 900 !important;
+            box-shadow: 0 0 14px rgba(251,191,36,0.4) !important;
+        }
+
         /* Toast Styles */
         #toast-container {
             position: fixed;
@@ -359,6 +404,27 @@
             <button onclick="switchCategory('All')"
                 class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-active"
                 id="tab-All">ทั้งหมด</button>
+            <button onclick="switchCategoryPremium()"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
+                id="tab-พรีเมียม">👑 พรีเมียม</button>
+            <button onclick="switchCategory('ดิลโด้')"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
+                id="tab-ดิลโด้">ดิลโด้</button>
+            <button onclick="switchCategory('ไข่สั่น')"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
+                id="tab-ไข่สั่น">ไข่สั่น</button>
+            <button onclick="switchCategory('สำหรับผู้ชาย')"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
+                id="tab-สำหรับผู้ชาย">สำหรับผู้ชาย</button>
+            <button onclick="switchCategory('เจล & ถุงยาง')"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
+                id="tab-เจล & ถุงยาง">เจล & ถุงยาง</button>
+            <button onclick="switchCategory('BDSM')"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
+                id="tab-BDSM">BDSM</button>
+            <button onclick="switchCategory('Anal')"
+                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
+                id="tab-Anal">Anal</button>
         </div>
     </div>
 
@@ -541,6 +607,57 @@
                 <path d="M12 2C6.48 2 2 6.03 2 11c0 2.84 1.38 5.38 3.56 7.12L4.5 22l3.78-1.98C9.37 20.63 10.66 21 12 21c5.52 0 10-4.03 10-9S17.52 2 12 2zm0 16c-1.1 0-2.14-.2-3.1-.56l-.22-.08-2.3 1.2.62-2.27-.16-.23C5.38 14.73 4 12.95 4 11c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8z"/>
             </svg>
         </a>
+    </div>
+
+    <!-- PRODUCT DETAIL MODAL -->
+    <div id="productModal"
+        class="fixed inset-0 z-[90] bg-black/80 backdrop-blur-md cart-closed transition-transform duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="glass-card w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] border border-white/10">
+            <!-- Close Bar -->
+            <div class="flex justify-between items-center px-6 pt-5 pb-3 border-b border-white/10">
+                <div class="w-10 h-1 bg-white/20 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3 sm:hidden"></div>
+                <span class="text-white/40 text-xs font-bold uppercase tracking-widest">รายละเอียดสินค้า</span>
+                <button onclick="window.closeProductDetails()" class="p-2 hover:bg-white/10 rounded-full text-white/50 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 p-5 space-y-4">
+                <!-- Premium Banner -->
+                <div id="modalPremiumBanner" class="hidden items-center gap-2 px-4 py-2.5 rounded-2xl" style="display:none;background:linear-gradient(90deg,#78500a,#c8970a,#78500a);background-size:200% auto;animation:shimmer-badge 2.5s linear infinite;border:1px solid rgba(255,215,0,0.4);">
+                    <span class="text-lg">👑</span>
+                    <div>
+                        <p class="text-amber-100 font-black text-xs">สินค้าพรีเมียม</p>
+                        <p class="text-amber-200/70 text-[10px]">คุณภาพระดับสากล · วัสดุเกรดการแพทย์</p>
+                    </div>
+                </div>
+
+                <!-- Image -->
+                <div class="relative rounded-2xl overflow-hidden bg-white/5 aspect-square max-h-60 sm:max-h-72">
+                    <img id="modalMainImage" src="" alt="" class="w-full h-full object-cover" />
+                </div>
+
+                <!-- Thumbnails -->
+                <div id="modalGallery" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+
+                <!-- Name & Note -->
+                <div>
+                    <h2 id="modalProductName" class="text-xl font-black text-white leading-snug"></h2>
+                    <p id="modalProductNote" class="text-white/50 text-xs mt-1 leading-relaxed"></p>
+                </div>
+
+                <!-- Price -->
+                <p id="modalProductPrice" class="text-2xl font-black text-white"></p>
+
+                <!-- Variants -->
+                <div id="modalVariants" class="flex flex-wrap gap-2"></div>
+
+                <!-- CTA -->
+                <div id="modalActionContainer"></div>
+            </div>
+        </div>
     </div>
 
     <!-- SUCCESS CELEBRATION MODAL -->

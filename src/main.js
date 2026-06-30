@@ -13,10 +13,29 @@ const COD_FEE = 50;
 
 function classifyItem(name) {
     const n = name.toLowerCase();
-    if (["phone", "laptop", "watch", "tech", "gadget"].some(s => n.includes(s))) return "Electronics";
-    if (["shirt", "pants", "dress", "bag", "shoe"].some(i => n.includes(i))) return "Fashion";
-    if (["chair", "table", "lamp", "sofa", "bed"].some(h => n.includes(h))) return "Home";
-    return "Other";
+    // ไวเบรเตอร์ / ไข่สั่น
+    if (["ไข่สั่น", "ไข่", "vibrat", "วิบ", "egg"].some(s => n.includes(s))) return "ไข่สั่น";
+    // ดิลโด้
+    if (["ดิลโด้", "ดิวโด้", "dildo", "ควยปลอม", "แท่ง"].some(s => n.includes(s))) return "ดิลโด้";
+    // เจลหล่อลื่น / ถุงยาง
+    if (["เจล", "หล่อลื่น", "lube", "ถุงยาง", "condom"].some(s => n.includes(s))) return "เจล & ถุงยาง";
+    // BDSM
+    if (["bdsm", "มัด", "ตรวน", "แส้", "กุญแจ", "bondage", "sm", "ปิดตา"].some(s => n.includes(s))) return "BDSM";
+    // สินค้าผู้ชาย
+    if (["จิ๋ม", "ปลอกเพิ่ม", "sleeve", "masturbat", "กระป๋อง", "อากาศ", "เพิ่มขนาด"].some(s => n.includes(s))) return "สำหรับผู้ชาย";
+    // Anal / Butt plug
+    if (["anal", "butt", "ทวาร", "ประตูหลัง", "plug"].some(s => n.includes(s))) return "Anal";
+    // ชุดชั้นใน / เซ็กซี่
+    if (["lingerie", "ชุด", "sexy", "stocking", "bikini"].some(s => n.includes(s))) return "ชุดเซ็กซี่";
+    return "อื่นๆ";
+}
+
+function isPremiumProduct(product) {
+    const hasPremiumTag = product.tags && product.tags.some(t =>
+        ["premium", "พรีเมียม", "luxury", "brand", "branded"].includes(t.toLowerCase())
+    );
+    const highPrice = product.variants && product.variants.some(v => v.price >= 1200);
+    return hasPremiumTag || highPrice;
 }
 
 function showToast(message, type = 'success') {
@@ -147,7 +166,9 @@ function renderProducts(filter = "") {
 
         const filtered = products.filter(p => {
             const matchesSearch = p.name.toLowerCase().includes(q) || (p.note && p.note.toLowerCase().includes(q));
-            const matchesCategory = currentCategory === "All" || p.aiType === currentCategory;
+            const matchesCategory = currentCategory === "All"
+                || (currentCategory === "พรีเมียม" && isPremiumProduct(p))
+                || p.aiType === currentCategory;
             return matchesSearch && matchesCategory;
         });
 
@@ -159,7 +180,8 @@ function renderProducts(filter = "") {
         filtered.forEach((p, idx) => {
             const card = document.createElement("div");
             const pNameEscaped = p.name.replace(/'/g, "\\'");
-            card.className = "glass-card rounded-3xl shadow-lg overflow-hidden flex flex-col reveal cursor-pointer hover:scale-[1.02] transition-transform duration-300";
+            const premium = isPremiumProduct(p);
+            card.className = `rounded-3xl shadow-lg overflow-hidden flex flex-col reveal cursor-pointer hover:scale-[1.02] transition-transform duration-300 ${premium ? 'premium-card' : 'glass-card'}`;
             card.style.transitionDelay = `${(idx % 4) * 100}ms`;
             card.onclick = (e) => {
                 if(e.target.closest('button') || e.target.closest('a')) return;
@@ -173,7 +195,7 @@ function renderProducts(filter = "") {
             const priorityAttr = products.indexOf(p) < 4 ? 'fetchpriority="high"' : 'loading="lazy"';
 
             card.innerHTML = `
-                <div class="h-32 bg-white/5 flex items-center justify-center relative overflow-hidden">
+                <div class="h-44 bg-white/5 flex items-center justify-center relative overflow-hidden">
                     <img src="${p.image}"
                          alt="${p.name}"
                          ${priorityAttr}
@@ -181,20 +203,20 @@ function renderProducts(filter = "") {
                          onload="this.classList.add('img-loaded')"
                          onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
                     <div class="absolute top-2 left-2 flex flex-col gap-1">
-                        ${p.tags.length ? `<span class="bg-indigo-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">${p.tags[0]}</span>` : ''}
+                        ${premium ? `<span class="premium-badge text-[9px] px-2 py-0.5 rounded-full font-black shadow-lg w-fit flex items-center gap-1">👑 PREMIUM</span>` : (p.tags.length ? `<span class="bg-indigo-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">${p.tags[0]}</span>` : '')}
                         ${p.totalSold > 0 ? `<span class="bg-orange-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">ขายแล้ว ${p.totalSold}+</span>` : ''}
                     </div>
                     ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span></div>` : ''}
                 </div>
                 <div class="p-3 flex-1 flex flex-col">
                     <div class="flex-1">
-                        <h3 class="font-bold text-white leading-tight text-sm">${p.name}</h3>
+                        <h3 class="font-bold ${premium ? 'text-amber-200' : 'text-white'} leading-tight text-sm">${p.name}</h3>
                         <p class="text-[10px] text-white/40 mt-1 line-clamp-1">${p.note}</p>
                     </div>
-                    
+
                     <div class="mt-3 flex flex-wrap gap-1">
                         ${p.variants.map((v, vIdx) => `
-                            <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-1 text-[10px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-white/20 border-white/40 text-white' : 'bg-black/20 text-white/30 border-white/5'} ${v.stock <= 0 ? 'opacity-20' : ''}">
+                            <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-3 py-1.5 text-[10px] border rounded-lg transition-all font-bold min-h-[32px] ${p.selectedVariantIdx === vIdx ? 'bg-white/20 border-white/40 text-white' : 'bg-black/20 text-white/30 border-white/5'} ${v.stock <= 0 ? 'opacity-20' : ''}">
                                 ${v.size}
                             </button>
                         `).join('')}
@@ -202,8 +224,8 @@ function renderProducts(filter = "") {
                     ${variant.stock > 0 && variant.stock <= 5 ? `<p class="text-[9px] text-red-400 font-bold mt-2">🔥 Only ${variant.stock} left!</p>` : ''}
 
                     <div class="mt-3 flex items-center justify-between">
-                        <p class="font-bold text-white text-sm">${variant.price.toLocaleString()} ฿</p>
-                        <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="bg-white/10 text-white p-2 rounded-xl hover:bg-white/20 transition-all disabled:opacity-10">
+                        <p class="font-bold ${premium ? 'text-amber-300' : 'text-white'} text-sm">${variant.price.toLocaleString()} ฿</p>
+                        <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="${premium ? 'bg-amber-400/20 hover:bg-amber-400/40 border border-amber-400/30' : 'bg-white/10 hover:bg-white/20'} text-white p-2 rounded-xl transition-all disabled:opacity-10">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>
@@ -268,20 +290,49 @@ function openProductDetails(pName) {
         });
     }
 
-    document.getElementById('modalProductName').textContent = product.name;
+    const premium = isPremiumProduct(product);
+    const nameEl = document.getElementById('modalProductName');
+    nameEl.textContent = product.name;
+    nameEl.className = premium
+        ? 'text-xl font-black text-amber-200 leading-snug'
+        : 'text-xl font-black text-white leading-snug';
+
+    const premiumBannerEl = document.getElementById('modalPremiumBanner');
+    if (premiumBannerEl) {
+        premiumBannerEl.style.display = premium ? 'flex' : 'none';
+    }
+
     document.getElementById('modalProductNote').textContent = product.note || '';
     
     const priceEl = document.getElementById('modalProductPrice');
     const actionEl = document.getElementById('modalActionContainer');
-    
+    const variantsEl = document.getElementById('modalVariants');
+    const pNameEsc = product.name.replace(/'/g, "\\'");
+
     priceEl.textContent = `${variant.price.toLocaleString()} ฿`;
+    priceEl.className = premium ? 'text-2xl font-black text-amber-300' : 'text-2xl font-black text-white';
+
+    // Render variant buttons
+    if (variantsEl) {
+        variantsEl.innerHTML = product.variants.map((v, vIdx) => `
+            <button onclick="window.selectModalVariant('${pNameEsc}', ${vIdx})"
+                class="px-4 py-2 text-sm border rounded-xl font-bold min-h-[40px] transition-all
+                    ${product.selectedVariantIdx === vIdx
+                        ? (premium ? 'bg-amber-400/30 border-amber-400/60 text-amber-200' : 'bg-white/20 border-white/40 text-white')
+                        : 'bg-black/20 text-white/40 border-white/10'}
+                    ${v.stock <= 0 ? 'opacity-30' : ''}">
+                ${v.size} — ${v.price.toLocaleString()} ฿
+            </button>
+        `).join('');
+    }
+
     const lineMsg = `สนใจสินค้า: ${product.name} (${variant.size}) ราคา ${variant.price.toLocaleString()} ฿`;
     actionEl.innerHTML = `
-        <div class="flex flex-col gap-3">
-            <button onclick="window.addToCart('${product.name.replace(/'/g, "\\'")}', ${product.selectedVariantIdx}); window.closeProductDetails();"
+        <div class="flex flex-col gap-3 pb-2">
+            <button onclick="window.addToCart('${pNameEsc}', ${product.selectedVariantIdx}); window.closeProductDetails();"
                     ${isOutOfStock ? 'disabled' : ''}
-                    class="w-full bg-white text-black py-4 rounded-2xl font-bold hover:bg-white/90 transition shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-                ${isOutOfStock ? '❌ สินค้าหมด' : '🛒 เพิ่มลงตะกร้า'}
+                    class="w-full ${premium ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black' : 'bg-white text-black'} py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+                ${isOutOfStock ? '❌ สินค้าหมด' : (premium ? '👑 เพิ่มลงตะกร้า' : '🛒 เพิ่มลงตะกร้า')}
             </button>
             ${!isOutOfStock ? `
             <a href="${buildLineUrl(lineMsg)}" target="_blank"
@@ -595,6 +646,29 @@ ${itemsDetail}
     }
 }
 
+function selectModalVariant(pName, vIdx) {
+    const product = products.find(p => p.name === pName);
+    if (!product) return;
+    product.selectedVariantIdx = vIdx;
+    // Re-open modal to refresh price + variant selection
+    window.openProductDetails(pName);
+}
+
+function switchCategoryPremium() {
+    currentCategory = "พรีเมียม";
+    document.querySelectorAll('#categoryTabs button').forEach(btn => {
+        btn.classList.remove('category-active', 'tab-premium-active');
+        btn.classList.add('category-inactive');
+    });
+    const premTab = document.getElementById('tab-พรีเมียม');
+    if (premTab) {
+        premTab.classList.remove('category-inactive');
+        premTab.classList.add('tab-premium-active');
+    }
+    const searchInput = document.getElementById('searchInput');
+    renderProducts(searchInput ? searchInput.value : "");
+}
+
 // === EXPOSE TO GLOBAL ===
 window.handleLogoClick = handleLogoClick;
 window.toggleCart = toggleCart;
@@ -612,6 +686,8 @@ window.submitOrder = submitOrder;
 window.openProductDetails = openProductDetails;
 window.closeProductDetails = closeProductDetails;
 window.changeProductImage = changeProductImage;
+window.selectModalVariant = selectModalVariant;
+window.switchCategoryPremium = switchCategoryPremium;
 window.redirectToLine = () => {
     if (currentLineUrl) window.location.href = currentLineUrl;
     else window.location.reload();

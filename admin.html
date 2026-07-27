@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ฝ่ายบริหาร - Cannabis Flower อ่อนนุช</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -86,9 +86,463 @@
             }
         }
     </style>
+    <style id="admin-redesign">
+        :root {
+            --admin-ink: #07120c;
+            --admin-deep: #0a1d12;
+            --admin-panel: #f5f8f5;
+            --admin-line: rgba(12, 44, 25, 0.09);
+            --admin-muted: #708078;
+            --admin-green: #20bd68;
+            --admin-mint: #a8ffc6;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body.admin-shell {
+            color: #17241c;
+            background:
+                radial-gradient(900px circle at 8% -10%, rgba(50, 220, 117, 0.16), transparent 58%),
+                radial-gradient(700px circle at 95% 5%, rgba(132, 255, 181, 0.08), transparent 52%),
+                linear-gradient(180deg, #07120c 0 245px, #edf2ed 245px 100%);
+        }
+
+        body.admin-shell::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.34;
+            background-image:
+                linear-gradient(rgba(168,255,198,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(168,255,198,0.035) 1px, transparent 1px);
+            background-size: 72px 72px;
+            mask-image: linear-gradient(to bottom, #000, transparent 58%);
+        }
+
+        .admin-login-overlay {
+            background:
+                radial-gradient(700px circle at 25% 20%, rgba(51, 230, 121, 0.2), transparent 55%),
+                rgba(3, 13, 8, 0.93);
+        }
+
+        .admin-login-card {
+            width: min(880px, calc(100vw - 32px));
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            overflow: hidden;
+            border-radius: 34px;
+            background: #f7faf7;
+            border: 1px solid rgba(191, 255, 214, 0.16);
+            box-shadow: 0 40px 120px rgba(0,0,0,0.45);
+        }
+
+        .admin-login-brand {
+            position: relative;
+            min-height: 440px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 38px;
+            color: white;
+            text-align: left;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 82% 15%, rgba(139,255,181,0.25), transparent 31%),
+                linear-gradient(150deg, #123d25, #06150d);
+        }
+
+        .admin-login-brand::after {
+            content: "";
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            right: -100px;
+            bottom: -100px;
+            border-radius: 50%;
+            border: 1px solid rgba(171,255,202,0.18);
+            box-shadow: 0 0 0 42px rgba(171,255,202,0.035), 0 0 0 84px rgba(171,255,202,0.025);
+        }
+
+        .admin-brand-mark {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 17px;
+            color: #082414;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.06em;
+            background: linear-gradient(145deg, #c1ffd6, #54e98a);
+            border: 1px solid rgba(255,255,255,0.65);
+            box-shadow: 0 16px 42px rgba(53,226,116,0.22), inset 0 1px 0 #fff;
+        }
+
+        .admin-login-brand h1 {
+            max-width: 340px;
+            font-size: clamp(36px, 4vw, 55px);
+            line-height: 0.98;
+            font-weight: 800;
+            letter-spacing: -0.055em;
+        }
+
+        .admin-login-brand h1 span { color: var(--admin-mint); }
+
+        .admin-login-brand p {
+            max-width: 330px;
+            margin-top: 18px;
+            color: rgba(226, 248, 234, 0.52);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .admin-login-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(229,255,237,0.65);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+        }
+
+        .admin-login-status span,
+        .admin-live-chip span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #57ee8c;
+            box-shadow: 0 0 14px #57ee8c;
+        }
+
+        .admin-login-form {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 44px;
+            text-align: left;
+        }
+
+        .admin-login-form .login-kicker,
+        .admin-page-kicker {
+            color: #159850;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+        }
+
+        .admin-login-form h2 {
+            margin: 8px 0 24px;
+            color: #102219;
+            font-size: 28px;
+            font-weight: 750;
+            letter-spacing: -0.04em;
+        }
+
+        .admin-login-form input {
+            height: 54px;
+            border-radius: 15px;
+            border-color: #dbe5dd;
+            background: #fff;
+            text-align: left;
+            font-size: 15px;
+        }
+
+        .admin-login-form input:focus {
+            border-color: #4ed681;
+            box-shadow: 0 0 0 4px rgba(43,190,101,0.1);
+        }
+
+        .admin-login-submit {
+            min-height: 52px;
+            border-radius: 15px;
+            color: #062211;
+            background: linear-gradient(135deg, #b9ffd0, #54e889);
+            border: 1px solid rgba(33,124,67,0.12);
+            box-shadow: 0 14px 32px rgba(39,190,96,0.18);
+        }
+
+        .admin-header {
+            color: white;
+            background: rgba(5, 18, 10, 0.82);
+            border-bottom: 1px solid rgba(202,255,221,0.1);
+            backdrop-filter: blur(24px) saturate(1.2);
+        }
+
+        .admin-header-inner {
+            max-width: 1400px;
+            min-height: 76px;
+            margin: auto;
+            padding: 10px 24px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .admin-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-header .admin-brand-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 13px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .admin-header-title {
+            color: #f5fff8;
+            font-size: 15px;
+            line-height: 1;
+            font-weight: 700;
+        }
+
+        .admin-header-subtitle {
+            margin-top: 5px;
+            color: rgba(215,244,225,0.38);
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+        }
+
+        .admin-tabs {
+            justify-self: center;
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.045);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .admin-tab {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 0 13px;
+            border-radius: 11px;
+            color: rgba(231,247,236,0.48) !important;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+        }
+
+        .admin-tab:hover {
+            color: white !important;
+            transform: translateY(-1px);
+        }
+
+        .admin-tab.admin-tab-active {
+            color: #092415 !important;
+            background: linear-gradient(135deg, #c1ffd5, #5be78d) !important;
+            box-shadow: 0 8px 22px rgba(50,220,114,0.16);
+        }
+
+        .admin-tab-icon {
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+        }
+
+        .admin-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-store-link,
+        .admin-logout {
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 13px;
+            border-radius: 11px;
+            font-size: 10px;
+            font-weight: 700;
+            transition: background 180ms ease, color 180ms ease;
+        }
+
+        .admin-store-link {
+            color: rgba(231,247,236,0.72);
+            border: 1px solid rgba(255,255,255,0.09);
+        }
+
+        .admin-logout {
+            color: #ffb5b5;
+            background: rgba(255,91,91,0.07);
+        }
+
+        .admin-shell main { max-width: 1400px; }
+
+        .admin-overview-intro {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 22px 2px 4px;
+            color: white;
+        }
+
+        .admin-overview-intro h2 {
+            margin-top: 7px;
+            font-size: clamp(30px, 4vw, 46px);
+            line-height: 1;
+            font-weight: 760;
+            letter-spacing: -0.045em;
+        }
+
+        .admin-overview-intro p:not(.admin-page-kicker) {
+            margin-top: 10px;
+            color: rgba(224,247,232,0.48);
+            font-size: 12px;
+        }
+
+        .admin-live-chip {
+            flex: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 13px;
+            border-radius: 999px;
+            color: rgba(226,255,236,0.7);
+            font-size: 9px;
+            font-weight: 700;
+            background: rgba(134,255,177,0.06);
+            border: 1px solid rgba(134,255,177,0.13);
+        }
+
+        .admin-metric-card {
+            min-height: 164px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-radius: 25px;
+            background: rgba(250,252,250,0.97);
+            border: 1px solid rgba(255,255,255,0.55);
+            box-shadow: 0 20px 52px rgba(0,0,0,0.13), inset 0 1px 0 #fff;
+        }
+
+        .admin-metric-card::after {
+            content: attr(data-index);
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            color: rgba(17, 86, 47, 0.16);
+            font: 800 10px/1 Arial, sans-serif;
+            letter-spacing: 0.12em;
+        }
+
+        .admin-metric-card .metric-label {
+            color: #77867d;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .admin-metric-card h2 {
+            color: #11311f !important;
+            font-size: clamp(25px, 2.7vw, 35px);
+            font-weight: 780;
+            letter-spacing: -0.04em;
+        }
+
+        .admin-metric-card .metric-detail {
+            color: #8b9890;
+            font-size: 10px;
+        }
+
+        .admin-metric-card.metric-highlight {
+            color: white;
+            background:
+                radial-gradient(circle at 85% 12%, rgba(180,255,207,0.22), transparent 35%),
+                linear-gradient(145deg, #174a2c, #0a2315);
+            border-color: rgba(185,255,210,0.18);
+        }
+
+        .admin-metric-card.metric-highlight h2,
+        .admin-metric-card.metric-highlight .metric-label { color: white !important; }
+        .admin-metric-card.metric-highlight .metric-detail { color: rgba(222,247,231,0.5); }
+        .admin-metric-card.metric-highlight::after { color: rgba(189,255,211,0.25); }
+
+        .admin-shell main > div.bg-white,
+        .admin-shell main > div.grid > div.bg-white {
+            border-radius: 25px !important;
+            border-color: var(--admin-line) !important;
+            box-shadow: 0 16px 46px rgba(26, 47, 34, 0.08) !important;
+        }
+
+        .admin-shell table thead {
+            color: #8a978f !important;
+            background: #f5f8f5 !important;
+        }
+
+        .admin-shell table th {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .admin-shell table tbody tr { transition: background 160ms ease; }
+        .admin-shell table tbody tr:hover { background: #f1faf4 !important; }
+
+        .admin-shell input:not([type="file"]),
+        .admin-shell select {
+            border-color: #dce6df;
+            background-color: #fbfdfb;
+        }
+
+        .admin-shell input:not([type="file"]):focus,
+        .admin-shell select:focus {
+            border-color: #4dd57e;
+            box-shadow: 0 0 0 3px rgba(45,190,100,0.1);
+        }
+
+        .admin-shell #productModal > div,
+        .admin-shell #promptpayModal > div,
+        .admin-shell #confirmModal > div {
+            border: 1px solid rgba(35,88,54,0.12);
+            box-shadow: 0 36px 100px rgba(0,0,0,0.35);
+        }
+
+        @media (max-width: 1100px) {
+            .admin-header-inner { grid-template-columns: auto auto; }
+            .admin-tabs {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                justify-self: stretch;
+                overflow-x: auto;
+            }
+            .admin-header-actions { justify-self: end; }
+        }
+
+        @media (max-width: 720px) {
+            body.admin-shell {
+                background: linear-gradient(180deg, #07120c 0 340px, #edf2ed 340px 100%);
+            }
+            .admin-login-card { grid-template-columns: 1fr; }
+            .admin-login-brand { min-height: 235px; padding: 27px; }
+            .admin-login-brand h1 { font-size: 36px; }
+            .admin-login-brand p { display: none; }
+            .admin-login-form { padding: 28px; }
+            .admin-header-inner { padding: 10px 14px; }
+            .admin-store-link { display: none; }
+            .admin-tab { flex: 1 0 auto; justify-content: center; }
+            .admin-overview-intro { align-items: flex-start; flex-direction: column; }
+            .admin-live-chip { align-self: flex-start; }
+        }
+    </style>
 </head>
 
-<body class="bg-slate-100 min-h-screen">
+<body class="admin-shell min-h-screen">
 
     <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
@@ -111,77 +565,87 @@
     </div>
 
     <!-- LOGIN OVERLAY -->
-    <div id="loginOverlay"
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/40 backdrop-blur-md">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
-            <div class="text-4xl mb-4 text-emerald-600 font-bold">LOGIN</div>
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">เข้าสู่ระบบหลังบ้าน</h2>
-            <input type="password" id="passInput" placeholder="รหัสผ่าน..."
-                class="w-full px-4 py-3 border rounded-xl mb-4 focus:ring-2 focus:ring-emerald-500 outline-none text-center text-lg">
-            <button onclick="checkPass()"
-                class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg">ยืนยัน</button>
-            <p id="errorMsg" class="text-red-500 text-sm mt-3 hidden">รหัสผ่านไม่ถูกต้อง!</p>
+    <div id="loginOverlay" class="admin-login-overlay fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="admin-login-card">
+            <section class="admin-login-brand">
+                <div class="admin-brand-mark">CF</div>
+                <div class="relative z-10">
+                    <h1>ควบคุมร้าน<br><span>จากที่เดียว</span></h1>
+                    <p>ติดตามยอดขาย จัดการสินค้า ปรับสต๊อก และช่องทางชำระเงินของ Cannabis Flower อ่อนนุช</p>
+                </div>
+                <div class="admin-login-status relative z-10"><span></span> SECURE OPERATIONS CENTER</div>
+            </section>
+            <section class="admin-login-form">
+                <p class="login-kicker">ADMIN ACCESS</p>
+                <h2>เข้าสู่ระบบหลังบ้าน</h2>
+                <input type="password" id="passInput" placeholder="กรอกรหัสผ่าน"
+                    class="w-full px-4 py-3 border mb-4 outline-none">
+                <button onclick="checkPass()" class="admin-login-submit w-full py-3 font-bold transition">เข้าสู่ระบบ →</button>
+                <p id="errorMsg" class="text-red-500 text-sm mt-3 hidden">รหัสผ่านไม่ถูกต้อง!</p>
+            </section>
         </div>
     </div>
 
     <!-- MAIN DASHBOARD -->
     <div id="dashboard" class="hidden">
         <!-- HEADER -->
-        <header class="bg-white border-b sticky top-0 z-40">
-            <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <span class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-green-700 flex items-center justify-center text-lg shadow-lg shadow-emerald-500/30 border border-emerald-300/40 cursor-pointer"
-                        onclick="location.href='index.html'" title="Cannabis Flower อ่อนนุช">🌿</span>
-                    <div class="flex flex-col">
-                        <h1 class="text-xl font-bold text-slate-800 leading-none">Admin Panel</h1>
-                        <span id="appVersion" class="text-[10px] text-slate-400 font-bold">v2.1.0</span>
+        <header class="admin-header sticky top-0 z-40">
+            <div class="admin-header-inner">
+                <div class="admin-header-brand">
+                    <span class="admin-brand-mark" onclick="location.href='index.html'" title="Cannabis Flower อ่อนนุช">CF</span>
+                    <div>
+                        <h1 class="admin-header-title">Cannabis Flower</h1>
+                        <div class="admin-header-subtitle">ON NUT · CONTROL CENTER · <span id="appVersion">v2.1.0</span></div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                <nav class="admin-tabs no-scrollbar" aria-label="เมนูหลังบ้าน">
                     <button onclick="switchTab('overview')" id="tab-overview"
-                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">สรุปยอดขาย</button>
+                        class="admin-tab"><span class="admin-tab-icon">◫</span>ภาพรวม</button>
                     <button onclick="switchTab('products')" id="tab-products"
-                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">จัดการสินค้า</button>
+                        class="admin-tab"><span class="admin-tab-icon">◇</span>สินค้า</button>
                     <button onclick="switchTab('bulk')" id="tab-bulk"
-                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">📝 ปรับราคา/สต๊อก</button>
+                        class="admin-tab"><span class="admin-tab-icon">↕</span>ราคา / สต๊อก</button>
                     <button onclick="switchTab('promptpay')" id="tab-promptpay"
-                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-emerald-600">⚡
-                        Promptpay</button>
-                </div>
-                <div class="flex items-center gap-4">
-                    <button onclick="logout()"
-                        class="text-slate-400 hover:text-red-500 transition text-sm">Logout</button>
+                        class="admin-tab"><span class="admin-tab-icon">⌁</span>PromptPay</button>
+                </nav>
+                <div class="admin-header-actions">
+                    <a href="index.html" class="admin-store-link">ดูหน้าร้าน ↗</a>
+                    <button onclick="logout()" class="admin-logout">ออกจากระบบ</button>
                 </div>
             </div>
         </header>
 
         <!-- OVERVIEW TAB -->
         <main id="view-overview" class="max-w-6xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+            <section class="admin-overview-intro">
+                <div>
+                    <p class="admin-page-kicker">DAILY OPERATIONS</p>
+                    <h2>ภาพรวมร้านวันนี้</h2>
+                    <p>ยอดขาย ออเดอร์ และสินค้าที่ต้องติดตามในหน้าจอเดียว</p>
+                </div>
+                <div class="admin-live-chip"><span></span> ข้อมูลจาก Google Sheets</div>
+            </section>
             <!-- SUMMARY CARDS -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-
-                    <p class="text-slate-500 text-sm font-medium mb-1 relative z-10">ยอดขายวันนี้</p>
+                <div class="admin-metric-card metric-highlight relative overflow-hidden" data-index="01">
+                    <p class="metric-label relative z-10">ยอดขายวันนี้</p>
                     <h2 id="todayTotal" class="text-3xl font-extrabold text-emerald-600 relative z-10">0 ฿</h2>
-                    <p id="todayCount" class="text-xs text-slate-400 mt-2 relative z-10">กำลังโหลด...</p>
+                    <p id="todayCount" class="metric-detail relative z-10">กำลังโหลด...</p>
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-
-                    <p class="text-slate-500 text-sm font-medium mb-1 relative z-10">ยอดขายเดือนนี้</p>
+                <div class="admin-metric-card relative overflow-hidden" data-index="02">
+                    <p class="metric-label relative z-10">ยอดขายเดือนนี้</p>
                     <h2 id="monthlyTotal" class="text-3xl font-extrabold text-sky-600 relative z-10">0.00 ฿</h2>
-                    <p id="monthlyCount" class="text-xs text-slate-400 mt-2 relative z-10">กำลังโหลด...</p>
+                    <p id="monthlyCount" class="metric-detail relative z-10">กำลังโหลด...</p>
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-
-                    <p class="text-slate-500 text-sm font-medium mb-1 relative z-10">ยอดขายสัปดาห์นี้</p>
+                <div class="admin-metric-card relative overflow-hidden" data-index="03">
+                    <p class="metric-label relative z-10">ยอดขายสัปดาห์นี้</p>
                     <h2 id="weeklyTotal" class="text-3xl font-extrabold text-blue-600 relative z-10">0.00 ฿</h2>
-                    <p id="weeklyCount" class="text-xs text-slate-400 mt-2 relative z-10">กำลังโหลด...</p>
+                    <p id="weeklyCount" class="metric-detail relative z-10">กำลังโหลด...</p>
                 </div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-
-                    <p class="text-slate-500 text-sm font-medium mb-1 relative z-10">ยอดเฉลี่ยต่อออเดอร์</p>
+                <div class="admin-metric-card relative overflow-hidden" data-index="04">
+                    <p class="metric-label relative z-10">ยอดเฉลี่ยต่อออเดอร์</p>
                     <h2 id="avgOrder" class="text-3xl font-extrabold text-orange-500 relative z-10">0.00 ฿</h2>
-                    <p id="totalLifetime" class="text-xs text-slate-400 mt-2 relative z-10">กำลังโหลด...</p>
+                    <p id="totalLifetime" class="metric-detail relative z-10">กำลังโหลด...</p>
                 </div>
             </div>
 
@@ -475,7 +939,7 @@
                             <label class="block text-sm font-bold text-slate-700 mb-1">ชื่อสินค้า *</label>
                             <input type="text" id="pName" required
                                 class="w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                placeholder="เช่น กระเป๋าเป้, โทรศัพท์มือถือ">
+                                placeholder="เช่น White Truffle, น้ำโยเกิร์ต">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-1">หมวดหมู่ *</label>
@@ -486,6 +950,7 @@
                                 <option value="Hybrid">Hybrid</option>
                                 <option value="Pre-roll">Pre-roll</option>
                                 <option value="อุปกรณ์">อุปกรณ์</option>
+                                <option value="เครื่องดื่ม">เครื่องดื่ม</option>
                                 <option value="อื่นๆ">อื่นๆ</option>
                             </select>
                         </div>
@@ -569,10 +1034,6 @@
     </div>
 
     <script type="module" src="./src/adminApp.js"></script>
-</body>
-
-</html>
-pt>
 </body>
 
 </html>

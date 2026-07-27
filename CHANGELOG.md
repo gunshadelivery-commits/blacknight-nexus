@@ -19,8 +19,10 @@
 
 ### Changed
 - [Codex] feat(ui): redesign หน้าร้านเป็นสไตล์ Emerald Intelligence พร้อม navbar, hero, discovery panel, product cards และ responsive layout ใหม่ โดยคงแบรนด์ Cannabis Flower อ่อนนุช (index.html, src/main.js, src/style.css)
+- [Codex] feat(admin): redesign หน้าเข้าสู่ระบบ, navigation, dashboard metrics, ตาราง และ modal เป็นสไตล์ Emerald Operations Center พร้อม responsive layout (admin.html, src/adminApp.js)
 - [Codex] fix(store): เพิ่ม fallback จำแนกหมวดจากคำบอกเอฟเฟกต์และรองรับคำว่า “บ้อง” เพื่อให้ตัวกรองใช้งานได้เมื่อชีตยังไม่ระบุ category (src/main.js)
 - [Codex] fix(ui): จำกัดความยาว badge สินค้าไม่ให้ข้อความล้นการ์ด (src/style.css)
+- [Codex] fix(admin): ลบ markup ซ้ำท้ายไฟล์และเพิ่มหมวดเครื่องดื่มในฟอร์มสินค้า (admin.html)
 
 ---
 

@@ -109,9 +109,9 @@ function switchTab(tabId) {
     const viewEl = document.getElementById('view-' + tabId);
     if (viewEl) viewEl.classList.remove('hidden');
     
-    document.querySelectorAll('header button').forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600'));
+    document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('admin-tab-active'));
     const activeBtn = document.getElementById('tab-' + tabId);
-    if(activeBtn) activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+    if(activeBtn) activeBtn.classList.add('admin-tab-active');
 
     if (tabId === 'products') loadProducts();
     else if (tabId === 'bulk') loadBulkEditor();

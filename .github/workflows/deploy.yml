@@ -57,7 +57,7 @@ jobs:
           VITE_ADMIN_PASSWORD: ${{ secrets.VITE_ADMIN_PASSWORD }}
         run: npm run build
       - name: Add CNAME for custom domain
-        run: echo "blacknight69.com" > ./dist/CNAME
+        run: echo "gunshadelivery.com" > ./dist/CNAME
       - name: Copy static SEO files to dist
         run: cp sitemap.xml robots.txt llms.txt ./dist/
       - name: Setup Pages

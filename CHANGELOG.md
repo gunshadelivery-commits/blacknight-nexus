@@ -20,6 +20,7 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Codex] chore(deploy): เปลี่ยน custom domain ใน GitHub Pages workflow จากแบรนด์เก่าเป็น gunshadelivery.com ให้ตรงกับ Google Business Profile (.github/workflows/deploy.yml)
 - [Codex] feat(brand): ปรับชื่อร้าน โดเมน เบอร์โทร เวลาเริ่มรับออเดอร์ พื้นที่บริการ และหน้า login/register/accessories ให้สอดคล้องกับ Google Business Profile ของร้าน (index.html, login.html, register.html, accessories.html, src/i18n.js, sitemap.xml, robots.txt, llms.txt, vite.config.js, src/utils.js)
 - [Codex] feat(storefront): เปลี่ยนส่วนรีวิวเดิมเป็นข้อมูลร้านที่ตรวจสอบได้ พร้อมปุ่มโทรและเปิด Google Business Profile รองรับภาษาไทย/อังกฤษ (index.html, src/i18n.js)
 - [Codex] fix(ui): แยก style จุดสถานะร้านออกจากข้อความเวลา เพื่อไม่ให้ข้อความใน navbar ยุบเป็นแนวตั้ง (index.html, src/style.css)

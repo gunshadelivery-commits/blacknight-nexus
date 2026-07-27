@@ -20,6 +20,7 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Codex] fix(deploy): ซิงค์ GitHub Actions Secrets `VITE_SHEET_CSV_URL`, `VITE_GAS_URL` และ `VITE_ORDERS_CSV_URL` ให้ตรงกับ `.env` ของร้าน เพื่อให้หน้าร้านและหลังบ้าน production ใช้ชีตชุดเดียวกัน (GitHub Actions Secrets)
 - [Codex] chore(domain): ใช้ blacknight69.com เป็น canonical และ custom domain หลักตามโดเมนที่มี DNS/HTTPS พร้อมใช้งาน โดยคงแบรนด์ Cannabis Flower อ่อนนุช (index.html, login.html, register.html, accessories.html, sitemap.xml, robots.txt, llms.txt, vite.config.js, .github/workflows/deploy.yml)
 - [Codex] chore(deploy): เปลี่ยน custom domain ใน GitHub Pages workflow จากแบรนด์เก่าเป็น gunshadelivery.com ให้ตรงกับ Google Business Profile (.github/workflows/deploy.yml)
 - [Codex] feat(brand): ปรับชื่อร้าน โดเมน เบอร์โทร เวลาเริ่มรับออเดอร์ พื้นที่บริการ และหน้า login/register/accessories ให้สอดคล้องกับ Google Business Profile ของร้าน (index.html, login.html, register.html, accessories.html, src/i18n.js, sitemap.xml, robots.txt, llms.txt, vite.config.js, src/utils.js)

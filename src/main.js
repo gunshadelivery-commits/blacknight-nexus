@@ -237,6 +237,52 @@ function initRevealObserver() {
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
+function escapeProductArtText(value = '') {
+    return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[character]));
+}
+
+function getProductArtTheme(product) {
+    const type = `${product.aiType || ''} ${(product.tags || []).join(' ')}`.toLowerCase();
+    if (type.includes('sativa')) return 'sativa';
+    if (type.includes('indica')) return 'indica';
+    if (type.includes('hybrid')) return 'hybrid';
+    if (type.includes('pre-roll') || type.includes('preroll')) return 'preroll';
+    if (type.includes('อุปกรณ์') || type.includes('accessory') || type.includes('equipment')) return 'gear';
+    return 'flower';
+}
+
+function getProductMonogram(name = '') {
+    const words = String(name).trim().split(/[\s-]+/).filter(Boolean);
+    if (words.length > 1) {
+        return `${Array.from(words[0])[0] || ''}${Array.from(words[1])[0] || ''}`.toUpperCase();
+    }
+    return Array.from(words[0] || 'CF').slice(0, 2).join('').toUpperCase();
+}
+
+function renderProductArt(product, modal = false) {
+    const theme = getProductArtTheme(product);
+    const name = escapeProductArtText(product.name);
+    const type = escapeProductArtText(product.aiType || 'FLOWER');
+    const monogram = escapeProductArtText(getProductMonogram(product.name));
+
+    return `
+        <div class="strain-art strain-art-${theme} ${modal ? 'strain-art-modal' : ''}" role="img" aria-label="${name}">
+            <span class="strain-art-grid"></span>
+            <span class="strain-art-orbit strain-art-orbit-large"></span>
+            <span class="strain-art-orbit strain-art-orbit-small"></span>
+            <span class="strain-art-brand">CF · ON NUT</span>
+            <span class="strain-art-code">${monogram}</span>
+            <span class="strain-art-type">${type}</span>
+            <span class="strain-art-name">${name}</span>
+        </div>`;
+}
+
 function renderProducts(filter = "") {
     try {
         const grid = document.getElementById("productList");
@@ -317,14 +363,14 @@ function renderProducts(filter = "") {
                                     <span class="drink-label"><small>CF</small><strong>SET</strong></span>
                                 </div>` : ''}
                         </div>
-                    ` : `
+                    ` : (p.image ? `
                         <img src="${p.image}"
                              alt="${p.name}"
                              ${priorityAttr}
                              class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
                              onload="this.classList.add('img-loaded')"
                              onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
-                    `}
+                    ` : renderProductArt(p))}
                     <div class="product-badges">
                         ${p.isDrinkPromotion ? `<span class="drink-promo-badge">✦ PROMO SET</span>` : (premium ? `<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>` : (p.tags.length ? `<span class="product-pill">${p.tags[0]}</span>` : ''))}
                         ${p.totalSold > 0 ? `<span class="product-pill sold">${t('store.product.sold', { count: p.totalSold })}</span>` : ''}
@@ -408,7 +454,19 @@ function openProductDetails(pName) {
     const variant = product.variants[product.selectedVariantIdx];
     const isOutOfStock = product.status === 'หมด' || product.status === 'sold out' || product.status === '0' || variant.stock <= 0;
     
-    document.getElementById('modalMainImage').src = product.image;
+    const modalMainImage = document.getElementById('modalMainImage');
+    const modalProductArt = document.getElementById('modalProductArt');
+    if (product.image) {
+        modalMainImage.src = product.image;
+        modalMainImage.classList.remove('hidden');
+        modalProductArt.classList.add('hidden');
+        modalProductArt.innerHTML = '';
+    } else {
+        modalMainImage.removeAttribute('src');
+        modalMainImage.classList.add('hidden');
+        modalProductArt.innerHTML = renderProductArt(product, true);
+        modalProductArt.classList.remove('hidden');
+    }
     
     const galleryContainer = document.getElementById('modalGallery');
     galleryContainer.innerHTML = '';

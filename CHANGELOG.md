@@ -12,7 +12,7 @@
 
 ## [Unreleased]
 ### Added
-- [Codex] feat(products): เพิ่มสินค้าใหม่จากภาพหน้าร้าน 17 รายการ ครบหมวดดอกไม้และอุปกรณ์ พร้อมอัปโหลดภาพกลุ่มสินค้า ปรับราคาขึ้น 15% โดยปัดขึ้นขั้นละ 5 บาท และตั้งสต๊อกเริ่มต้น (Google Sheet Products, ImgBB)
+- [Codex] feat(products): ลิสต์สินค้าใหม่จากภาพหน้าร้าน 17 รายการเป็น Card แยกรายสายพันธุ์และอุปกรณ์ พร้อมปรับราคาขึ้น 15% โดยปัดขึ้นขั้นละ 5 บาท และตั้งสต๊อกเริ่มต้น (Google Sheet Products)
 - [Codex] feat(i18n): เพิ่มระบบเลือกภาษาไทย/อังกฤษแบบจำค่าบนอุปกรณ์เดียวกัน ครอบคลุมหน้าร้าน หน้ายืนยันอายุ ตะกร้า ชำระเงิน หน้าเข้าสู่ระบบ/สมัครสมาชิก และหน้า Admin (src/i18n.js, index.html, admin.html, login.html, register.html, src/agegate.js)
 - [Codex] feat(i18n): แปลข้อความแบบ dynamic ของรายการสินค้า การสั่งซื้อ ตัวชี้วัด ออเดอร์ สินค้า และ PromptPay พร้อมสวิตช์ภาษาที่รองรับ desktop/mobile (src/main.js, src/adminApp.js, src/style.css)
 - [Codex] feat(storefront): เพิ่มตัวเลือก “Find Your Flow”, spotlight ตามเมาส์, คีย์ลัด `/` สำหรับค้นหา และสถานะร้านพร้อมส่ง (index.html, src/main.js, src/style.css)
@@ -21,6 +21,7 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Codex] fix(products): ถอดภาพรวมที่ใช้ซ้ำผิดวัตถุประสงค์ออกจากสินค้าใหม่ และเพิ่มภาพกราฟิก Card อัตโนมัติตามชื่อกับหมวดหมู่เมื่อสินค้าไม่มีภาพ (บั๊กจาก [Codex]) (index.html, src/main.js, src/style.css, Google Sheet Products)
 - [Codex] fix(deploy): ซิงค์ GitHub Actions Secrets `VITE_SHEET_CSV_URL`, `VITE_GAS_URL` และ `VITE_ORDERS_CSV_URL` ให้ตรงกับ `.env` ของร้าน เพื่อให้หน้าร้านและหลังบ้าน production ใช้ชีตชุดเดียวกัน (GitHub Actions Secrets)
 - [Codex] chore(domain): ใช้ blacknight69.com เป็น canonical และ custom domain หลักตามโดเมนที่มี DNS/HTTPS พร้อมใช้งาน โดยคงแบรนด์ Cannabis Flower อ่อนนุช (index.html, login.html, register.html, accessories.html, sitemap.xml, robots.txt, llms.txt, vite.config.js, .github/workflows/deploy.yml)
 - [Codex] chore(deploy): เปลี่ยน custom domain ใน GitHub Pages workflow จากแบรนด์เก่าเป็น gunshadelivery.com ให้ตรงกับ Google Business Profile (.github/workflows/deploy.yml)

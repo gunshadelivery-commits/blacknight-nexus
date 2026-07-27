@@ -829,6 +829,173 @@ body.sol-shell .category-row .category-inactive {
     transform: scale(1.055);
 }
 
+.strain-art {
+    --art-accent: #8fffb7;
+    --art-accent-soft: rgba(143, 255, 183, 0.25);
+    --art-surface: #0a2b1b;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    padding: 18px;
+    color: #f1fff6;
+    background:
+        radial-gradient(circle at 78% 20%, var(--art-accent-soft), transparent 30%),
+        linear-gradient(145deg, var(--art-surface), #041009 78%);
+    isolation: isolate;
+}
+
+.strain-art::before {
+    content: "";
+    position: absolute;
+    width: 78%;
+    aspect-ratio: 1;
+    top: -42%;
+    right: -24%;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--art-accent) 32%, transparent);
+    box-shadow:
+        0 0 0 24px color-mix(in srgb, var(--art-accent) 5%, transparent),
+        0 0 64px color-mix(in srgb, var(--art-accent) 13%, transparent);
+    transition: transform 600ms cubic-bezier(.2,.8,.2,1);
+}
+
+.product-card:hover .strain-art::before {
+    transform: scale(1.08) rotate(8deg);
+}
+
+.strain-art-grid {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.22;
+    background-image:
+        linear-gradient(color-mix(in srgb, var(--art-accent) 16%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--art-accent) 16%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.85), transparent 90%);
+}
+
+.strain-art-orbit {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--art-accent);
+    box-shadow: 0 0 22px color-mix(in srgb, var(--art-accent) 45%, transparent);
+}
+
+.strain-art-orbit-large {
+    width: 10px;
+    height: 10px;
+    top: 22%;
+    right: 24%;
+}
+
+.strain-art-orbit-small {
+    width: 5px;
+    height: 5px;
+    top: 48%;
+    right: 12%;
+    opacity: 0.66;
+}
+
+.strain-art-brand {
+    position: absolute;
+    top: 17px;
+    left: 18px;
+    color: color-mix(in srgb, var(--art-accent) 72%, white);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+}
+
+.strain-art-code {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    color: color-mix(in srgb, var(--art-accent) 76%, white);
+    font-size: clamp(54px, 5vw, 82px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.08em;
+    text-shadow: 0 12px 40px color-mix(in srgb, var(--art-accent) 20%, transparent);
+    transform: translateX(-50%);
+}
+
+.strain-art-type {
+    position: relative;
+    width: max-content;
+    max-width: 100%;
+    margin-bottom: 5px;
+    padding: 3px 7px;
+    overflow: hidden;
+    color: #041009;
+    border-radius: 99px;
+    background: var(--art-accent);
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.strain-art-name {
+    position: relative;
+    max-width: 92%;
+    overflow: hidden;
+    color: rgba(242, 255, 247, 0.74);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.strain-art-sativa {
+    --art-accent: #bef264;
+    --art-accent-soft: rgba(190, 242, 100, 0.3);
+    --art-surface: #173719;
+}
+
+.strain-art-hybrid {
+    --art-accent: #6ee7b7;
+    --art-accent-soft: rgba(110, 231, 183, 0.28);
+    --art-surface: #10342c;
+}
+
+.strain-art-indica {
+    --art-accent: #c4b5fd;
+    --art-accent-soft: rgba(196, 181, 253, 0.3);
+    --art-surface: #252042;
+}
+
+.strain-art-preroll {
+    --art-accent: #fcd34d;
+    --art-accent-soft: rgba(252, 211, 77, 0.28);
+    --art-surface: #3a2910;
+}
+
+.strain-art-gear {
+    --art-accent: #67e8f9;
+    --art-accent-soft: rgba(103, 232, 249, 0.25);
+    --art-surface: #132d34;
+}
+
+.strain-art-modal {
+    padding: 24px;
+}
+
+.strain-art-modal .strain-art-code {
+    font-size: clamp(88px, 18vw, 128px);
+}
+
+.strain-art-modal .strain-art-name {
+    font-size: 12px;
+}
+
 .product-visual::after {
     content: "";
     position: absolute;

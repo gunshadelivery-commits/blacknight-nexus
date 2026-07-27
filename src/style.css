@@ -238,8 +238,8 @@
     font-weight: 600;
 }
 
-.open-status span,
-.live-indicator span {
+.open-status .status-dot,
+.live-indicator > span {
     width: 7px;
     height: 7px;
     border-radius: 50%;

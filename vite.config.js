@@ -15,7 +15,7 @@ const prepareSitesOutput = () => ({
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [prepareSitesOutput()],
-  // ตั้งค่า Base — ใช้ '/' สำหรับ custom domain (blacknight69.com)
+  // ตั้งค่า Base — ใช้ '/' สำหรับ custom domain (gunshadelivery.com)
   // หากต้องการกลับไปใช้ GitHub Pages ให้เปลี่ยนเป็น '/blacknight-nexus/'
   base: '/',
   publicDir: 'image', // กำหนดให้โฟลเดอร์ image เป็นโฟลเดอร์ public

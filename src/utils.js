@@ -1,4 +1,4 @@
-// Utility functions for BlackNight69
+// Utility functions for Cannabis Flower อ่อนนุช
 
 // --- CUSTOM UI: TOAST ---
 export function showToast(message, type = 'success') {

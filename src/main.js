@@ -11,22 +11,19 @@ let currentLineUrl = "";
 let selectedPaymentMethod = "transfer";
 const COD_FEE = 50;
 
-function classifyItem(name) {
-    const n = name.toLowerCase();
-    // ไวเบรเตอร์ / ไข่สั่น
-    if (["ไข่สั่น", "ไข่", "vibrat", "วิบ", "egg"].some(s => n.includes(s))) return "ไข่สั่น";
-    // ดิลโด้
-    if (["ดิลโด้", "ดิวโด้", "dildo", "ควยปลอม", "แท่ง"].some(s => n.includes(s))) return "ดิลโด้";
-    // เจลหล่อลื่น / ถุงยาง
-    if (["เจล", "หล่อลื่น", "lube", "ถุงยาง", "condom"].some(s => n.includes(s))) return "เจล & ถุงยาง";
-    // BDSM
-    if (["bdsm", "มัด", "ตรวน", "แส้", "กุญแจ", "bondage", "sm", "ปิดตา"].some(s => n.includes(s))) return "BDSM";
-    // สินค้าผู้ชาย
-    if (["จิ๋ม", "ปลอกเพิ่ม", "sleeve", "masturbat", "กระป๋อง", "อากาศ", "เพิ่มขนาด"].some(s => n.includes(s))) return "สำหรับผู้ชาย";
-    // Anal / Butt plug
-    if (["anal", "butt", "ทวาร", "ประตูหลัง", "plug"].some(s => n.includes(s))) return "Anal";
-    // ชุดชั้นใน / เซ็กซี่
-    if (["lingerie", "ชุด", "sexy", "stocking", "bikini"].some(s => n.includes(s))) return "ชุดเซ็กซี่";
+function classifyItem(name, tags = []) {
+    // รวมชื่อสินค้า + แท็ก (คอลัมน์ tags ในชีตมักระบุสายพันธุ์ เช่น "ไฮบริด (Hybrid) 50/50")
+    const n = (name + ' ' + (Array.isArray(tags) ? tags.join(' ') : tags)).toLowerCase();
+    // อุปกรณ์ (บอง / กระดาษ / เครื่องบด) - เช็คก่อนสายพันธุ์
+    if (["บอง", "bong", "กระดาษ", "paper", "rolling", "เครื่องบด", "grinder", "ที่บด", "ไฟแช็ก", "lighter", "อุปกรณ์", "pipe", "ที่สูบ", "ถาด", "tray"].some(s => n.includes(s))) return "อุปกรณ์";
+    // Pre-roll / พรีโรล / มวนสำเร็จ
+    if (["pre-roll", "preroll", "pre roll", "พรีโรล", "มวนสำเร็จ", "joint"].some(s => n.includes(s))) return "Pre-roll";
+    const hasSativa = ["sativa", "ซาติวา", "ซาทิวา", "ซาไทวา"].some(s => n.includes(s));
+    const hasIndica = ["indica", "อินดิก้า", "อินดิกา", "อินดิ"].some(s => n.includes(s));
+    // Hybrid: ระบุ hybrid ตรงๆ หรือมีทั้ง sativa และ indica ในสายพันธุ์เดียว (เช่น "Indica 70% Sativa 30")
+    if (["hybrid", "ไฮบริด", "ไฮบริค", "ผสม"].some(s => n.includes(s)) || (hasSativa && hasIndica)) return "Hybrid";
+    if (hasSativa) return "Sativa";
+    if (hasIndica) return "Indica";
     return "อื่นๆ";
 }
 
@@ -82,14 +79,17 @@ function handleLogoClick() {
 }
 
 function loadProductsFromSheet(callback) {
-    fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-            if (!data || data.error || data.length < 2) {
+    // โหลดรายการสินค้าจาก Google Sheet CSV (สาธารณะ) ด้วย PapaParse
+    // คอลัมน์: name, size, price, note, image, tags, status, stock, sold_count
+    Papa.parse(`${SHEET_CSV_URL}&t=${Date.now()}`, {
+        download: true,
+        complete: (results) => {
+            const data = results.data || [];
+            if (!data || data.length < 2) {
                 showToast("ไม่พบข้อมูลสินค้า", "error");
                 return;
             }
-            
+
             const grouped = {};
             data.slice(1).forEach(row => {
                 const name = row[0];
@@ -116,7 +116,7 @@ function loadProductsFromSheet(callback) {
                         variants: [],
                         selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: row[9] || classifyItem(name)
+                        aiType: (row[9] && row[9].toString().trim()) || classifyItem(name, tags)
                     };
                 }
 
@@ -131,11 +131,12 @@ function loadProductsFromSheet(callback) {
 
             products = Object.values(grouped);
             if (callback) callback(products);
-        })
-        .catch(err => {
+        },
+        error: (err) => {
             console.error("Fetch Products Error:", err);
             showToast("โหลดข้อมูลสินค้าล้มเหลว", "error");
-        });
+        }
+    });
 }
 
 function initRevealObserver() {

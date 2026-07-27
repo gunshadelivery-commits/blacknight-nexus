@@ -4,15 +4,18 @@
  */
 
 const GAS_VERSION = "V24-MAIL";
-const SPREADSHEET_ID = "11p5OmXlmYoSvrjatX1JTRKlM6QcRnJdBIxm1EwqM0Sw";
-const SHEET_PRODUCTS = "Blacknight69 - Product List";
+// TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
+// (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
+const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
+// ชื่อแท็บ (sheet tab) — ต้องตรงกับชื่อแท็บในไฟล์ Google Sheet ของคุณเป๊ะ
+const SHEET_PRODUCTS = "Products";
 const SHEET_ORDERS = "Orders";
 const SHEET_BANK = "BankAccounts";
 const SHEET_USERS = "Users";
 
 // --- อีเมลแจ้งเตือนออเดอร์ใหม่ (ใส่หลายอีเมลได้ คั่นด้วย ,) ---
 const NOTIFY_EMAIL = "ped.siraphob@gmail.com";
-const SHOP_NAME = "BlackNight69";
+const SHOP_NAME = "Cannabis Flower อ่อนนุช";
 
 function getSS() {
   try {
@@ -164,10 +167,13 @@ function doPost(e) {
     }
 
     if (action === "log") {
-      const oSheet = ss.getSheetByName(SHEET_ORDERS);
-      if (oSheet) {
-        oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
+      let oSheet = ss.getSheetByName(SHEET_ORDERS);
+      if (!oSheet) oSheet = ss.insertSheet(SHEET_ORDERS);
+      // ใส่หัวคอลัมน์อัตโนมัติถ้าแท็บ Orders ยังว่าง (กันออเดอร์แรกกลายเป็น header)
+      if (oSheet.getLastRow() === 0) {
+        oSheet.appendRow(["วันที่", "ชื่อ", "เบอร์โทร", "ที่อยู่", "mapUrl", "รายการ", "ยอดรวม", "สลิป", "ชำระเงิน", "สถานะ"]);
       }
+      oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
       // แจ้งเตือนอีเมลเมื่อมีออเดอร์ใหม่ (ไม่ให้ error เรื่องอีเมลทำให้บันทึกออเดอร์ล้มเหลว)
       try {
         notifyNewOrder(data);          // แจ้งเตือนร้าน
@@ -268,6 +274,32 @@ function testCustomerEmail() {
     paymentMethod: "โอนเงิน"
   });
   Logger.log("ส่งใบยืนยันทดสอบไปที่ " + NOTIFY_EMAIL + " เรียบร้อย");
+}
+
+/**
+ * ▶️ ลบแถวออเดอร์ทดสอบในชีต Orders (กดรันครั้งเดียวใน editor)
+ * ลบเฉพาะแถวที่ชื่อลูกค้ามีคำว่า "ทดสอบ", "Test Order" หรือ "E2E"
+ * จะ log ทุกแถวที่ลบไว้ให้ตรวจสอบ
+ */
+function deleteTestOrders() {
+  const ss = getSS();
+  const oSheet = ss.getSheetByName(SHEET_ORDERS);
+  if (!oSheet) { Logger.log("ไม่พบชีต Orders"); return; }
+
+  const rows = oSheet.getDataRange().getValues();
+  // คอลัมน์ชื่อลูกค้าอยู่ index 1 (B) ตามที่ action "log" บันทึก
+  var deleted = 0;
+  // ลบจากล่างขึ้นบนเพื่อไม่ให้ index เลื่อน
+  for (var i = rows.length - 1; i >= 1; i--) {
+    var name = (rows[i][1] || "").toString();
+    if (/ทดสอบ|Test Order|E2E/i.test(name)) {
+      Logger.log("ลบแถว " + (i + 1) + ": " + name);
+      oSheet.deleteRow(i + 1);
+      deleted++;
+    }
+  }
+  SpreadsheetApp.flush();
+  Logger.log("ลบออเดอร์ทดสอบทั้งหมด " + deleted + " แถว");
 }
 
 /** ส่งอีเมลแจ้งเตือนเมื่อมีออเดอร์ใหม่ */

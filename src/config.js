@@ -1,13 +1,13 @@
 // ============================================================
-// GUNSHA DELIVERY - Central Configuration
+// CANNABIS FLOWER อ่อนนุช - Central Configuration
 // ============================================================
 // แก้ไขค่าต่างๆ ในไฟล์นี้เพียงไฟล์เดียว เพื่อเชื่อมต่อกับระบบภายนอก
 // ============================================================
 
 // --- ข้อมูลร้าน (Shop Branding) ---
-export const SHOP_NAME = "BlackNight69";
-export const SHOP_VERSION = "3.0.0";
-export const SHOP_TAGLINE = "พรีเมียมทุกระดับ ประทับใจทุกชิ้น 🚀";
+export const SHOP_NAME = "Cannabis Flower อ่อนนุช";
+export const SHOP_VERSION = "1.0.0";
+export const SHOP_TAGLINE = "ดอกแท้คัดเกรด · ส่งด่วน ส่งฟรี ย่านอ่อนนุช สุขุมวิท 🌿";
 
 // --- Google Sheets CSV URL (Product List) - from environment ---
 export const SHEET_CSV_URL = import.meta.env.VITE_SHEET_CSV_URL || "";

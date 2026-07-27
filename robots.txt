@@ -6,4 +6,4 @@ Disallow: /admin.html
 Disallow: /admin/
 
 # Sitemap
-Sitemap: https://blacknight69.com/sitemap.xml
+Sitemap: https://cannabisflower-onnut.com/sitemap.xml

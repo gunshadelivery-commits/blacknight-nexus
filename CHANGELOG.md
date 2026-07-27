@@ -1,0 +1,61 @@
+# CHANGELOG — Cannabis Flower อ่อนนุช
+
+รูปแบบ: [Keep a Changelog](https://keepachangelog.com/) · เวอร์ชัน: [SemVer](https://semver.org/)
+**ทุกบรรทัดต้องมีป้ายผู้ทำ** `[Claude]` `[Codex]` `[Human:Ped]` (ดูกฏใน `AGENTS.md`)
+
+<!-- ===== แม่แบบสำหรับเวอร์ชันใหม่ (คัดลอกไปใช้) =====
+## [x.y.z] - YYYY-MM-DD
+### Added        (ของใหม่)     ### Changed  (แก้ของเดิม)
+### Fixed        (แก้บั๊ก)      ### Removed  (ลบออก)
+- [ผู้ทำ] type: อธิบายสั้นๆ (ไฟล์ที่แตะ)
+==================================================== -->
+
+## [Unreleased]
+- (ยังไม่มี)
+
+---
+
+## [2.5.0] - 2026-07-27
+### Added
+- [Claude] feat(admin): การ์ด "ยอดขายวันนี้" + จำนวนออเดอร์วันนี้ (admin.html, src/adminApp.js)
+- [Claude] feat(admin): ยอดขายเสริมที่เพิ่มขึ้นทุกวันอัตโนมัติ ผ่าน config `FAKE_SALES` (เดือน/สัปดาห์/รวม/กราฟ) — ยอดรวมเพิ่มขึ้นทุกวันแบบการันตี
+### Changed
+- [Claude] chore(admin): ปรับ `FAKE_SALES` ให้ยอดวันนี้อยู่หลักพัน (~2-3 พัน) ไม่เวอร์ — baseDaily 16000→1700, growth 55→4
+
+## [2.4.0] - 2026-07-27
+### Added
+- [Claude] feat(admin): แท็บ "ปรับราคา/สต๊อก" แก้ราคา-สต๊อกทุกรายการในครั้งเดียว + ปรับเร็ว (+%/+฿/ตั้งค่า, ตั้ง/+/- สต๊อก) บันทึกผ่าน `updateProduct` เดิม ไม่ต้อง re-deploy GAS
+
+## [2.3.0] - 2026-07-27
+### Added
+- [Claude] docs: `SETUP_BACKEND.md` คู่มือตั้งชีต + deploy Apps Script ของร้านเอง
+- [Claude] feat(gas): auto ใส่หัวคอลัมน์แท็บ Orders เมื่อว่าง (GoogleAppsScript.js)
+### Changed
+- [Claude] feat(admin): รีแบรนด์หน้า admin (title, โลโก้ 🌿, หมวดหมู่กัญชา, ใบปะหน้าใช้ชื่อร้านใหม่)
+- [Human:Ped] chore: ตั้ง backend ของร้านเอง (Google Sheet + Apps Script) แล้วใส่ URL ใน .env
+### Fixed
+- [Claude] fix(env): แปลงลิงก์ `/edit` เป็น CSV `/export?format=csv` เพื่อให้ PapaParse อ่านได้
+- [Claude] fix(store): trim คอลัมน์ category (ชีตมีช่องว่างท้ายคำ) ให้เข้าแท็บถูก (src/main.js)
+
+## [2.2.0] - 2026-07-27
+### Changed
+- [Claude] feat(ui): พื้นหลังหน้าร้านเป็นภาพกัญชา `bg-cannabis.jpg` + overlay เขียวเข้มให้ตัวหนังสืออ่านง่าย (index.html)
+### Fixed
+- [Claude] fix(ui): โลโก้หาย (image/logo.png ถูกลบ) → แทนด้วยโลโก้ CSS วงกลม 🌿 (index.html)
+
+## [2.1.0] - 2026-07-27
+### Changed
+- [Claude] feat(store): ดึงรายการสินค้าจาก Google Sheet CSV ด้วย PapaParse แทน GAS getProducts (src/main.js)
+- [Claude] feat(store): จัดหมวดกัญชาอัตโนมัติจากชื่อ+tags (Sativa/Indica/Hybrid/Pre-roll/อุปกรณ์)
+- [Human:Ped] chore(data): ตั้ง category ให้สินค้า 24 รายการในชีต (แนะนำโดย [Claude])
+
+## [2.0.0] - 2026-07-27
+### Changed — รีแบรนด์ครั้งใหญ่ (BlackNight69 → Cannabis Flower อ่อนนุช)
+- [Claude] feat(brand): เปลี่ยนชื่อร้าน/แท็กไลน์/โลโก้ (src/config.js, index.html)
+- [Claude] feat(seo): title, meta, keywords, JSON-LD local business (อ่อนนุช/สุขุมวิท/สวนหลวง/อุดมสุข), sitemap, robots, llms.txt
+- [Claude] feat(ui): hero, หมวดหมู่, รีวิว, trust badges เป็นธีมกัญชา; age gate 18+ → 20+
+### Note
+- ฐานเดิม: gunshadelivery v1.2.1 (git history เก่ายังอยู่)
+
+---
+_เวอร์ชันปัจจุบัน: **2.5.0** · ผู้สร้างฐาน: [Claude] · ต่อไป: AI ทุกตัวบันทึกต่อที่นี่_

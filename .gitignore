@@ -12,4 +12,6 @@ yarn-error.log*
 # Node
 node_modules/
 dist/
+dist2/
+dist3/
 .env

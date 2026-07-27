@@ -23,19 +23,19 @@ function createAgeGateHTML() {
         padding: 48px 32px;
         backdrop-filter: blur(20px);
     ">
-        <div style="font-size: 56px; margin-bottom: 16px;">🔞</div>
+        <div style="font-size: 56px; margin-bottom: 16px;">🌿</div>
         <h2 style="color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 8px;">ยืนยันอายุ</h2>
         <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0 0 12px;">
-            เว็บไซต์นี้จำหน่าย<strong style="color: rgba(255,255,255,0.85);">ของเล่นผู้ใหญ่ อุปกรณ์คู่รัก<br>และสินค้าเพื่อสุขภาพทางเพศ</strong>
+            เว็บไซต์นี้จำหน่าย<strong style="color: rgba(255,255,255,0.85);">ผลิตภัณฑ์กัญชา<br>ดอกแท้คัดเกรด พรีโรล และอุปกรณ์</strong>
         </p>
         <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin: 0 0 32px;">
-            เหมาะสำหรับผู้ที่มีอายุ <strong style="color: #f87171;">18 ปีขึ้นไปเท่านั้น</strong><br>
-            กรุณายืนยันว่าคุณมีอายุครบ 18 ปีบริบูรณ์
+            จำหน่ายสำหรับผู้ที่มีอายุ <strong style="color: #4ade80;">20 ปีขึ้นไปเท่านั้น</strong><br>
+            งดจำหน่ายแก่สตรีมีครรภ์และสตรีให้นมบุตร
         </p>
         <div style="display: flex; flex-direction: column; gap: 12px;">
             <button id="age-gate-confirm" style="
-                background: #fff;
-                color: #000;
+                background: #4ade80;
+                color: #052e16;
                 border: none;
                 border-radius: 16px;
                 padding: 16px 24px;
@@ -44,7 +44,7 @@ function createAgeGateHTML() {
                 cursor: pointer;
                 font-family: inherit;
                 transition: opacity 0.2s;
-            ">ฉันอายุ 18 ปีขึ้นไป — เข้าสู่เว็บไซต์</button>
+            ">ฉันอายุ 20 ปีขึ้นไป — เข้าสู่เว็บไซต์</button>
             <button id="age-gate-exit" style="
                 background: rgba(255,255,255,0.08);
                 color: rgba(255,255,255,0.5);
@@ -55,10 +55,10 @@ function createAgeGateHTML() {
                 font-weight: 600;
                 cursor: pointer;
                 font-family: inherit;
-            ">ฉันอายุต่ำกว่า 18 ปี — ออก</button>
+            ">ฉันอายุต่ำกว่า 20 ปี — ออก</button>
         </div>
         <p style="color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 24px; line-height: 1.5;">
-            การเข้าสู่เว็บไซต์นี้ถือว่าคุณยืนยันว่ามีอายุครบ 18 ปีบริบูรณ์<br>และยินยอมรับชมเนื้อหาสำหรับผู้ใหญ่
+            การเข้าสู่เว็บไซต์นี้ถือว่าคุณยืนยันว่ามีอายุครบ 20 ปีบริบูรณ์<br>โปรดใช้ผลิตภัณฑ์อย่างมีความรับผิดชอบ
         </p>
     </div>
 </div>`;

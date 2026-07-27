@@ -114,7 +114,128 @@ function switchTab(tabId) {
     if(activeBtn) activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
 
     if (tabId === 'products') loadProducts();
+    else if (tabId === 'bulk') loadBulkEditor();
     else loadData();
+}
+
+// ============================================================
+// BULK PRICE / STOCK EDITOR
+// ปรับราคา-สต๊อกทุกรายการในครั้งเดียว (บันทึกผ่าน action=updateProduct รายสินค้า)
+// ============================================================
+let bulkRows = []; // หนึ่ง element = หนึ่งแถวสินค้า (สินค้า+ขนาด)
+
+function bulkEsc(s) {
+    return (s == null ? "" : s.toString()).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+async function loadBulkEditor() {
+    const body = document.getElementById('bulkTableBody');
+    if (body) body.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">กำลังโหลด...</td></tr>`;
+    try {
+        const res = await fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`);
+        const data = await res.json();
+        bulkRows = (!data || data.error || data.length < 2) ? [] : data.slice(1).map(r => ({
+            name: (r[0] || "").toString(),
+            size: (r[1] || "").toString(),
+            note: r[3] || "",
+            image: r[4] || "",
+            tags: r[5] || "",
+            sold: parseInt(r[8]) || 0,
+            category: r[9] || "อื่นๆ",
+            price: parseFloat(r[2]) || 0,
+            stock: parseInt(r[7]) || 0
+        })).filter(x => x.name.trim());
+        renderBulkTable();
+    } catch (e) {
+        console.error("Bulk load error:", e);
+        showToast("โหลดข้อมูลล้มเหลว", "error");
+    }
+}
+
+function renderBulkTable() {
+    const body = document.getElementById('bulkTableBody');
+    if (!body) return;
+    if (!bulkRows.length) {
+        body.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">ไม่มีสินค้า</td></tr>`;
+        return;
+    }
+    body.innerHTML = bulkRows.map((r, i) => `
+        <tr>
+            <td class="px-4 py-2 font-bold text-slate-700">${bulkEsc(r.name)}</td>
+            <td class="px-4 py-2 text-slate-500 text-xs">${bulkEsc(r.size || 'Standard')}</td>
+            <td class="px-4 py-2"><input type="number" step="any" min="0" data-i="${i}" class="bulk-price w-32 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none" value="${r.price}"></td>
+            <td class="px-4 py-2"><input type="number" min="0" data-i="${i}" class="bulk-stock w-32 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none" value="${r.stock}"></td>
+        </tr>`).join('');
+}
+
+function bulkApplyPrice() {
+    const mode = document.getElementById('bulkPriceMode').value;
+    const v = parseFloat(document.getElementById('bulkPriceVal').value);
+    if (isNaN(v)) return alert("กรอกตัวเลขก่อน");
+    document.querySelectorAll('.bulk-price').forEach(inp => {
+        const cur = parseFloat(inp.value) || 0;
+        let nv = mode === 'pct' ? cur * (1 + v / 100) : (mode === 'add' ? cur + v : v);
+        nv = Math.max(0, Math.round(nv));
+        inp.value = nv;
+    });
+    showToast('ปรับราคาในตารางแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน', "success");
+}
+
+function bulkApplyStock() {
+    const mode = document.getElementById('bulkStockMode').value;
+    const v = parseInt(document.getElementById('bulkStockVal').value);
+    if (isNaN(v)) return alert("กรอกตัวเลขก่อน");
+    document.querySelectorAll('.bulk-stock').forEach(inp => {
+        const cur = parseInt(inp.value) || 0;
+        let nv = mode === 'set' ? v : (mode === 'add' ? cur + v : cur - v);
+        nv = Math.max(0, nv);
+        inp.value = nv;
+    });
+    showToast('ปรับสต๊อกในตารางแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน', "success");
+}
+
+async function saveAllBulk() {
+    // อ่านค่าจากช่อง input กลับเข้า bulkRows
+    document.querySelectorAll('.bulk-price').forEach(inp => { bulkRows[+inp.dataset.i].price = parseFloat(inp.value) || 0; });
+    document.querySelectorAll('.bulk-stock').forEach(inp => { bulkRows[+inp.dataset.i].stock = parseInt(inp.value) || 0; });
+
+    // จัดกลุ่มตามชื่อสินค้า (updateProduct จะแทนที่ทุกแถวของสินค้านั้น)
+    const groups = {};
+    bulkRows.forEach(r => {
+        if (!groups[r.name]) groups[r.name] = { name: r.name, note: r.note, image: r.image, tags: r.tags, category: r.category, variants: [] };
+        groups[r.name].variants.push({ size: r.size || "Standard", price: r.price, stock: r.stock, sold: r.sold });
+    });
+    const list = Object.values(groups);
+    if (!list.length) return;
+    if (!confirm(`ยืนยันบันทึกราคา/สต๊อกของ ${list.length} รายการ?`)) return;
+
+    const btn = document.getElementById('saveAllBtn');
+    const status = document.getElementById('bulkStatus');
+    btn.disabled = true;
+    status.classList.remove('hidden');
+    let ok = 0, fail = 0;
+    for (let i = 0; i < list.length; i++) {
+        const p = list[i];
+        status.textContent = `กำลังบันทึก ${i + 1}/${list.length} — ${p.name}`;
+        try {
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({
+                    action: "updateProduct",
+                    oldName: p.name, name: p.name,
+                    category: p.category, note: p.note, tags: p.tags, image: p.image,
+                    variants: p.variants
+                })
+            });
+            const j = await res.json();
+            if (j.result === "success") ok++; else { fail++; console.error("bulk save fail:", p.name, j); }
+        } catch (e) { fail++; console.error("bulk save error:", p.name, e); }
+    }
+    status.textContent = `บันทึกเสร็จ ✓ สำเร็จ ${ok} รายการ${fail ? ` · ล้มเหลว ${fail}` : ''}`;
+    btn.disabled = false;
+    showToast(fail ? `บันทึกเสร็จ (ล้มเหลว ${fail})` : "บันทึกทั้งหมดสำเร็จ!", fail ? "error" : "success");
+    setTimeout(loadBulkEditor, 1500);
 }
 
 // --- AUTH ---
@@ -213,12 +334,69 @@ function applyLocalOrderUpdates() {
     }
 }
 
+// ============================================================
+// ยอดขาย "เสริม" สำหรับ dashboard (ตัวเลขปั่น เพิ่มขึ้นทุกวันอัตโนมัติ)
+// ⚠️ ใช้บนหลังบ้านส่วนตัวเท่านั้น อย่านำไปอ้างเป็นยอดจริงกับลูกค้า
+// ปรับ/ปิดได้ที่ object นี้ (enabled:false = ปิด, กลับเป็นยอดจริงล้วน)
+// ============================================================
+const FAKE_SALES = {
+    enabled: true,
+    startDate: new Date(2026, 0, 1),  // วันเริ่มนับ (ปี, เดือน0-11, วัน)
+    baseDaily: 1700,                  // ยอดหลอกต่อวันโดยประมาณ (บาท) → วันนี้ราว 2-3 พัน
+    dailyGrowth: 4,                   // เทรนด์ขาขึ้น: บวกเพิ่มเฉลี่ยต่อวัน (ค่อยๆ ขยับ)
+    variancePct: 0.25,                // ความผันผวนรายวัน ±25%
+    avgTicket: 480,                   // ยอดเฉลี่ย/ออเดอร์ (ใช้ประมาณจำนวนออเดอร์หลอก)
+    baseLifetime: 120000              // ยอดสะสมตั้งต้น (บวกเข้ายอดรวมทั้งหมด)
+};
+
+function _fakeDayNum(d) {
+    const a = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return Math.floor((a - FAKE_SALES.startDate) / 86400000);
+}
+function _seededRand(seed) { // mulberry32 (deterministic ต่อ seed)
+    let t = (seed + 0x6D2B79F5) >>> 0;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+// ยอดหลอกของ "วันนั้นๆ" (คงที่ภายในวันเดียวกัน แต่ต่างกันแต่ละวัน + เทรนด์ขึ้น)
+function fakeDailyAmount(date) {
+    if (!FAKE_SALES.enabled) return 0;
+    const n = _fakeDayNum(date);
+    if (n < 0) return 0;
+    const trend = FAKE_SALES.baseDaily + n * FAKE_SALES.dailyGrowth;
+    const r = _seededRand(n);
+    const amt = trend * (1 + (r * 2 - 1) * FAKE_SALES.variancePct);
+    return Math.max(0, Math.round(amt / 10) * 10);
+}
+function fakeDailyCount(date) {
+    if (!FAKE_SALES.enabled) return 0;
+    const amt = fakeDailyAmount(date);
+    const r = _seededRand(_fakeDayNum(date) + 99999);
+    const ticket = FAKE_SALES.avgTicket * (0.8 + r * 0.4);
+    return Math.max(1, Math.round(amt / ticket));
+}
+// รวมยอด/จำนวนหลอกตั้งแต่ from ถึง to (รวมปลายทั้งสอง)
+function fakeSum(fromDate, toDate, countMode) {
+    let sum = 0;
+    const d = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+    const end = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+    let guard = 0;
+    while (d <= end && guard < 4000) {
+        sum += countMode ? fakeDailyCount(d) : fakeDailyAmount(d);
+        d.setDate(d.getDate() + 1);
+        guard++;
+    }
+    return sum;
+}
+
 function processSales() {
     const now = new Date();
     const oneWeekAgo = new Date(); oneWeekAgo.setDate(now.getDate() - 7);
     const oneMonthAgo = new Date(); oneMonthAgo.setDate(now.getDate() - 30);
 
     let totalLife = 0, totalMonth = 0, totalWeek = 0, countMonth = 0, countWeek = 0;
+    let totalToday = 0, countToday = 0;
     let pendingTotal = 0, pendingCount = 0;
     const productCounts = {}, dailyStats = {};
 
@@ -284,6 +462,7 @@ function processSales() {
             totalLife += total;
             if (orderDate >= oneMonthAgo) { totalMonth += total; countMonth++; }
             if (orderDate >= oneWeekAgo) { totalWeek += total; countWeek++; }
+            if (orderDate.toDateString() === now.toDateString()) { totalToday += total; countToday++; }
             const dKey = orderDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
             if (orderDate >= (new Date().setDate(now.getDate()-14))) dailyStats[dKey] = (dailyStats[dKey] || 0) + total;
             
@@ -306,6 +485,25 @@ function processSales() {
         pendingLabel.innerHTML = `รวมทั้งหมด ${totalLife.toLocaleString()} ฿ <span class="ml-2 text-amber-500">(รอรับยอด: ${pendingTotal.toLocaleString()} ฿)</span>`;
     }
 
+    // ===== บวกยอด "เสริม" (เพิ่มขึ้นทุกวันอัตโนมัติ) =====
+    const fToday = fakeDailyAmount(now);
+    const fWeek = fakeSum(oneWeekAgo, now, false);
+    const fMonth = fakeSum(oneMonthAgo, now, false);
+    const fLife = (FAKE_SALES.enabled ? FAKE_SALES.baseLifetime : 0) + fakeSum(FAKE_SALES.startDate, now, false);
+    const fcToday = fakeDailyCount(now);
+    const fcWeek = fakeSum(oneWeekAgo, now, true);
+    const fcMonth = fakeSum(oneMonthAgo, now, true);
+
+    totalToday += fToday; countToday += fcToday;
+    totalWeek += fWeek; countWeek += fcWeek;
+    totalMonth += fMonth; countMonth += fcMonth;
+    totalLife += fLife;
+
+    const todayEl = document.getElementById('todayTotal');
+    if (todayEl) todayEl.textContent = totalToday.toLocaleString() + " ฿";
+    const todayCountEl = document.getElementById('todayCount');
+    if (todayCountEl) todayCountEl.textContent = `${countToday} รายการวันนี้`;
+
     document.getElementById('monthlyTotal').textContent = totalMonth.toLocaleString() + " ฿";
     document.getElementById('monthlyCount').textContent = `${countMonth} รายการ`;
     document.getElementById('weeklyTotal').textContent = totalWeek.toLocaleString() + " ฿";
@@ -322,7 +520,7 @@ function renderChart(dataMap) {
     for (let i = 13; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
         const k = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-        labels.push(k); values.push(dataMap[k] || 0);
+        labels.push(k); values.push((dataMap[k] || 0) + fakeDailyAmount(d));
     }
     if (salesChart) salesChart.destroy();
     salesChart = new Chart(ctx, {
@@ -631,7 +829,7 @@ function printLabel(idx) {
         <body onload="window.print()">
             <div class="label-container">
                 <div class="shop-name">
-                    <span>BlackNight69</span>
+                    <span>${SHOP_NAME}</span>
                     <span style="font-size: 12px;">Order #${idx + 1}</span>
                 </div>
                 
@@ -650,7 +848,7 @@ function printLabel(idx) {
                 ` : ''}
 
                 <div class="footer">
-                    ขอบคุณที่ใช้บริการ BlackNight69
+                    ขอบคุณที่ใช้บริการ ${SHOP_NAME}
                 </div>
             </div>
             <div style="text-align: center; margin-top: 20px;" class="no-print">
@@ -757,7 +955,7 @@ function toggleProductModal(show, mode = 'add', type = 'herb') {
         document.getElementById('productForm').reset();
         document.getElementById('variantContainer').innerHTML = "";
         // เซ็ตหมวดหมู่เริ่มต้นตามประเภทที่กด
-        categorySelect.value = "ดิลโด้";
+        categorySelect.value = "Sativa";
         
         addVariant(); // เรียก addVariant หลังจากเซ็ตหมวดหมู่แล้วเพื่อให้หน่วยเปลี่ยนตาม
     }
@@ -1172,3 +1370,7 @@ window.syncPromptpayToGAS = syncPromptpayToGAS;
 window.previewQRCode = previewQRCode;
 window.deleteAllProducts = deleteAllProducts;
 window.printLabel = printLabel;
+window.loadBulkEditor = loadBulkEditor;
+window.bulkApplyPrice = bulkApplyPrice;
+window.bulkApplyStock = bulkApplyStock;
+window.saveAllBulk = saveAllBulk;

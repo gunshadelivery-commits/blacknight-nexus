@@ -1,7 +1,7 @@
 {
-  "name": "gunshadelivery",
-  "version": "1.2.1",
-  "description": "Gunsha Cannabis Online Ordering",
+  "name": "cannabis-flower-onnut",
+  "version": "2.5.0",
+  "description": "Cannabis Flower อ่อนนุช — ร้านกัญชา delivery sale page + admin",
   "main": "index.js",
   "scripts": {
     "dev": "vite",

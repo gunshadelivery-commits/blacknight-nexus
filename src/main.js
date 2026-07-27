@@ -11,9 +11,87 @@ let currentLineUrl = "";
 let selectedPaymentMethod = "transfer";
 const COD_FEE = 50;
 
+const DRINK_PRODUCTS = [
+    {
+        name: "น้ำท่อมมี่ ธรรมดา",
+        note: "สูตรธรรมดา พร้อมดื่ม · แพ็ก 3 ขวดประหยัด 50 บาท",
+        image: "",
+        images: [],
+        tags: ["เมนูน้ำ", "แพ็กคุ้ม"],
+        status: "active",
+        variants: [
+            { size: "1 ขวด", price: 100, stock: 999, sold_count: 0 },
+            { size: "3 ขวด", price: 250, originalPrice: 300, stock: 999, sold_count: 0 },
+        ],
+        selectedVariantIdx: 0,
+        totalSold: 0,
+        aiType: "เครื่องดื่ม",
+        isDrink: true,
+        drinkTheme: "herbal",
+        drinkLabel: "ท่อมมี่",
+    },
+    {
+        name: "น้ำโยเกิร์ต",
+        note: "รสนุ่ม ดื่มง่าย · แพ็ก 3 ขวดประหยัด 20 บาท",
+        image: "",
+        images: [],
+        tags: ["เมนูน้ำ", "ขายดี"],
+        status: "active",
+        variants: [
+            { size: "1 ขวด", price: 80, stock: 999, sold_count: 0 },
+            { size: "3 ขวด", price: 220, originalPrice: 240, stock: 999, sold_count: 0 },
+        ],
+        selectedVariantIdx: 0,
+        totalSold: 0,
+        aiType: "เครื่องดื่ม",
+        isDrink: true,
+        drinkTheme: "yogurt",
+        drinkLabel: "โยเกิร์ต",
+    },
+    {
+        name: "น้ำผลไม้",
+        note: "หวานสดชื่น · แพ็ก 3 ขวดประหยัด 20 บาท",
+        image: "",
+        images: [],
+        tags: ["เมนูน้ำ", "สดชื่น"],
+        status: "active",
+        variants: [
+            { size: "1 ขวด", price: 80, stock: 999, sold_count: 0 },
+            { size: "3 ขวด", price: 220, originalPrice: 240, stock: 999, sold_count: 0 },
+        ],
+        selectedVariantIdx: 0,
+        totalSold: 0,
+        aiType: "เครื่องดื่ม",
+        isDrink: true,
+        drinkTheme: "fruit",
+        drinkLabel: "ผลไม้",
+    },
+    {
+        name: "เซ็ตโปรโมชั่นเมนูน้ำ",
+        note: "เลือกชุดลองครบ 3 รส หรือยกแก๊ง 9 ขวดในราคาพิเศษ",
+        image: "",
+        images: [],
+        tags: ["โปรโมชั่น", "ประหยัดสูงสุด 130 บาท"],
+        status: "active",
+        variants: [
+            { size: "ครบ 3 รส · 3 ขวด", price: 240, originalPrice: 260, stock: 999, sold_count: 0 },
+            { size: "ยกแก๊ง · 9 ขวด", price: 650, originalPrice: 780, stock: 999, sold_count: 0 },
+        ],
+        selectedVariantIdx: 0,
+        totalSold: 0,
+        aiType: "เครื่องดื่ม",
+        isDrink: true,
+        isDrinkPromotion: true,
+        drinkTheme: "mix",
+        drinkLabel: "MIX",
+    },
+];
+
 function classifyItem(name, tags = []) {
     // รวมชื่อสินค้า + แท็ก (คอลัมน์ tags ในชีตมักระบุสายพันธุ์ เช่น "ไฮบริด (Hybrid) 50/50")
     const n = (name + ' ' + (Array.isArray(tags) ? tags.join(' ') : tags)).toLowerCase();
+    // เครื่องดื่ม
+    if (["น้ำท่อม", "ท่อมมี่", "โยเกิร์ต", "น้ำผลไม้", "เครื่องดื่ม", "drink", "juice"].some(s => n.includes(s))) return "เครื่องดื่ม";
     // อุปกรณ์ (บอง / กระดาษ / เครื่องบด) - เช็คก่อนสายพันธุ์
     if (["บอง", "บ้อง", "bong", "กระดาษ", "paper", "rolling", "เครื่องบด", "grinder", "ที่บด", "ไฟแช็ก", "lighter", "อุปกรณ์", "pipe", "ที่สูบ", "ถาด", "tray"].some(s => n.includes(s))) return "อุปกรณ์";
     // Pre-roll / พรีโรล / มวนสำเร็จ
@@ -133,7 +211,10 @@ function loadProductsFromSheet(callback) {
                 grouped[name].totalSold += sold;
             });
 
-            products = Object.values(grouped);
+            const sheetProducts = Object.values(grouped);
+            const sheetNames = new Set(sheetProducts.map(product => product.name.trim().toLowerCase()));
+            const localDrinks = DRINK_PRODUCTS.filter(product => !sheetNames.has(product.name.trim().toLowerCase()));
+            products = [...sheetProducts, ...localDrinks];
             if (callback) callback(products);
         },
         error: (err) => {
@@ -200,10 +281,10 @@ function renderProducts(filter = "") {
             const card = document.createElement("div");
             const pNameEscaped = p.name.replace(/'/g, "\\'");
             const premium = isPremiumProduct(p);
-            card.className = `product-card reveal cursor-pointer ${premium ? 'premium-card' : ''}`;
+            card.className = `product-card reveal ${p.isDrink ? 'drink-card' : 'cursor-pointer'} ${p.isDrinkPromotion ? 'drink-promotion-card' : ''} ${premium ? 'premium-card' : ''}`;
             card.style.transitionDelay = `${(idx % 4) * 100}ms`;
             card.onclick = (e) => {
-                if(e.target.closest('button') || e.target.closest('a')) return;
+                if(p.isDrink || e.target.closest('button') || e.target.closest('a')) return;
                 window.openProductDetails(p.name);
             };
             const isOutOfStock = p.status === 'หมด' || p.status === 'sold out' || p.status === '0';
@@ -215,14 +296,30 @@ function renderProducts(filter = "") {
 
             card.innerHTML = `
                 <div class="product-visual">
-                    <img src="${p.image}"
-                         alt="${p.name}"
-                         ${priorityAttr}
-                         class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
-                         onload="this.classList.add('img-loaded')"
-                         onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
+                    ${p.isDrink ? `
+                        <div class="drink-art drink-art-${p.drinkTheme}" role="img" aria-label="${p.name}">
+                            <span class="drink-orb drink-orb-one"></span>
+                            <span class="drink-orb drink-orb-two"></span>
+                            <div class="drink-bottle ${p.isDrinkPromotion ? 'drink-bottle-left' : ''}">
+                                <span class="drink-cap"></span>
+                                <span class="drink-label"><small>CF</small><strong>${p.drinkLabel}</strong></span>
+                            </div>
+                            ${p.isDrinkPromotion ? `
+                                <div class="drink-bottle drink-bottle-right">
+                                    <span class="drink-cap"></span>
+                                    <span class="drink-label"><small>CF</small><strong>SET</strong></span>
+                                </div>` : ''}
+                        </div>
+                    ` : `
+                        <img src="${p.image}"
+                             alt="${p.name}"
+                             ${priorityAttr}
+                             class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
+                             onload="this.classList.add('img-loaded')"
+                             onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
+                    `}
                     <div class="product-badges">
-                        ${premium ? `<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>` : (p.tags.length ? `<span class="product-pill">${p.tags[0]}</span>` : '')}
+                        ${p.isDrinkPromotion ? `<span class="drink-promo-badge">✦ PROMO SET</span>` : (premium ? `<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>` : (p.tags.length ? `<span class="product-pill">${p.tags[0]}</span>` : ''))}
                         ${p.totalSold > 0 ? `<span class="product-pill sold">ขายแล้ว ${p.totalSold}+</span>` : ''}
                     </div>
                     ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span></div>` : ''}
@@ -247,7 +344,10 @@ function renderProducts(filter = "") {
                     <div class="product-bottom">
                         <div>
                             <p class="product-price-label">เริ่มต้น</p>
-                            <p class="product-price ${premium ? 'text-amber-200' : ''}">${variant.price.toLocaleString()} ฿</p>
+                            <div class="product-price-row">
+                                <p class="product-price ${premium ? 'text-amber-200' : ''}">${variant.price.toLocaleString()} ฿</p>
+                                ${variant.originalPrice ? `<span class="original-price">${variant.originalPrice.toLocaleString()} ฿</span>` : ''}
+                            </div>
                         </div>
                         <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})"
                             ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''}
@@ -392,7 +492,7 @@ function addToCart(pName, vIdx) {
 
     const existing = cart.find(item => item.name === product.name && item.size === variant.size);
     if (existing) existing.qty++;
-    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: product.image });
+    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: product.image, icon: product.isDrink ? '🥤' : '📦' });
 
     updateCartUI();
     toggleCart(true);
@@ -428,7 +528,9 @@ function updateCartUI() {
             subtotal += item.price * item.qty;
             return `
                 <div class="flex gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='📦';">
+                    ${item.image
+                        ? `<img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='<div class=\\'cart-item-icon\\'>${item.icon || '📦'}</div>';">`
+                        : `<div class="cart-item-icon">${item.icon || '📦'}</div>`}
                     <div class="flex-1">
                         <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
                         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${item.size}</p>

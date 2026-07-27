@@ -15,6 +15,7 @@
 - [Codex] feat(storefront): เพิ่มตัวเลือก “Find Your Flow”, spotlight ตามเมาส์, คีย์ลัด `/` สำหรับค้นหา และสถานะร้านพร้อมส่ง (index.html, src/main.js, src/style.css)
 - [Codex] chore(hosting): เพิ่มข้อมูลโปรเจกต์สำหรับเผยแพร่ตัวอย่างผ่าน Sites (.openai/hosting.json)
 - [Codex] chore(hosting): เพิ่ม static worker adapter และขั้นตอนเตรียม build output สำหรับ Sites (sites-worker.js, vite.config.js)
+- [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
 - [Codex] feat(ui): redesign หน้าร้านเป็นสไตล์ Emerald Intelligence พร้อม navbar, hero, discovery panel, product cards และ responsive layout ใหม่ โดยคงแบรนด์ Cannabis Flower อ่อนนุช (index.html, src/main.js, src/style.css)

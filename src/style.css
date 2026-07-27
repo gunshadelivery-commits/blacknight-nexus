@@ -800,6 +800,17 @@ body.sol-shell .category-row .category-inactive {
     border-color: rgba(255,215,100,0.24);
 }
 
+.product-card.drink-card {
+    background: linear-gradient(155deg, rgba(10,38,29,0.94), rgba(4,19,14,0.96));
+    border-color: rgba(132,255,198,0.16);
+}
+
+.product-card.drink-promotion-card {
+    background: linear-gradient(155deg, rgba(50,30,9,0.95), rgba(22,18,7,0.96));
+    border-color: rgba(255,205,103,0.3);
+    box-shadow: 0 20px 58px rgba(0,0,0,0.25), 0 0 40px rgba(255,180,73,0.05);
+}
+
 .product-visual {
     position: relative;
     aspect-ratio: 4 / 3.55;
@@ -825,6 +836,142 @@ body.sol-shell .category-row .category-inactive {
     height: 48%;
     pointer-events: none;
     background: linear-gradient(to top, rgba(3,12,7,0.68), transparent);
+}
+
+.drink-art {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 80%, rgba(121,255,190,0.2), transparent 34%),
+        linear-gradient(145deg, #0d3528, #071b14);
+}
+
+.drink-art-yogurt {
+    background:
+        radial-gradient(circle at 70% 20%, rgba(255,183,219,0.32), transparent 28%),
+        linear-gradient(145deg, #392534, #17111b);
+}
+
+.drink-art-fruit {
+    background:
+        radial-gradient(circle at 72% 18%, rgba(255,191,78,0.35), transparent 28%),
+        linear-gradient(145deg, #442514, #1b1008);
+}
+
+.drink-art-mix {
+    background:
+        radial-gradient(circle at 30% 22%, rgba(125,255,187,0.28), transparent 25%),
+        radial-gradient(circle at 75% 30%, rgba(255,170,91,0.26), transparent 28%),
+        linear-gradient(145deg, #2d2b17, #11190f);
+}
+
+.drink-orb {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.045);
+}
+
+.drink-orb-one {
+    width: 38px;
+    height: 38px;
+    top: 20%;
+    right: 18%;
+}
+
+.drink-orb-two {
+    width: 15px;
+    height: 15px;
+    top: 48%;
+    left: 18%;
+}
+
+.drink-bottle {
+    position: relative;
+    width: 82px;
+    height: 128px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 23px 23px 29px 29px;
+    background: linear-gradient(100deg, rgba(255,255,255,0.19), rgba(99,255,171,0.4) 30%, rgba(24,111,70,0.7));
+    border: 1px solid rgba(224,255,237,0.38);
+    box-shadow: 0 24px 48px rgba(0,0,0,0.3), inset 10px 0 18px rgba(255,255,255,0.06);
+    transform: rotate(2deg);
+}
+
+.drink-art-yogurt .drink-bottle {
+    background: linear-gradient(100deg, rgba(255,255,255,0.32), rgba(255,196,225,0.58) 38%, rgba(172,84,128,0.72));
+}
+
+.drink-art-fruit .drink-bottle {
+    background: linear-gradient(100deg, rgba(255,255,255,0.24), rgba(255,191,83,0.66) 38%, rgba(178,82,24,0.78));
+}
+
+.drink-cap {
+    position: absolute;
+    top: -16px;
+    width: 38px;
+    height: 20px;
+    border-radius: 8px 8px 5px 5px;
+    background: linear-gradient(#d9ffe6, #69dc96);
+    border: 1px solid rgba(255,255,255,0.45);
+}
+
+.drink-label {
+    width: 64px;
+    min-height: 46px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #082417;
+    border-radius: 12px;
+    background: rgba(231,255,239,0.84);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.16);
+}
+
+.drink-label small {
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.drink-label strong {
+    max-width: 58px;
+    overflow: hidden;
+    font-size: 10px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.drink-bottle-left {
+    margin-left: -34px;
+    transform: rotate(-7deg);
+}
+
+.drink-bottle-right {
+    position: absolute;
+    margin-left: 60px;
+    transform: rotate(8deg) scale(0.9);
+    background: linear-gradient(100deg, rgba(255,255,255,0.2), rgba(255,190,91,0.62), rgba(158,73,22,0.76));
+}
+
+.drink-promo-badge {
+    padding: 6px 9px;
+    color: #332006;
+    font-size: 8px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ffe9a8, #ffb84f);
+    border: 1px solid rgba(255,255,255,0.55);
+    box-shadow: 0 8px 24px rgba(255,180,71,0.2);
 }
 
 .product-badges {
@@ -949,6 +1096,30 @@ body.sol-shell .category-row .category-inactive {
     line-height: 1;
     font-weight: 750;
     letter-spacing: -0.025em;
+}
+
+.product-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.original-price {
+    color: rgba(230,244,235,0.3);
+    font-size: 9px;
+    text-decoration: line-through;
+}
+
+.cart-item-icon {
+    width: 64px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+    flex: none;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #dcffe7, #a4efbd);
+    box-shadow: 0 4px 10px rgba(15,40,24,0.08);
+    font-size: 26px;
 }
 
 .add-button {

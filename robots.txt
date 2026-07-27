@@ -6,4 +6,4 @@ Disallow: /admin.html
 Disallow: /admin/
 
 # Sitemap
-Sitemap: https://gunshadelivery.com/sitemap.xml
+Sitemap: https://blacknight69.com/sitemap.xml

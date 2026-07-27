@@ -15,7 +15,7 @@ function classifyItem(name, tags = []) {
     // รวมชื่อสินค้า + แท็ก (คอลัมน์ tags ในชีตมักระบุสายพันธุ์ เช่น "ไฮบริด (Hybrid) 50/50")
     const n = (name + ' ' + (Array.isArray(tags) ? tags.join(' ') : tags)).toLowerCase();
     // อุปกรณ์ (บอง / กระดาษ / เครื่องบด) - เช็คก่อนสายพันธุ์
-    if (["บอง", "bong", "กระดาษ", "paper", "rolling", "เครื่องบด", "grinder", "ที่บด", "ไฟแช็ก", "lighter", "อุปกรณ์", "pipe", "ที่สูบ", "ถาด", "tray"].some(s => n.includes(s))) return "อุปกรณ์";
+    if (["บอง", "บ้อง", "bong", "กระดาษ", "paper", "rolling", "เครื่องบด", "grinder", "ที่บด", "ไฟแช็ก", "lighter", "อุปกรณ์", "pipe", "ที่สูบ", "ถาด", "tray"].some(s => n.includes(s))) return "อุปกรณ์";
     // Pre-roll / พรีโรล / มวนสำเร็จ
     if (["pre-roll", "preroll", "pre roll", "พรีโรล", "มวนสำเร็จ", "joint"].some(s => n.includes(s))) return "Pre-roll";
     const hasSativa = ["sativa", "ซาติวา", "ซาทิวา", "ซาไทวา"].some(s => n.includes(s));
@@ -24,7 +24,11 @@ function classifyItem(name, tags = []) {
     if (["hybrid", "ไฮบริด", "ไฮบริค", "ผสม"].some(s => n.includes(s)) || (hasSativa && hasIndica)) return "Hybrid";
     if (hasSativa) return "Sativa";
     if (hasIndica) return "Indica";
-    return "อื่นๆ";
+    // fallback จากเอฟเฟกต์ใน tags สำหรับแถวที่ยังไม่ได้ใส่ category ในชีต
+    if (["ตื่นตัว", "สดชื่น", "โฟกัส", "focus", "energetic", "energy"].some(s => n.includes(s))) return "Sativa";
+    if (["ง่วง", "ลงตา", "หนักตา", "พักผ่อน", "ผ่อนคลาย", "relax", "sleep"].some(s => n.includes(s))) return "Indica";
+    // สินค้าที่ไม่ใช่อุปกรณ์/พรีโรลในร้านนี้เป็นดอก จึงใช้ Hybrid เป็นค่ากลาง
+    return "Hybrid";
 }
 
 function isPremiumProduct(product) {
@@ -154,6 +158,7 @@ function initRevealObserver() {
 function renderProducts(filter = "") {
     try {
         const grid = document.getElementById("productList");
+        const resultMeta = document.getElementById("productResultMeta");
         if (!grid) return; 
         grid.innerHTML = "";
         
@@ -161,7 +166,8 @@ function renderProducts(filter = "") {
         if (typeof filter === "string") q = filter.toLowerCase();
 
         if (products.length === 0) {
-            grid.innerHTML = `<div class="col-span-2 text-center text-white/40 py-20 animate-pulse">กำลังโหลดข้อมูลสินค้า...</div>`;
+            if (resultMeta) resultMeta.textContent = "กำลังอัปเดตรายการ...";
+            grid.innerHTML = `<div class="empty-products animate-pulse">กำลังโหลดรายการพร้อมส่ง...</div>`;
             return;
         }
 
@@ -173,8 +179,20 @@ function renderProducts(filter = "") {
             return matchesSearch && matchesCategory;
         });
 
+        if (resultMeta) {
+            const categoryLabel = currentCategory === "All" ? "ทุกหมวดหมู่" : currentCategory;
+            resultMeta.textContent = `${filtered.length} รายการ · ${categoryLabel}`;
+        }
+
         if (filtered.length === 0) {
-            grid.innerHTML = `<div class="col-span-2 text-center text-white/40 py-20">ไม่พบสินค้าในหมวดหมู่นี้</div>`;
+            grid.innerHTML = `
+                <div class="empty-products">
+                    <div>
+                        <div class="text-3xl mb-3">⌕</div>
+                        <p class="font-bold text-white/70">ยังไม่พบรายการที่ค้นหา</p>
+                        <p class="text-xs text-white/30 mt-1">ลองเปลี่ยนคำค้นหรือเลือกหมวดหมู่อื่น</p>
+                    </div>
+                </div>`;
             return;
         }
 
@@ -182,7 +200,7 @@ function renderProducts(filter = "") {
             const card = document.createElement("div");
             const pNameEscaped = p.name.replace(/'/g, "\\'");
             const premium = isPremiumProduct(p);
-            card.className = `rounded-3xl shadow-lg overflow-hidden flex flex-col reveal cursor-pointer hover:scale-[1.02] transition-transform duration-300 ${premium ? 'premium-card' : 'glass-card'}`;
+            card.className = `product-card reveal cursor-pointer ${premium ? 'premium-card' : ''}`;
             card.style.transitionDelay = `${(idx % 4) * 100}ms`;
             card.onclick = (e) => {
                 if(e.target.closest('button') || e.target.closest('a')) return;
@@ -196,37 +214,44 @@ function renderProducts(filter = "") {
             const priorityAttr = products.indexOf(p) < 4 ? 'fetchpriority="high"' : 'loading="lazy"';
 
             card.innerHTML = `
-                <div class="h-44 bg-white/5 flex items-center justify-center relative overflow-hidden">
+                <div class="product-visual">
                     <img src="${p.image}"
                          alt="${p.name}"
                          ${priorityAttr}
-                         class="w-full h-full object-cover img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
+                         class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
                          onload="this.classList.add('img-loaded')"
                          onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
-                    <div class="absolute top-2 left-2 flex flex-col gap-1">
-                        ${premium ? `<span class="premium-badge text-[9px] px-2 py-0.5 rounded-full font-black shadow-lg w-fit flex items-center gap-1">👑 PREMIUM</span>` : (p.tags.length ? `<span class="bg-indigo-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">${p.tags[0]}</span>` : '')}
-                        ${p.totalSold > 0 ? `<span class="bg-orange-500/80 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm w-fit">ขายแล้ว ${p.totalSold}+</span>` : ''}
+                    <div class="product-badges">
+                        ${premium ? `<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>` : (p.tags.length ? `<span class="product-pill">${p.tags[0]}</span>` : '')}
+                        ${p.totalSold > 0 ? `<span class="product-pill sold">ขายแล้ว ${p.totalSold}+</span>` : ''}
                     </div>
                     ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span></div>` : ''}
                 </div>
-                <div class="p-3 flex-1 flex flex-col">
-                    <div class="flex-1">
-                        <h3 class="font-bold ${premium ? 'text-amber-200' : 'text-white'} leading-tight text-sm">${p.name}</h3>
-                        <p class="text-[10px] text-white/40 mt-1 line-clamp-1">${p.note}</p>
+                <div class="product-content">
+                    <div>
+                        <p class="product-type">${p.aiType || 'FLOWER'}</p>
+                        <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${p.name}</h3>
+                        <p class="product-note">${p.note}</p>
                     </div>
 
-                    <div class="mt-3 flex flex-wrap gap-1">
+                    <div class="variant-row">
                         ${p.variants.map((v, vIdx) => `
-                            <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-3 py-1.5 text-[10px] border rounded-lg transition-all font-bold min-h-[32px] ${p.selectedVariantIdx === vIdx ? 'bg-white/20 border-white/40 text-white' : 'bg-black/20 text-white/30 border-white/5'} ${v.stock <= 0 ? 'opacity-20' : ''}">
+                            <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})"
+                                class="variant-chip ${p.selectedVariantIdx === vIdx ? 'is-active' : ''} ${v.stock <= 0 ? 'is-empty' : ''}">
                                 ${v.size}
                             </button>
                         `).join('')}
                     </div>
-                    ${variant.stock > 0 && variant.stock <= 5 ? `<p class="text-[9px] text-red-400 font-bold mt-2">🔥 Only ${variant.stock} left!</p>` : ''}
+                    ${variant.stock > 0 && variant.stock <= 5 ? `<p class="stock-alert">เหลือเพียง ${variant.stock} ชิ้น</p>` : ''}
 
-                    <div class="mt-3 flex items-center justify-between">
-                        <p class="font-bold ${premium ? 'text-amber-300' : 'text-white'} text-sm">${variant.price.toLocaleString()} ฿</p>
-                        <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="${premium ? 'bg-amber-400/20 hover:bg-amber-400/40 border border-amber-400/30' : 'bg-white/10 hover:bg-white/20'} text-white p-2 rounded-xl transition-all disabled:opacity-10">
+                    <div class="product-bottom">
+                        <div>
+                            <p class="product-price-label">เริ่มต้น</p>
+                            <p class="product-price ${premium ? 'text-amber-200' : ''}">${variant.price.toLocaleString()} ฿</p>
+                        </div>
+                        <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})"
+                            ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''}
+                            class="add-button" aria-label="เพิ่ม ${p.name} ลงตะกร้า">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>
@@ -245,7 +270,7 @@ function renderProducts(filter = "") {
 function switchCategory(cat) {
     currentCategory = cat;
     document.querySelectorAll('#categoryTabs button').forEach(btn => {
-        btn.classList.remove('category-active');
+        btn.classList.remove('category-active', 'tab-premium-active');
         btn.classList.add('category-inactive');
     });
     const activeTab = document.getElementById('tab-' + cat);
@@ -670,6 +695,39 @@ function switchCategoryPremium() {
     renderProducts(searchInput ? searchInput.value : "");
 }
 
+function initSolExperience() {
+    const hero = document.getElementById('hero-header');
+    const nav = document.getElementById('siteNav');
+    const searchInput = document.getElementById('searchInput');
+
+    if (hero && window.matchMedia('(pointer: fine)').matches) {
+        hero.addEventListener('pointermove', (event) => {
+            const rect = hero.getBoundingClientRect();
+            hero.style.setProperty('--spot-x', `${event.clientX - rect.left}px`);
+            hero.style.setProperty('--spot-y', `${event.clientY - rect.top}px`);
+        });
+    }
+
+    const updateScrollState = () => {
+        if (nav) nav.classList.toggle('is-scrolled', window.scrollY > 18);
+    };
+    updateScrollState();
+    window.addEventListener('scroll', updateScrollState, { passive: true });
+
+    document.addEventListener('keydown', (event) => {
+        const target = event.target;
+        const isTyping = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+        if (event.key === '/' && !isTyping && searchInput) {
+            event.preventDefault();
+            searchInput.focus();
+            searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (event.key === 'Escape' && document.activeElement === searchInput) {
+            searchInput.blur();
+        }
+    });
+}
+
 // === EXPOSE TO GLOBAL ===
 window.handleLogoClick = handleLogoClick;
 window.toggleCart = toggleCart;
@@ -695,5 +753,6 @@ window.redirectToLine = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    initSolExperience();
     loadProductsFromSheet(renderProducts);
 });

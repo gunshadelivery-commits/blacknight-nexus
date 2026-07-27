@@ -96,7 +96,7 @@
       gtag('config', 'G-70NV9ZCP1L');
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -307,12 +307,12 @@
     </style>
 </head>
 
-<body class="bg-black min-h-screen text-white">
+<body class="sol-shell bg-black min-h-screen text-white">
     <!-- FULL PAGE STATIC BACKGROUND (ภาพกัญชา) -->
     <div id="static-bg" class="fixed inset-0 z-0 pointer-events-none bg-cover bg-center bg-no-repeat"
         style="background-image: url('/bg-cannabis.jpg');"></div>
     <!-- READABILITY OVERLAY: ไล่สีเขียวเข้ม + vignette ทับภาพให้ตัวหนังสืออ่านง่าย -->
-    <div class="fixed inset-0 z-0 pointer-events-none"
+    <div class="ambient-canvas fixed inset-0 z-0 pointer-events-none"
         style="background:
             linear-gradient(160deg, rgba(3,20,12,0.72) 0%, rgba(4,16,10,0.62) 45%, rgba(2,8,6,0.85) 100%),
             radial-gradient(120% 90% at 50% 38%, transparent 0%, rgba(0,0,0,0.4) 100%);"></div>
@@ -333,113 +333,158 @@
     </div>
 
     <!-- NAVBAR -->
-    <nav class="glass-card text-white shadow-lg sticky top-0 z-50 border-b border-white/5">
-        <div
-            class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="handleLogoClick()">
-                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-green-700 flex items-center justify-center text-lg shadow-lg shadow-emerald-500/30 border border-emerald-300/30" aria-label="Cannabis Flower อ่อนนุช Logo">🌿</div>
+    <nav id="siteNav" class="site-nav sticky top-0 z-50">
+        <div class="site-nav-inner max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="brand-lockup cursor-pointer" onclick="handleLogoClick()">
+                <div class="brand-mark" aria-label="Cannabis Flower อ่อนนุช Logo">CF</div>
                 <div class="flex flex-col">
-                    <span class="text-lg font-bold leading-none text-white">Cannabis Flower <span class="text-emerald-400">อ่อนนุช</span></span>
+                    <span class="brand-name">Cannabis Flower</span>
+                    <span class="brand-place">ON NUT · BANGKOK</span>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
+
+            <div class="hidden lg:flex items-center gap-7 text-[13px] font-medium text-white/55">
+                <a href="#products" class="nav-link">สายพันธุ์</a>
+                <a href="#reviews" class="nav-link">เสียงจากลูกค้า</a>
+                <span class="open-status"><span></span> เปิดถึง 24:00</span>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
                 <!-- User Auth Area -->
                 <div id="authArea" class="text-xs font-bold flex items-center gap-3">
                     <a href="login.html"
-                        class="bg-white text-black px-4 py-2 rounded-full hover:bg-white/90 transition shadow-lg hidden sm:block">เข้าสู่ระบบ</a>
+                        class="login-link hidden sm:block">เข้าสู่ระบบ</a>
                 </div>
 
-                <button id="cartBtn" onclick="toggleCart()" class="relative p-2">
+                <button id="cartBtn" onclick="toggleCart()" class="cart-nav-button relative" aria-label="เปิดตะกร้าสินค้า">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     <span id="cartCountBadge"
-                        class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+                        class="cart-count absolute hidden">0</span>
                 </button>
             </div>
         </div>
     </nav>
 
-    <!-- HERO / PROMO WITH DYNAMIC BACKGROUND -->
-    <header id="hero-header"
-        class="px-4 py-24 text-center pb-36 relative overflow-hidden transition-all duration-1000 bg-transparent">
-        <!-- Blurred Background Layer (Optional extra depth) -->
-        <div id="hero-bg"
-            class="absolute inset-0 z-0 bg-cover bg-center scale-110 blur-md opacity-5 transition-all duration-1000">
-        </div>
+    <!-- HERO / EMERALD INTELLIGENCE -->
+    <header id="hero-header" class="sol-hero relative overflow-hidden">
+        <div class="hero-spotlight" aria-hidden="true"></div>
+        <div class="hero-grid" aria-hidden="true"></div>
 
-        <div class="relative z-10 space-y-4">
-            <h1 class="text-5xl sm:text-6xl font-black mb-2 tracking-tighter text-white drop-shadow-lg hero-title">
-                Cannabis Flower <span class="text-emerald-400">อ่อนนุช</span></h1>
-            <p class="text-white text-base opacity-80 font-medium tracking-widest uppercase bloom-effect">ร้านกัญชา สุขุมวิท · สวนหลวง · อุดมสุข 🌿</p>
-            <p class="text-white/60 text-sm max-w-sm mx-auto mt-4 px-4">ดอกแท้คัดเกรด Sativa · Indica · Hybrid ส่งด่วนถึงมือใน 1 ชั่วโมง 🚀 ส่งฟรีในย่านอ่อนนุช</p>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+            <div class="hero-layout">
+                <div class="hero-copy">
+                    <div class="eyebrow">
+                        <span class="eyebrow-dot"></span>
+                        CURATED FLOWER · ON NUT
+                    </div>
+                    <h1 class="hero-heading">
+                        เลือกดอกที่ใช่<br>
+                        <span>ให้ทุกช่วงเวลาของคุณ</span>
+                    </h1>
+                    <p class="hero-description">
+                        ดอกแท้คัดเกรด Sativa, Indica และ Hybrid พร้อมคำแนะนำแบบเป็นกันเอง
+                        ส่งด่วนในย่านอ่อนนุช–สุขุมวิทภายในประมาณ 1 ชั่วโมง
+                    </p>
 
-            <!-- Urgency badges -->
-            <div class="flex flex-wrap justify-center gap-2 mt-4">
-                <span class="bg-emerald-500/80 backdrop-blur-sm text-white text-xs font-bold px-4 py-1.5 rounded-full animate-pulse">🔥 ดอกใหม่เข้าทุกสัปดาห์ พร้อมส่งวันนี้</span>
-                <span class="bg-white/10 backdrop-blur-sm text-white text-xs font-bold px-4 py-1.5 rounded-full border border-white/20">🛵 ส่งด่วน · ส่งฟรีย่านอ่อนนุช</span>
-            </div>
+                    <div class="hero-actions">
+                        <a href="#products" class="primary-action">
+                            ดูรายการพร้อมส่ง <span>↓</span>
+                        </a>
+                        <a id="heroLineLink" href="#" target="_blank" class="secondary-action">
+                            คุยกับร้านทาง LINE
+                        </a>
+                    </div>
 
-            <div class="w-16 h-1 bg-white/30 mx-auto rounded-full overflow-hidden mt-4">
-                <div id="scroll-progress" class="w-0 h-full bg-white transition-all duration-300"></div>
+                    <div class="hero-signals">
+                        <div><strong>1 ชม.</strong><span>ส่งด่วนในพื้นที่</span></div>
+                        <div><strong>ฟรี</strong><span>ค่าส่งย่านอ่อนนุช</span></div>
+                        <div><strong>20+</strong><span>สำหรับผู้ใหญ่เท่านั้น</span></div>
+                    </div>
+                </div>
+
+                <div class="experience-card" aria-label="เลือกสายพันธุ์ตามช่วงเวลา">
+                    <div class="experience-header">
+                        <div>
+                            <p class="experience-kicker">FIND YOUR FLOW</p>
+                            <h2>วันนี้อยากได้ฟีลแบบไหน?</h2>
+                        </div>
+                        <div class="live-indicator"><span></span> พร้อมส่ง</div>
+                    </div>
+
+                    <div class="flow-orbit" aria-hidden="true">
+                        <div class="orbit-ring orbit-ring-one"></div>
+                        <div class="orbit-ring orbit-ring-two"></div>
+                        <div class="orbit-core">CF</div>
+                        <span class="orbit-node node-one">S</span>
+                        <span class="orbit-node node-two">H</span>
+                        <span class="orbit-node node-three">I</span>
+                    </div>
+
+                    <div class="mood-selector">
+                        <button onclick="switchCategory('Sativa'); document.getElementById('products').scrollIntoView({behavior:'smooth'})">
+                            <span class="mood-icon">☀</span>
+                            <span><strong>สดใส & โฟกัส</strong><small>Sativa</small></span>
+                            <b>→</b>
+                        </button>
+                        <button onclick="switchCategory('Hybrid'); document.getElementById('products').scrollIntoView({behavior:'smooth'})">
+                            <span class="mood-icon">◐</span>
+                            <span><strong>สมดุล & ลื่นไหล</strong><small>Hybrid</small></span>
+                            <b>→</b>
+                        </button>
+                        <button onclick="switchCategory('Indica'); document.getElementById('products').scrollIntoView({behavior:'smooth'})">
+                            <span class="mood-icon">☾</span>
+                            <span><strong>นิ่ง & ผ่อนคลาย</strong><small>Indica</small></span>
+                            <b>→</b>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- SEARCH & FILTER -->
-    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 relative z-20 -mt-10">
-        <div class="glass-card rounded-[2rem] p-1.5 flex items-center shadow-2xl">
-            <input type="text" id="searchInput" onkeyup="renderProducts(this.value)"
-                placeholder="ค้นหาสายพันธุ์ / ดอก / พรีโรล..."
-                class="flex-1 bg-transparent border-none focus:ring-0 px-5 py-3 text-sm placeholder:text-white/40 text-white outline-none">
-            <button onclick="renderProducts(document.getElementById('searchInput').value)"
-                class="w-12 h-12 bg-white/20 text-white rounded-2xl flex items-center justify-center hover:bg-white/30 transition shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-            </button>
-        </div>
-    </div>
+    <!-- DISCOVERY / SEARCH / FILTER -->
+    <section id="products" class="discovery-section relative z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="section-heading">
+                <div>
+                    <p class="section-kicker">CURATED FOR TODAY</p>
+                    <h2>รายการพร้อมส่ง</h2>
+                </div>
+                <p id="productResultMeta" class="result-meta">กำลังอัปเดตรายการ...</p>
+            </div>
 
-    <!-- CATEGORY TABS -->
-    <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-8 relative z-20">
-        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="categoryTabs">
-            <button onclick="switchCategory('All')"
-                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-active"
-                id="tab-All">ทั้งหมด</button>
-            <button onclick="switchCategoryPremium()"
-                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
-                id="tab-พรีเมียม">👑 คัดเกรด</button>
-            <button onclick="switchCategory('Sativa')"
-                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
-                id="tab-Sativa">Sativa</button>
-            <button onclick="switchCategory('Indica')"
-                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
-                id="tab-Indica">Indica</button>
-            <button onclick="switchCategory('Hybrid')"
-                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
-                id="tab-Hybrid">Hybrid</button>
-            <button onclick="switchCategory('Pre-roll')"
-                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
-                id="tab-Pre-roll">Pre-roll</button>
-            <button onclick="switchCategory('อุปกรณ์')"
-                class="px-6 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap category-inactive"
-                id="tab-อุปกรณ์">อุปกรณ์</button>
-        </div>
-    </div>
+            <div class="discovery-panel">
+                <div class="search-shell">
+                    <span class="search-symbol">⌕</span>
+                    <input type="text" id="searchInput" onkeyup="renderProducts(this.value)"
+                        placeholder="ค้นหาชื่อสายพันธุ์ หรือเอฟเฟกต์ที่ชอบ..."
+                        aria-label="ค้นหาสินค้า">
+                    <kbd>/</kbd>
+                </div>
 
-    <!-- PRODUCT LIST -->
-    <main class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-8 relative z-20">
-        <div id="productList"
-            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"></div>
-    </main>
+                <div class="category-row no-scrollbar" id="categoryTabs">
+                    <button onclick="switchCategory('All')" class="category-active" id="tab-All">ทั้งหมด</button>
+                    <button onclick="switchCategoryPremium()" class="category-inactive" id="tab-พรีเมียม">✦ คัดเกรด</button>
+                    <button onclick="switchCategory('Sativa')" class="category-inactive" id="tab-Sativa">☀ Sativa</button>
+                    <button onclick="switchCategory('Hybrid')" class="category-inactive" id="tab-Hybrid">◐ Hybrid</button>
+                    <button onclick="switchCategory('Indica')" class="category-inactive" id="tab-Indica">☾ Indica</button>
+                    <button onclick="switchCategory('Pre-roll')" class="category-inactive" id="tab-Pre-roll">Pre-roll</button>
+                    <button onclick="switchCategory('อุปกรณ์')" class="category-inactive" id="tab-อุปกรณ์">อุปกรณ์</button>
+                </div>
+            </div>
+
+            <main class="mt-7">
+                <div id="productList" class="product-grid"></div>
+            </main>
+        </div>
+    </section>
 
     <!-- REVIEWS SECTION -->
-    <section class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-16 mb-10 relative z-20">
+    <section id="reviews" class="social-proof-section max-w-7xl mx-auto px-4 sm:px-6 relative z-20">
         <div class="text-center mb-8">
             <p class="text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold mb-2">รีวิวจากลูกค้าจริง</p>
             <h2 class="text-2xl font-black text-white">⭐ เสียงจากลูกค้า</h2>
@@ -852,9 +897,12 @@
     <script type="module" src="./src/main.js"></script>
     <script type="module">
         import { getLineOaUrl } from './src/config.js';
-        // เซต LINE floating button href
-        const lineBtn = document.getElementById('lineFloatLink');
-        if (lineBtn) lineBtn.href = getLineOaUrl();
+        // เซต LINE links ใน hero และปุ่มลอย
+        const lineUrl = getLineOaUrl();
+        ['lineFloatLink', 'heroLineLink'].forEach(id => {
+            const lineLink = document.getElementById(id);
+            if (lineLink) lineLink.href = lineUrl;
+        });
     </script>
     <script type="module">
         import { getAuthSession, clearAuthSession } from './src/auth.js';
@@ -866,7 +914,7 @@
             if (user) {
                 authArea.innerHTML = `
                     <span class="text-white/60 hidden sm:inline">สวัสดี, <span class="text-white">${user.name}</span></span>
-                    <button id="logoutBtn" class="bg-white/10 text-white px-4 py-2 rounded-full hover:bg-white/20 transition border border-white/10">ออกจากระบบ</button>
+                    <button id="logoutBtn" class="login-link">ออกจากระบบ</button>
                 `;
                 document.getElementById('logoutBtn').addEventListener('click', () => {
                     clearAuthSession();
@@ -879,7 +927,7 @@
 
             } else {
                 authArea.innerHTML = `
-                    <a href="login.html" class="bg-white/10 text-white px-4 py-1.5 rounded-full hover:bg-white/20 transition border border-white/10 text-xs">เข้าสู่ระบบ</a>
+                    <a href="login.html" class="login-link hidden sm:block">เข้าสู่ระบบ</a>
                 `;
             }
         });

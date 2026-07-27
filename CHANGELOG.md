@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Added
+- [Codex] feat(products): เพิ่มภาพประกอบต้นฉบับตามชื่อให้ Card ที่ไม่มีภาพ 17 รายการ บีบอัดเป็น JPEG 900x900 พร้อมป้าย “ภาพประกอบ” เพื่อแยกจากภาพสินค้าล็อตจริง (image/generated-products, Google Sheet Products)
 - [Codex] feat(products): ลิสต์สินค้าใหม่จากภาพหน้าร้าน 17 รายการเป็น Card แยกรายสายพันธุ์และอุปกรณ์ พร้อมปรับราคาขึ้น 15% โดยปัดขึ้นขั้นละ 5 บาท และตั้งสต๊อกเริ่มต้น (Google Sheet Products)
 - [Codex] feat(i18n): เพิ่มระบบเลือกภาษาไทย/อังกฤษแบบจำค่าบนอุปกรณ์เดียวกัน ครอบคลุมหน้าร้าน หน้ายืนยันอายุ ตะกร้า ชำระเงิน หน้าเข้าสู่ระบบ/สมัครสมาชิก และหน้า Admin (src/i18n.js, index.html, admin.html, login.html, register.html, src/agegate.js)
 - [Codex] feat(i18n): แปลข้อความแบบ dynamic ของรายการสินค้า การสั่งซื้อ ตัวชี้วัด ออเดอร์ สินค้า และ PromptPay พร้อมสวิตช์ภาษาที่รองรับ desktop/mobile (src/main.js, src/adminApp.js, src/style.css)

@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Added
+- [Codex] feat(products): เพิ่มสินค้าใหม่จากภาพหน้าร้าน 17 รายการ ครบหมวดดอกไม้และอุปกรณ์ พร้อมอัปโหลดภาพกลุ่มสินค้า ปรับราคาขึ้น 15% โดยปัดขึ้นขั้นละ 5 บาท และตั้งสต๊อกเริ่มต้น (Google Sheet Products, ImgBB)
 - [Codex] feat(i18n): เพิ่มระบบเลือกภาษาไทย/อังกฤษแบบจำค่าบนอุปกรณ์เดียวกัน ครอบคลุมหน้าร้าน หน้ายืนยันอายุ ตะกร้า ชำระเงิน หน้าเข้าสู่ระบบ/สมัครสมาชิก และหน้า Admin (src/i18n.js, index.html, admin.html, login.html, register.html, src/agegate.js)
 - [Codex] feat(i18n): แปลข้อความแบบ dynamic ของรายการสินค้า การสั่งซื้อ ตัวชี้วัด ออเดอร์ สินค้า และ PromptPay พร้อมสวิตช์ภาษาที่รองรับ desktop/mobile (src/main.js, src/adminApp.js, src/style.css)
 - [Codex] feat(storefront): เพิ่มตัวเลือก “Find Your Flow”, spotlight ตามเมาส์, คีย์ลัด `/` สำหรับค้นหา และสถานะร้านพร้อมส่ง (index.html, src/main.js, src/style.css)

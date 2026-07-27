@@ -1,3 +1,5 @@
+import { initI18n } from './i18n.js';
+
 const STORAGE_KEY = 'bn_age_verified';
 
 function createAgeGateHTML() {
@@ -22,13 +24,18 @@ function createAgeGateHTML() {
         border-radius: 32px;
         padding: 48px 32px;
         backdrop-filter: blur(20px);
+        position: relative;
     ">
+        <div class="language-switcher" role="group" data-i18n-aria="language.label" style="position:absolute;top:20px;right:20px;">
+            <button type="button" data-language-option="th" data-i18n-title="language.thai">TH</button>
+            <button type="button" data-language-option="en" data-i18n-title="language.english">EN</button>
+        </div>
         <div style="font-size: 56px; margin-bottom: 16px;">🌿</div>
-        <h2 style="color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 8px;">ยืนยันอายุ</h2>
+        <h2 data-i18n="age.title" style="color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 8px;">ยืนยันอายุ</h2>
         <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0 0 12px;">
-            เว็บไซต์นี้จำหน่าย<strong style="color: rgba(255,255,255,0.85);">ผลิตภัณฑ์กัญชา<br>ดอกแท้คัดเกรด พรีโรล และอุปกรณ์</strong>
+            <strong data-i18n-html="age.product" style="color: rgba(255,255,255,0.85);">ผลิตภัณฑ์กัญชา<br>ดอกแท้คัดเกรด พรีโรล และอุปกรณ์</strong>
         </p>
-        <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin: 0 0 32px;">
+        <p data-i18n-html="age.requirement" style="color: rgba(255,255,255,0.5); font-size: 13px; margin: 0 0 32px;">
             จำหน่ายสำหรับผู้ที่มีอายุ <strong style="color: #4ade80;">20 ปีขึ้นไปเท่านั้น</strong><br>
             งดจำหน่ายแก่สตรีมีครรภ์และสตรีให้นมบุตร
         </p>
@@ -44,7 +51,7 @@ function createAgeGateHTML() {
                 cursor: pointer;
                 font-family: inherit;
                 transition: opacity 0.2s;
-            ">ฉันอายุ 20 ปีขึ้นไป — เข้าสู่เว็บไซต์</button>
+            " data-i18n="age.confirm">ฉันอายุ 20 ปีขึ้นไป — เข้าสู่เว็บไซต์</button>
             <button id="age-gate-exit" style="
                 background: rgba(255,255,255,0.08);
                 color: rgba(255,255,255,0.5);
@@ -55,9 +62,9 @@ function createAgeGateHTML() {
                 font-weight: 600;
                 cursor: pointer;
                 font-family: inherit;
-            ">ฉันอายุต่ำกว่า 20 ปี — ออก</button>
+            " data-i18n="age.exit">ฉันอายุต่ำกว่า 20 ปี — ออก</button>
         </div>
-        <p style="color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 24px; line-height: 1.5;">
+        <p data-i18n-html="age.notice" style="color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 24px; line-height: 1.5;">
             การเข้าสู่เว็บไซต์นี้ถือว่าคุณยืนยันว่ามีอายุครบ 20 ปีบริบูรณ์<br>โปรดใช้ผลิตภัณฑ์อย่างมีความรับผิดชอบ
         </p>
     </div>
@@ -65,6 +72,7 @@ function createAgeGateHTML() {
 }
 
 export function initAgeGate() {
+    initI18n();
     if (sessionStorage.getItem(STORAGE_KEY)) return;
 
     const wrapper = document.createElement('div');

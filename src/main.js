@@ -3,6 +3,7 @@ import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
 import { isLoggedIn } from './auth.js';
+import { initI18n, t } from './i18n.js';
 
 let products = [];
 let cart = [];
@@ -145,7 +146,7 @@ document.addEventListener('touchmove', e => {
             setTimeout(() => {
                 document.body.classList.remove('ptr-loading');
                 isRefreshing = false;
-                showToast("อัปเดตข้อมูลเรียบร้อย!");
+                showToast(t('store.product.updated'));
             }, 500);
         });
     }
@@ -168,7 +169,7 @@ function loadProductsFromSheet(callback) {
         complete: (results) => {
             const data = results.data || [];
             if (!data || data.length < 2) {
-                showToast("ไม่พบข้อมูลสินค้า", "error");
+                showToast(t('store.product.noData'), "error");
                 return;
             }
 
@@ -219,7 +220,7 @@ function loadProductsFromSheet(callback) {
         },
         error: (err) => {
             console.error("Fetch Products Error:", err);
-            showToast("โหลดข้อมูลสินค้าล้มเหลว", "error");
+            showToast(t('store.product.loadError'), "error");
         }
     });
 }
@@ -247,8 +248,8 @@ function renderProducts(filter = "") {
         if (typeof filter === "string") q = filter.toLowerCase();
 
         if (products.length === 0) {
-            if (resultMeta) resultMeta.textContent = "กำลังอัปเดตรายการ...";
-            grid.innerHTML = `<div class="empty-products animate-pulse">กำลังโหลดรายการพร้อมส่ง...</div>`;
+            if (resultMeta) resultMeta.textContent = t('store.catalog.updating');
+            grid.innerHTML = `<div class="empty-products animate-pulse">${t('store.catalog.loading')}</div>`;
             return;
         }
 
@@ -261,8 +262,14 @@ function renderProducts(filter = "") {
         });
 
         if (resultMeta) {
-            const categoryLabel = currentCategory === "All" ? "ทุกหมวดหมู่" : currentCategory;
-            resultMeta.textContent = `${filtered.length} รายการ · ${categoryLabel}`;
+            const categoryLabels = {
+                All: t('store.category.allLabel'),
+                'พรีเมียม': t('store.category.premium').replace('✦ ', ''),
+                'อุปกรณ์': t('store.category.accessories'),
+                'เครื่องดื่ม': t('store.category.drinks').replace('🧃 ', '')
+            };
+            const categoryLabel = categoryLabels[currentCategory] || currentCategory;
+            resultMeta.textContent = t('store.catalog.results', { count: filtered.length, category: categoryLabel });
         }
 
         if (filtered.length === 0) {
@@ -270,8 +277,8 @@ function renderProducts(filter = "") {
                 <div class="empty-products">
                     <div>
                         <div class="text-3xl mb-3">⌕</div>
-                        <p class="font-bold text-white/70">ยังไม่พบรายการที่ค้นหา</p>
-                        <p class="text-xs text-white/30 mt-1">ลองเปลี่ยนคำค้นหรือเลือกหมวดหมู่อื่น</p>
+                        <p class="font-bold text-white/70">${t('store.catalog.emptyTitle')}</p>
+                        <p class="text-xs text-white/30 mt-1">${t('store.catalog.emptyHint')}</p>
                     </div>
                 </div>`;
             return;
@@ -320,7 +327,7 @@ function renderProducts(filter = "") {
                     `}
                     <div class="product-badges">
                         ${p.isDrinkPromotion ? `<span class="drink-promo-badge">✦ PROMO SET</span>` : (premium ? `<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>` : (p.tags.length ? `<span class="product-pill">${p.tags[0]}</span>` : ''))}
-                        ${p.totalSold > 0 ? `<span class="product-pill sold">ขายแล้ว ${p.totalSold}+</span>` : ''}
+                        ${p.totalSold > 0 ? `<span class="product-pill sold">${t('store.product.sold', { count: p.totalSold })}</span>` : ''}
                     </div>
                     ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span></div>` : ''}
                 </div>
@@ -339,11 +346,11 @@ function renderProducts(filter = "") {
                             </button>
                         `).join('')}
                     </div>
-                    ${variant.stock > 0 && variant.stock <= 5 ? `<p class="stock-alert">เหลือเพียง ${variant.stock} ชิ้น</p>` : ''}
+                    ${variant.stock > 0 && variant.stock <= 5 ? `<p class="stock-alert">${t('store.product.lowStock', { count: variant.stock })}</p>` : ''}
 
                     <div class="product-bottom">
                         <div>
-                            <p class="product-price-label">เริ่มต้น</p>
+                            <p class="product-price-label">${t('store.product.startingAt')}</p>
                             <div class="product-price-row">
                                 <p class="product-price ${premium ? 'text-amber-200' : ''}">${variant.price.toLocaleString()} ฿</p>
                                 ${variant.originalPrice ? `<span class="original-price">${variant.originalPrice.toLocaleString()} ฿</span>` : ''}
@@ -351,7 +358,7 @@ function renderProducts(filter = "") {
                         </div>
                         <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})"
                             ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''}
-                            class="add-button" aria-label="เพิ่ม ${p.name} ลงตะกร้า">
+                            class="add-button" aria-label="${t('store.product.addAria', { name: p.name })}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>
@@ -363,7 +370,7 @@ function renderProducts(filter = "") {
         initRevealObserver();
     } catch (err) {
         console.error("Render Error:", err);
-        showToast("เกิดข้อผิดพลาดในการแสดงสินค้า", "error");
+        showToast(t('store.product.renderError'), "error");
     }
 }
 
@@ -458,13 +465,13 @@ function openProductDetails(pName) {
             <button onclick="window.addToCart('${pNameEsc}', ${product.selectedVariantIdx}); window.closeProductDetails();"
                     ${isOutOfStock ? 'disabled' : ''}
                     class="w-full ${premium ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black' : 'bg-white text-black'} py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl disabled:opacity-40 disabled:cursor-not-allowed text-sm">
-                ${isOutOfStock ? '❌ สินค้าหมด' : (premium ? '👑 เพิ่มลงตะกร้า' : '🛒 เพิ่มลงตะกร้า')}
+                ${isOutOfStock ? `❌ ${t('store.product.outOfStock')}` : (premium ? `👑 ${t('store.product.add')}` : `🛒 ${t('store.product.add')}`)}
             </button>
             ${!isOutOfStock ? `
             <a href="${buildLineUrl(lineMsg)}" target="_blank"
                class="w-full bg-[#06C755] text-white py-4 rounded-2xl font-bold hover:bg-[#05b34c] transition shadow-xl shadow-green-900/30 text-sm text-center flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.84 1.38 5.38 3.56 7.12L4.5 22l3.78-1.98C9.37 20.63 10.66 21 12 21c5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg>
-                ทัก LINE สั่งด่วน
+                ${t('store.product.lineOrder')}
             </a>` : ''}
         </div>
     `;
@@ -496,7 +503,7 @@ function addToCart(pName, vIdx) {
 
     updateCartUI();
     toggleCart(true);
-    showToast(`เพิ่ม ${product.name} ลงในตะกร้าแล้ว!`);
+    showToast(t('store.product.added', { name: product.name }));
 }
 
 function toggleCart(force = null) {
@@ -522,7 +529,7 @@ function updateCartUI() {
     let cartHTML = '';
 
     if (cart.length === 0) {
-        cartHTML = `<div class="text-center py-20 text-slate-400">ยังไม่มีสินค้าในตะกร้า</div>`;
+        cartHTML = `<div class="text-center py-20 text-slate-400">${t('store.cart.empty')}</div>`;
     } else {
         cartHTML = cart.map((item, idx) => {
             subtotal += item.price * item.qty;
@@ -560,7 +567,7 @@ function updateQty(idx, change) {
 
 async function loadAndDisplayPaymentMethods() {
     const container = document.getElementById('paymentMethodsContainer');
-    container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm animate-pulse">กำลังโหลดข้อมูลชำระเงิน...</div>`;
+    container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm animate-pulse">${t('store.checkout.loadingPayment')}</div>`;
     
     try {
         const res = await fetch(`${GAS_URL}?action=getBank`);
@@ -577,7 +584,7 @@ async function loadAndDisplayPaymentMethods() {
         const activePromptpay = promptpayList.filter(pp => pp.status === 'active');
 
         if (activePromptpay.length === 0) {
-            container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm">ยังไม่มีข้อมูลการชำระเงิน</div>`;
+            container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm">${t('store.checkout.noPayment')}</div>`;
             return;
         }
 
@@ -597,12 +604,12 @@ async function loadAndDisplayPaymentMethods() {
                         <p class="text-[11px] text-white font-mono bg-white/10 px-2 py-1 rounded inline-block">
                             ${pp.number}
                         </p>
-                        <p class="text-[10px] text-white/40 mt-2">โปรดโอนเงินไปยังบัญชีนี้</p>
+                        <p class="text-[10px] text-white/40 mt-2">${t('store.checkout.transferHint')}</p>
                     </div>
                     ${pp.qrImage ? `
                         <div class="flex-shrink-0">
                             <button onclick="previewPaymentQR('${pp.qrImage}')" class="px-3 py-1 text-[10px] font-bold bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
-                                ดู QR
+                                ${t('store.checkout.viewQr')}
                             </button>
                         </div>
                     ` : ''}
@@ -611,7 +618,7 @@ async function loadAndDisplayPaymentMethods() {
         `).join('');
     } catch (err) {
         console.error("Load Settings Error:", err);
-        container.innerHTML = `<div class="text-center py-4 text-red-400 text-sm">โหลดข้อมูลล้มเหลว</div>`;
+        container.innerHTML = `<div class="text-center py-4 text-red-400 text-sm">${t('store.checkout.paymentLoadError')}</div>`;
     }
 }
 
@@ -624,7 +631,7 @@ function previewPaymentQR(qrUrl) {
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <img src="${qrUrl}" class="w-64 h-64 mx-auto rounded-xl shadow-md mb-4 object-cover">
-            <p class="text-sm text-slate-600 font-medium">สแกน QR Code นี้เพื่อโอนเงิน</p>
+            <p class="text-sm text-slate-600 font-medium">${t('store.checkout.scanQr')}</p>
         </div>
     `;
     modal.onclick = () => modal.remove();
@@ -647,11 +654,11 @@ function updatePaymentMethod(method) {
     if (method === 'cod') {
         paymentDetails.classList.add('hidden');
         slipSection.classList.add('hidden');
-        confirmBtn.innerHTML = `ยืนยันสั่งซื้อ (เก็บเงินปลายทาง)`;
+        confirmBtn.innerHTML = t('store.checkout.confirmCod');
     } else {
         paymentDetails.classList.remove('hidden');
         slipSection.classList.remove('hidden');
-        confirmBtn.innerHTML = `ยืนยันและสั่งซื้อ`;
+        confirmBtn.innerHTML = t('store.checkout.confirmTransfer');
     }
     updateConfirmButtonText();
 }
@@ -662,9 +669,9 @@ function updateConfirmButtonText() {
     const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
     
     if (selectedPaymentMethod === 'cod') {
-        btn.innerHTML = `ยืนยันสั่งซื้อ (ยอดรวม ${finalTotal.toLocaleString()} ฿)`;
+        btn.innerHTML = t('store.checkout.confirmCodTotal', { total: finalTotal.toLocaleString() });
     } else {
-        btn.innerHTML = `ยืนยันและสั่งซื้อ (${finalTotal.toLocaleString()} ฿)`;
+        btn.innerHTML = t('store.checkout.confirmTransferTotal', { total: finalTotal.toLocaleString() });
     }
 }
 
@@ -672,7 +679,7 @@ function previewSlip(input) {
     if (input.files[0]) {
         const reader = new FileReader();
         reader.onload = e => {
-            document.getElementById('slipPreview').innerHTML = `<img src="${e.target.result}" class="h-32 w-auto mx-auto rounded-xl shadow-md"><p class="mt-2 text-xs text-indigo-600 font-bold">✓ เลือกสลิปแล้ว</p>`;
+            document.getElementById('slipPreview').innerHTML = `<img src="${e.target.result}" class="h-32 w-auto mx-auto rounded-xl shadow-md"><p class="mt-2 text-xs text-indigo-600 font-bold">${t('store.checkout.slipSelected')}</p>`;
         };
         reader.readAsDataURL(input.files[0]);
     }
@@ -694,11 +701,11 @@ async function submitOrder() {
         paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'
     };
 
-    if (!data.name || !data.phone || !data.address) return showToast("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง", "error");
-    if (selectedPaymentMethod === 'transfer' && !data.slip) return showToast("กรุณาแนบสลิปโอนเงิน", "error");
+    if (!data.name || !data.phone || !data.address) return showToast(t('store.checkout.required'), "error");
+    if (selectedPaymentMethod === 'transfer' && !data.slip) return showToast(t('store.checkout.slipRequired'), "error");
 
     btn.disabled = true;
-    btn.innerHTML = "กำลังบันทึกออเดอร์...";
+    btn.innerHTML = t('store.checkout.saving');
 
     try {
         let slipUrl = "COD (ไม่แนบสลิป)";
@@ -768,9 +775,9 @@ ${itemsDetail}
             if (currentLineUrl) window.location.href = currentLineUrl;
         }, 3000);
     } catch (e) {
-        showToast("เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง", "error");
+        showToast(t('store.checkout.error'), "error");
         btn.disabled = false;
-        btn.innerHTML = "ยืนยันและสั่งซื้อ";
+        btn.innerHTML = t('store.checkout.confirmTransfer');
     }
 }
 
@@ -855,6 +862,14 @@ window.redirectToLine = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    initI18n();
     initSolExperience();
     loadProductsFromSheet(renderProducts);
+});
+
+document.addEventListener('cf:languagechange', () => {
+    const searchInput = document.getElementById('searchInput');
+    renderProducts(searchInput ? searchInput.value : "");
+    updateCartUI();
+    updateConfirmButtonText();
 });

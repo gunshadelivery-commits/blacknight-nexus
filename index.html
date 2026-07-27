@@ -350,13 +350,17 @@
             </div>
 
             <div class="flex items-center gap-2 sm:gap-3">
+                <div class="language-switcher" role="group" data-i18n-aria="language.label">
+                    <button type="button" data-language-option="th" data-i18n-title="language.thai">TH</button>
+                    <button type="button" data-language-option="en" data-i18n-title="language.english">EN</button>
+                </div>
                 <!-- User Auth Area -->
                 <div id="authArea" class="text-xs font-bold flex items-center gap-3">
                     <a href="login.html"
-                        class="login-link hidden sm:block">เข้าสู่ระบบ</a>
+                        class="login-link hidden sm:block" data-i18n="store.nav.login">เข้าสู่ระบบ</a>
                 </div>
 
-                <button id="cartBtn" onclick="toggleCart()" class="cart-nav-button relative" aria-label="เปิดตะกร้าสินค้า">
+                <button id="cartBtn" onclick="toggleCart()" class="cart-nav-button relative" aria-label="เปิดตะกร้าสินค้า" data-i18n-aria="store.cart.open">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -385,7 +389,7 @@
                         เลือกดอกที่ใช่<br>
                         <span>ให้ทุกช่วงเวลาของคุณ</span>
                     </h1>
-                    <p class="hero-description">
+                    <p class="hero-description" data-i18n="store.hero.description">
                         ดอกแท้คัดเกรด Sativa, Indica และ Hybrid พร้อมคำแนะนำแบบเป็นกันเอง
                         ส่งด่วนในย่านอ่อนนุช–สุขุมวิทภายในประมาณ 1 ชั่วโมง
                     </p>
@@ -739,7 +743,7 @@
     <div id="cartSidebar"
         class="fixed top-0 right-0 h-full w-[85%] max-w-sm glass-card z-[60] shadow-2xl transition-transform duration-300 transform translate-x-full flex flex-col border-l border-white/5">
         <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5 text-white">
-            <h3 class="text-xl font-bold flex items-center gap-2">ตะกร้าสินค้า <span id="cartTotalCount"
+            <h3 class="text-xl font-bold flex items-center gap-2"><span data-i18n="store.cart.title">ตะกร้าสินค้า</span> <span id="cartTotalCount"
                     class="text-sm font-normal opacity-50">(0)</span></h3>
             <button onclick="toggleCart()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -755,13 +759,13 @@
 
         <div class="p-6 pb-24 border-t border-white/10 bg-black/40 space-y-4">
             <div class="flex justify-between items-center text-white/60 text-sm">
-                <span>ยอดรวมสินค้า</span>
+                <span data-i18n="store.cart.subtotal">ยอดรวมสินค้า</span>
                 <span id="cartSubtotal" class="font-bold text-white text-lg">0.00 ฿</span>
             </div>
             <button onclick="goToCheckout()" id="checkoutBtn" disabled class="btn-checkout btn-checkout-with-icon"
                 title="คลิกเพื่อไปยังหน้าชำระเงิน">
                 <span>🛒</span>
-                <span>สั่งซื้อสินค้า</span>
+                <span data-i18n="store.cart.checkout">สั่งซื้อสินค้า</span>
             </button>
         </div>
     </div>
@@ -772,7 +776,7 @@
         <div
             class="glass-card w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300 border border-white/10">
             <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                <h3 class="text-xl font-bold text-white">รายละเอียดการจัดส่ง</h3>
+                <h3 class="text-xl font-bold text-white" data-i18n="store.checkout.title">รายละเอียดการจัดส่ง</h3>
                 <button onclick="closeCheckout()" class="p-2 hover:bg-white/10 rounded-full text-white/50"><svg
                         class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -907,6 +911,7 @@
     </script>
     <script type="module">
         import { getAuthSession, clearAuthSession } from './src/auth.js';
+        import { applyTranslations } from './src/i18n.js';
 
         document.addEventListener('DOMContentLoaded', () => {
             const authArea = document.getElementById('authArea');
@@ -914,9 +919,10 @@
 
             if (user) {
                 authArea.innerHTML = `
-                    <span class="text-white/60 hidden sm:inline">สวัสดี, <span class="text-white">${user.name}</span></span>
-                    <button id="logoutBtn" class="login-link">ออกจากระบบ</button>
+                    <span class="text-white/60 hidden sm:inline"><span data-i18n="store.nav.greeting">สวัสดี,</span> <span class="text-white">${user.name}</span></span>
+                    <button id="logoutBtn" class="login-link" data-i18n="store.nav.logout">ออกจากระบบ</button>
                 `;
+                applyTranslations(authArea);
                 document.getElementById('logoutBtn').addEventListener('click', () => {
                     clearAuthSession();
                     window.location.reload();
@@ -928,8 +934,9 @@
 
             } else {
                 authArea.innerHTML = `
-                    <a href="login.html" class="login-link hidden sm:block">เข้าสู่ระบบ</a>
+                    <a href="login.html" class="login-link hidden sm:block" data-i18n="store.nav.login">เข้าสู่ระบบ</a>
                 `;
+                applyTranslations(authArea);
             }
         });
     </script>

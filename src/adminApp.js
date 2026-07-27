@@ -2,6 +2,7 @@ import './style.css';
 import Papa from 'papaparse';
 import Chart from 'chart.js/auto';
 import { ADMIN_PASSWORD, ORDERS_CSV_URL, SHEET_CSV_URL as PRODUCTS_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, getImgbbUploadUrl } from './config.js';
+import { getLanguage, initI18n, t } from './i18n.js';
 
 let rawOrders = [];
 let rawProducts = [];
@@ -130,7 +131,7 @@ function bulkEsc(s) {
 
 async function loadBulkEditor() {
     const body = document.getElementById('bulkTableBody');
-    if (body) body.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">กำลังโหลด...</td></tr>`;
+    if (body) body.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">${t('admin.dynamic.loading')}</td></tr>`;
     try {
         const res = await fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`);
         const data = await res.json();
@@ -148,7 +149,7 @@ async function loadBulkEditor() {
         renderBulkTable();
     } catch (e) {
         console.error("Bulk load error:", e);
-        showToast("โหลดข้อมูลล้มเหลว", "error");
+        showToast(t('admin.dynamic.loadError'), "error");
     }
 }
 
@@ -156,7 +157,7 @@ function renderBulkTable() {
     const body = document.getElementById('bulkTableBody');
     if (!body) return;
     if (!bulkRows.length) {
-        body.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">ไม่มีสินค้า</td></tr>`;
+        body.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400">${t('admin.dynamic.noProducts')}</td></tr>`;
         return;
     }
     body.innerHTML = bulkRows.map((r, i) => `
@@ -242,11 +243,11 @@ async function saveAllBulk() {
 function checkPass() {
     if (document.getElementById('passInput').value === ADMIN_PASSWORD) {
         localStorage.setItem('adminAuth', 'true');
-        showToast("เข้าสู่ระบบเรียบร้อย", "success");
+        showToast(t('admin.toast.loginSuccess'), "success");
         showDashboard();
     } else {
         document.getElementById('errorMsg').classList.remove('hidden');
-        showToast("รหัสผ่านผิด!", "error");
+        showToast(t('admin.toast.wrongPassword'), "error");
     }
 }
 function showDashboard() {
@@ -258,6 +259,7 @@ function logout() { localStorage.removeItem('adminAuth'); location.reload(); }
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
+        initI18n();
         loadData();
         loadProducts();
         loadPromptpayData();
@@ -502,14 +504,14 @@ function processSales() {
     const todayEl = document.getElementById('todayTotal');
     if (todayEl) todayEl.textContent = totalToday.toLocaleString() + " ฿";
     const todayCountEl = document.getElementById('todayCount');
-    if (todayCountEl) todayCountEl.textContent = `${countToday} รายการวันนี้`;
+    if (todayCountEl) todayCountEl.textContent = t('admin.dynamic.todayOrders', { count: countToday });
 
     document.getElementById('monthlyTotal').textContent = totalMonth.toLocaleString() + " ฿";
-    document.getElementById('monthlyCount').textContent = `${countMonth} รายการ`;
+    document.getElementById('monthlyCount').textContent = t('admin.dynamic.orders', { count: countMonth });
     document.getElementById('weeklyTotal').textContent = totalWeek.toLocaleString() + " ฿";
-    document.getElementById('weeklyCount').textContent = `${countWeek} รายการ`;
+    document.getElementById('weeklyCount').textContent = t('admin.dynamic.orders', { count: countWeek });
     document.getElementById('avgOrder').textContent = (countMonth > 0 ? (totalMonth / countMonth).toFixed(2) : 0) + " ฿";
-    document.getElementById('totalLifetime').textContent = `รวมทั้งหมด ${totalLife.toLocaleString()} ฿`;
+    document.getElementById('totalLifetime').textContent = t('admin.dynamic.lifetime', { total: totalLife.toLocaleString() });
 
     renderChart(dailyStats); renderTop(productCounts); renderOrdersTable();
 }
@@ -519,8 +521,9 @@ function renderChart(dataMap) {
     const labels = [], values = [];
     for (let i = 13; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
-        const k = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-        labels.push(k); values.push((dataMap[k] || 0) + fakeDailyAmount(d));
+        const dataKey = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+        const label = d.toLocaleDateString(getLanguage() === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' });
+        labels.push(label); values.push((dataMap[dataKey] || 0) + fakeDailyAmount(d));
     }
     if (salesChart) salesChart.destroy();
     salesChart = new Chart(ctx, {
@@ -588,6 +591,12 @@ function renderOrdersTable() {
         const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
         const dateStr = dateRaw ? dateRaw.toString().split('GMT')[0].trim() : "N/A";
         const total = parseFloat(getVal(["ยอดรวม", "ราคา", "total", "price"]) || 0);
+        const displayStatus = {
+            'รอดำเนินการ': t('admin.orders.pending'),
+            'ชำระเงินแล้ว': t('admin.orders.paid'),
+            'อยู่ระหว่างจัดส่ง': t('admin.orders.inTransit')
+        }[status] || status;
+        const displayPayment = isCOD ? t('admin.orders.cod') : t('admin.orders.transfer');
         
         body.innerHTML += `
             <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-50">
@@ -602,15 +611,15 @@ function renderOrdersTable() {
                 </td>
                 <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">
                     ${total.toLocaleString()} ฿
-                    ${shippingFee ? `<div class="text-[9px] text-slate-400 font-normal">ค่าส่ง: ${shippingFee}</div>` : ''}
+                    ${shippingFee ? `<div class="text-[9px] text-slate-400 font-normal">${t('admin.orders.shipping')} ${shippingFee}</div>` : ''}
                 </td>
                 <td class="px-6 py-4 w-[120px] text-center">
                     <div class="flex flex-col items-center gap-1">
                         <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight ${isConfirmed?'bg-emerald-50 text-emerald-600 border border-emerald-100':'bg-amber-50 text-amber-600 border border-amber-100'}">
-                            ${status}
+                            ${displayStatus}
                         </span>
                         <span class="text-[9px] font-bold ${isCOD ? 'text-blue-500' : 'text-slate-400'} uppercase tracking-tighter">
-                            ${payMethod}
+                            ${displayPayment}
                         </span>
                     </div>
                 </td>
@@ -618,21 +627,21 @@ function renderOrdersTable() {
                     <div class="flex justify-end gap-2 flex-wrap">
                         <button onclick="window.printLabel(${rawOrders.indexOf(order)})" 
                                 class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition active:scale-95 shadow-md">
-                            🖨️ ปริ้น
+                            ${t('admin.orders.print')}
                         </button>
                         <a href="${slip}" target="_blank" 
                            class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
-                            📄 ดูสลิป
+                            ${t('admin.orders.slip')}
                         </a>
                         ${status === 'รอดำเนินการ' || status === 'เก็บเงินปลายทาง' ? `
                         <button onclick="window.updateConfirm(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
                                 class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
-                            ✅ รับยอด
+                            ${t('admin.orders.receive')}
                         </button>` : ''}
                         ${status !== 'อยู่ระหว่างจัดส่ง' ? `
                         <button onclick="window.updateStatusToTransit(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
                                 class="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
-                            🚚 จัดส่ง
+                            ${t('admin.orders.ship')}
                         </button>` : ''}
                     </div>
                 </td>
@@ -920,7 +929,7 @@ function renderProductsTable() {
             <td class="px-6 py-3 font-bold text-emerald-600">${p.minPrice.toLocaleString()} ฿ +</td>
             <td class="px-6 py-3 font-bold ${p.totalStock < 5 ? 'text-red-500' : 'text-slate-600'}">${p.totalStock}</td>
             <td class="px-6 py-3 text-slate-400 font-bold">${p.totalSold}</td>
-            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${outOfStock ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${outOfStock ? 'หมด' : 'มีของ'}</span></td>
+            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${outOfStock ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${outOfStock ? t('admin.products.out') : t('admin.products.available')}</span></td>
             <td class="px-6 py-3 text-right">
                 <button onclick="editProduct('${p.name.replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-emerald-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -1141,7 +1150,7 @@ function renderPromptpayTable() {
     tbody.innerHTML = "";
     
     if (promptpayList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">ยังไม่มีข้อมูล Promptpay</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">${t('admin.promptpay.none')}</td></tr>`;
         return;
     }
 
@@ -1155,7 +1164,7 @@ function renderPromptpayTable() {
             <td class="px-6 py-4 font-mono text-sm text-slate-600">${pp.number}</td>
             <td class="px-6 py-4">
                 <span class="px-3 py-1 rounded-full text-[10px] font-bold ${pp.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
-                    ${pp.status === 'active' ? '✓ ใช้งาน' : '○ ไม่ใช้งาน'}
+                    ${pp.status === 'active' ? t('admin.promptpay.active') : t('admin.promptpay.inactive')}
                 </span>
             </td>
             <td class="px-6 py-4 text-right flex gap-2 justify-end">
@@ -1349,6 +1358,13 @@ async function syncPromptpayToGAS() {
         btn.innerHTML = originalText;
     }
 }
+
+document.addEventListener('cf:languagechange', () => {
+    if (rawOrders.length) processSales();
+    if (rawProducts.length) renderProductsTable();
+    if (bulkRows.length) renderBulkTable();
+    renderPromptpayTable();
+});
 
 // === EXPOSE GLOBALS ===
 window.checkPass = checkPass;

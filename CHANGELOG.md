@@ -12,6 +12,8 @@
 
 ## [Unreleased]
 ### Added
+- [Codex] feat(i18n): เพิ่มระบบเลือกภาษาไทย/อังกฤษแบบจำค่าบนอุปกรณ์เดียวกัน ครอบคลุมหน้าร้าน หน้ายืนยันอายุ ตะกร้า ชำระเงิน หน้าเข้าสู่ระบบ/สมัครสมาชิก และหน้า Admin (src/i18n.js, index.html, admin.html, login.html, register.html, src/agegate.js)
+- [Codex] feat(i18n): แปลข้อความแบบ dynamic ของรายการสินค้า การสั่งซื้อ ตัวชี้วัด ออเดอร์ สินค้า และ PromptPay พร้อมสวิตช์ภาษาที่รองรับ desktop/mobile (src/main.js, src/adminApp.js, src/style.css)
 - [Codex] feat(storefront): เพิ่มตัวเลือก “Find Your Flow”, spotlight ตามเมาส์, คีย์ลัด `/` สำหรับค้นหา และสถานะร้านพร้อมส่ง (index.html, src/main.js, src/style.css)
 - [Codex] chore(hosting): เพิ่มข้อมูลโปรเจกต์สำหรับเผยแพร่ตัวอย่างผ่าน Sites (.openai/hosting.json)
 - [Codex] chore(hosting): เพิ่ม static worker adapter และขั้นตอนเตรียม build output สำหรับ Sites (sites-worker.js, vite.config.js)

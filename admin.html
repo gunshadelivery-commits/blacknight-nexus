@@ -566,6 +566,11 @@
 
     <!-- LOGIN OVERLAY -->
     <div id="loginOverlay" class="admin-login-overlay fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="language-switcher language-switcher-light" role="group" data-i18n-aria="language.label"
+            style="position: fixed; top: 20px; right: 20px;">
+            <button type="button" data-language-option="th" data-i18n-title="language.thai">TH</button>
+            <button type="button" data-language-option="en" data-i18n-title="language.english">EN</button>
+        </div>
         <div class="admin-login-card">
             <section class="admin-login-brand">
                 <div class="admin-brand-mark">CF</div>
@@ -598,7 +603,7 @@
                         <div class="admin-header-subtitle">ON NUT · CONTROL CENTER · <span id="appVersion">v2.1.0</span></div>
                     </div>
                 </div>
-                <nav class="admin-tabs no-scrollbar" aria-label="เมนูหลังบ้าน">
+                <nav class="admin-tabs no-scrollbar" aria-label="เมนูหลังบ้าน" data-i18n-aria="admin.nav.aria">
                     <button onclick="switchTab('overview')" id="tab-overview"
                         class="admin-tab"><span class="admin-tab-icon">◫</span>ภาพรวม</button>
                     <button onclick="switchTab('products')" id="tab-products"
@@ -609,6 +614,10 @@
                         class="admin-tab"><span class="admin-tab-icon">⌁</span>PromptPay</button>
                 </nav>
                 <div class="admin-header-actions">
+                    <div class="language-switcher language-switcher-light" role="group" data-i18n-aria="language.label">
+                        <button type="button" data-language-option="th" data-i18n-title="language.thai">TH</button>
+                        <button type="button" data-language-option="en" data-i18n-title="language.english">EN</button>
+                    </div>
                     <a href="index.html" class="admin-store-link">ดูหน้าร้าน ↗</a>
                     <button onclick="logout()" class="admin-logout">ออกจากระบบ</button>
                 </div>

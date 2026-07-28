@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Added
+- [Codex] feat(analytics): เพิ่ม GA4 ecommerce/contact events สำหรับดูสินค้า เพิ่มตะกร้า เริ่มชำระเงิน สั่งซื้อ LINE โทร และ Google Business Profile โดยไม่ส่งข้อมูลส่วนบุคคลของลูกค้า (src/analytics.js, src/main.js, index.html)
 - [Codex] feat(products): เพิ่มภาพประกอบต้นฉบับตามชื่อให้ Card ที่ไม่มีภาพ 17 รายการ บีบอัดเป็น JPEG 900x900 พร้อมป้าย “ภาพประกอบ” เพื่อแยกจากภาพสินค้าล็อตจริง (image/generated-products, Google Sheet Products)
 - [Codex] feat(products): ลิสต์สินค้าใหม่จากภาพหน้าร้าน 17 รายการเป็น Card แยกรายสายพันธุ์และอุปกรณ์ พร้อมปรับราคาขึ้น 15% โดยปัดขึ้นขั้นละ 5 บาท และตั้งสต๊อกเริ่มต้น (Google Sheet Products)
 - [Codex] feat(i18n): เพิ่มระบบเลือกภาษาไทย/อังกฤษแบบจำค่าบนอุปกรณ์เดียวกัน ครอบคลุมหน้าร้าน หน้ายืนยันอายุ ตะกร้า ชำระเงิน หน้าเข้าสู่ระบบ/สมัครสมาชิก และหน้า Admin (src/i18n.js, index.html, admin.html, login.html, register.html, src/agegate.js)
@@ -22,6 +23,7 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Codex] fix(seo): ปรับ Organization/WebSite structured data ให้ใช้ชื่อธุรกิจจริง เชื่อม publisher ด้วย @id และตัด SearchAction ที่หน้าเว็บไม่ได้รองรับ (index.html)
 - [Codex] fix(products): ถอดภาพรวมที่ใช้ซ้ำผิดวัตถุประสงค์ออกจากสินค้าใหม่ และเพิ่มภาพกราฟิก Card อัตโนมัติตามชื่อกับหมวดหมู่เมื่อสินค้าไม่มีภาพ (บั๊กจาก [Codex]) (index.html, src/main.js, src/style.css, Google Sheet Products)
 - [Codex] fix(deploy): ซิงค์ GitHub Actions Secrets `VITE_SHEET_CSV_URL`, `VITE_GAS_URL` และ `VITE_ORDERS_CSV_URL` ให้ตรงกับ `.env` ของร้าน เพื่อให้หน้าร้านและหลังบ้าน production ใช้ชีตชุดเดียวกัน (GitHub Actions Secrets)
 - [Codex] chore(domain): ใช้ blacknight69.com เป็น canonical และ custom domain หลักตามโดเมนที่มี DNS/HTTPS พร้อมใช้งาน โดยคงแบรนด์ Cannabis Flower อ่อนนุช (index.html, login.html, register.html, accessories.html, sitemap.xml, robots.txt, llms.txt, vite.config.js, .github/workflows/deploy.yml)

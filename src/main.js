@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
 import { isLoggedIn } from './auth.js';
 import { initI18n, t } from './i18n.js';
+import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
 
 let products = [];
 let cart = [];
@@ -453,6 +454,12 @@ function openProductDetails(pName) {
     
     const variant = product.variants[product.selectedVariantIdx];
     const isOutOfStock = product.status === 'หมด' || product.status === 'sold out' || product.status === '0' || variant.stock <= 0;
+
+    trackEvent('view_item', {
+        currency: 'THB',
+        value: Number(variant.price) || 0,
+        items: [buildAnalyticsItem(product, variant)],
+    });
     
     const modalMainImage = document.getElementById('modalMainImage');
     const modalProductArt = document.getElementById('modalProductArt');
@@ -527,6 +534,7 @@ function openProductDetails(pName) {
             </button>
             ${!isOutOfStock ? `
             <a href="${buildLineUrl(lineMsg)}" target="_blank"
+               data-analytics-event="contact_line" data-analytics-placement="product_detail"
                class="w-full bg-[#06C755] text-white py-4 rounded-2xl font-bold hover:bg-[#05b34c] transition shadow-xl shadow-green-900/30 text-sm text-center flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.84 1.38 5.38 3.56 7.12L4.5 22l3.78-1.98C9.37 20.63 10.66 21 12 21c5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg>
                 ${t('store.product.lineOrder')}
@@ -558,6 +566,12 @@ function addToCart(pName, vIdx) {
     const existing = cart.find(item => item.name === product.name && item.size === variant.size);
     if (existing) existing.qty++;
     else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: product.image, icon: product.isDrink ? '🥤' : '📦' });
+
+    trackEvent('add_to_cart', {
+        currency: 'THB',
+        value: Number(variant.price) || 0,
+        items: [buildAnalyticsItem(product, variant)],
+    });
 
     updateCartUI();
     toggleCart(true);
@@ -697,6 +711,19 @@ function previewPaymentQR(qrUrl) {
 }
 
 function goToCheckout() {
+    const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    trackEvent('begin_checkout', {
+        currency: 'THB',
+        value: total,
+        items: cart.map(item => ({
+            item_id: item.name,
+            item_name: item.name,
+            item_variant: item.size,
+            price: item.price,
+            quantity: item.qty,
+        })),
+    });
+
     loadAndDisplayPaymentMethods();
     updatePaymentMethod('cod'); // COD เป็น default — ลด friction (ไม่ต้องโอนก่อน)
     document.getElementById('checkoutModal').classList.remove('hidden');
@@ -822,6 +849,20 @@ ${itemsDetail}
 
         currentLineUrl = buildLineUrl(lineMsg);
 
+        trackEvent('purchase', {
+            transaction_id: window.crypto?.randomUUID?.() || `order-${Date.now()}`,
+            currency: 'THB',
+            value: finalTotal,
+            shipping: selectedPaymentMethod === 'cod' ? COD_FEE : 0,
+            items: cart.map(item => ({
+                item_id: item.name,
+                item_name: item.name,
+                item_variant: item.size,
+                price: item.price,
+                quantity: item.qty,
+            })),
+        });
+
         confetti({
             particleCount: 150,
             spread: 70,
@@ -921,6 +962,7 @@ window.redirectToLine = () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     initI18n();
+    initAnalyticsTracking();
     initSolExperience();
     loadProductsFromSheet(renderProducts);
 });

@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V24-MAIL";
+const GAS_VERSION = "V26-PRIVATE";
 // TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
 // (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
 const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
@@ -23,6 +23,17 @@ function getSS() {
     if (ss) return ss;
   } catch (e) {}
   return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+// ===== ไฟล์ส่วนตัวสำหรับข้อมูลลูกค้า (Orders + Users) =====
+// ตั้งรหัสไฟล์ที่ Project Settings → Script Properties → PRIVATE_SHEET_ID
+// ยังไม่ตั้ง = ใช้ไฟล์หลักตามเดิม (deploy ก่อนย้ายแท็บได้ ไม่มีอะไรพัง)
+function getPrivateSS() {
+  try {
+    var id = PropertiesService.getScriptProperties().getProperty("PRIVATE_SHEET_ID");
+    if (id) return SpreadsheetApp.openById(id);
+  } catch (e) {}
+  return getSS();
 }
 
 function initSheets() {
@@ -102,9 +113,10 @@ function doPost(e) {
 
     // ===== REGISTER =====
     if (action === "register") {
-      var uSheet = ss.getSheetByName(SHEET_USERS);
+      var pss = getPrivateSS();
+      var uSheet = pss.getSheetByName(SHEET_USERS);
       if (!uSheet) {
-        uSheet = ss.insertSheet(SHEET_USERS);
+        uSheet = pss.insertSheet(SHEET_USERS);
         uSheet.appendRow(["Timestamp", "Name", "Email", "PasswordHash", "Status"]);
       }
       var uRows = uSheet.getDataRange().getValues();
@@ -123,7 +135,7 @@ function doPost(e) {
 
     // ===== LOGIN =====
     if (action === "login") {
-      var uSheet2 = ss.getSheetByName(SHEET_USERS);
+      var uSheet2 = getPrivateSS().getSheetByName(SHEET_USERS);
       if (!uSheet2) return sendResponse({ error: "ยังไม่มีผู้ใช้ในระบบ" });
       var uRows2 = uSheet2.getDataRange().getValues();
       var emailLower2 = (data.email || "").toLowerCase().trim();
@@ -189,8 +201,9 @@ function doPost(e) {
     }
 
     if (action === "log") {
-      let oSheet = ss.getSheetByName(SHEET_ORDERS);
-      if (!oSheet) oSheet = ss.insertSheet(SHEET_ORDERS);
+      const pssLog = getPrivateSS();
+      let oSheet = pssLog.getSheetByName(SHEET_ORDERS);
+      if (!oSheet) oSheet = pssLog.insertSheet(SHEET_ORDERS);
       // ใส่หัวคอลัมน์อัตโนมัติถ้าแท็บ Orders ยังว่าง (กันออเดอร์แรกกลายเป็น header)
       if (oSheet.getLastRow() === 0) {
         oSheet.appendRow(["วันที่", "ชื่อ", "เบอร์โทร", "ที่อยู่", "mapUrl", "รายการ", "ยอดรวม", "สลิป", "ชำระเงิน", "สถานะ"]);
@@ -210,9 +223,16 @@ function doPost(e) {
       return sendResponse({ result: "success" });
     }
 
+    // ===== GET ORDERS (เฉพาะหน้า admin — ไม่อยู่ใน PUBLIC_ACTIONS จึงต้องมี ADMIN_KEY) =====
+    if (action === "getOrders") {
+      const oSheet = getPrivateSS().getSheetByName(SHEET_ORDERS);
+      // getDisplayValues = ค่าตามที่ตาเห็นในชีต (รูปแบบวันที่/ตัวเลขเหมือน CSV เดิมทุกประการ)
+      return sendResponse(oSheet ? oSheet.getDataRange().getDisplayValues() : []);
+    }
+
     // ===== UPDATE ORDER STATUS (รับยอด / จัดส่ง) =====
     if (action === "updateStatus") {
-      const oSheet = ss.getSheetByName(SHEET_ORDERS);
+      const oSheet = getPrivateSS().getSheetByName(SHEET_ORDERS);
       if (!oSheet) return sendResponse({ error: "Orders sheet missing" });
 
       const rows = oSheet.getDataRange().getValues();
@@ -304,8 +324,7 @@ function testCustomerEmail() {
  * จะ log ทุกแถวที่ลบไว้ให้ตรวจสอบ
  */
 function deleteTestOrders() {
-  const ss = getSS();
-  const oSheet = ss.getSheetByName(SHEET_ORDERS);
+  const oSheet = getPrivateSS().getSheetByName(SHEET_ORDERS);
   if (!oSheet) { Logger.log("ไม่พบชีต Orders"); return; }
 
   const rows = oSheet.getDataRange().getValues();

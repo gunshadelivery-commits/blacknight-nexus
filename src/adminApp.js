@@ -1207,6 +1207,47 @@ function renderPromptpayTable() {
     });
 }
 
+// รูป QR ที่อัปโหลด ImgBB ไม่สำเร็จจะเป็น data URL (base64) ยาวมาก แต่เซลล์ชีตรับได้ไม่เกิน 50,000 ตัวอักษร
+// จึงย่อเป็น PNG ไม่เกิน 400px ก่อนส่ง (QR ขาวดำบีบอัดได้ดี และยังสแกนได้)
+const QR_MAX_CHARS = 40000;
+function shrinkQrDataUrl(dataUrl) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            for (const size of [400, 300, 220]) {
+                const scale = Math.min(1, size / Math.max(img.width, img.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(img.width * scale);
+                canvas.height = Math.round(img.height * scale);
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const out = canvas.toDataURL('image/png');
+                if (out.length <= QR_MAX_CHARS) return resolve(out);
+            }
+            resolve(dataUrl);
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+    });
+}
+
+async function buildPromptpayPayload() {
+    let changed = false;
+    for (const pp of promptpayList) {
+        if (typeof pp.qrImage === 'string' && pp.qrImage.startsWith('data:') && pp.qrImage.length > QR_MAX_CHARS) {
+            pp.qrImage = await shrinkQrDataUrl(pp.qrImage);
+            changed = true;
+        }
+    }
+    if (changed) savePromptpayToStorage();
+    return [
+        ["Name", "Bank", "Number", "QR", "Status"],
+        ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
+    ];
+}
+
 function togglePromptpayModal(show, idx = null) {
     const modal = document.getElementById('promptpayModal');
     const form = document.getElementById('promptpayForm');
@@ -1292,10 +1333,7 @@ async function savePromptpay() {
         savePromptpayToStorage();
         
         // 🚀 SYNC TO GAS
-        const settingsPayload = [
-            ["Name", "Bank", "Number", "QR", "Status"],
-            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
-        ];
+        const settingsPayload = await buildPromptpayPayload();
 
         const res = await fetch(GAS_URL, {
             method: 'POST',
@@ -1310,7 +1348,7 @@ async function savePromptpay() {
         showToast("ซิงค์ข้อมูลสำเร็จ!", "success");
     } catch (err) {
         console.error("Save error:", err);
-        showToast("เกิดข้อผิดพลาดในการบันทึก", "error");
+        showToast("เกิดข้อผิดพลาดในการบันทึก: " + err.message, "error");
     } finally {
         btn.disabled = false;
         btn.innerText = "บันทึก";
@@ -1330,10 +1368,7 @@ async function deletePromptpay(idx) {
         savePromptpayToStorage();
         
         // 🚀 SYNC TO GAS
-        const settingsPayload = [
-            ["Name", "Bank", "Number", "QR", "Status"],
-            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
-        ];
+        const settingsPayload = await buildPromptpayPayload();
 
         try {
             const res = await fetch(GAS_URL, {
@@ -1346,7 +1381,7 @@ async function deletePromptpay(idx) {
             showToast("ลบและซิงค์ข้อมูลสำเร็จ!", "success");
         } catch (err) {
             console.error("Sync error:", err);
-            showToast("ลบสำเร็จแต่ซิงค์ข้อมูลล้มเหลว", "warning");
+            showToast("ลบสำเร็จแต่ซิงค์ข้อมูลล้มเหลว: " + err.message, "warning");
         }
 
         renderPromptpayTable();
@@ -1361,10 +1396,7 @@ async function syncPromptpayToGAS() {
         btn.disabled = true;
         btn.innerHTML = "🔄 กำลังซิงค์...";
         
-        const settingsPayload = [
-            ["Name", "Bank", "Number", "QR", "Status"],
-            ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
-        ];
+        const settingsPayload = await buildPromptpayPayload();
 
         // ใช้ fetch แบบปกติ
         const res = await fetch(GAS_URL, {

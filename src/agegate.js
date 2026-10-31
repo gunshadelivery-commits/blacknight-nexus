@@ -29,6 +29,8 @@ function createAgeGateHTML() {
         <div class="language-switcher" role="group" data-i18n-aria="language.label" style="position:absolute;top:20px;right:20px;">
             <button type="button" data-language-option="th" data-i18n-title="language.thai">TH</button>
             <button type="button" data-language-option="en" data-i18n-title="language.english">EN</button>
+            <button type="button" data-language-option="zh" data-i18n-title="language.chinese" lang="zh">中文</button>
+            <button type="button" data-language-option="ko" data-i18n-title="language.korean" lang="ko">한국</button>
         </div>
         <div style="font-size: 56px; margin-bottom: 16px;">🌿</div>
         <h2 data-i18n="age.title" style="color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 8px;">ยืนยันอายุ</h2>

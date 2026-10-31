@@ -1240,6 +1240,7 @@ body.sol-shell .category-row .category-inactive {
 }
 
 .language-switcher button {
+    white-space: nowrap;
     min-width: 36px;
     min-height: 30px;
     padding: 0 9px;

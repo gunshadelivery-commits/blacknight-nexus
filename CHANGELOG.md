@@ -27,6 +27,7 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Claude] feat(ui): โลโก้บนหัวเว็บเปลี่ยนจากตัวอักษร SC เป็นรูปรถเข็น+ใบกัญชาบนกล่องขาว (หัวเว็บหน้าแรก, วงกลมกลางหน้าแรก, หน้า admin 2 จุด) และแทนอีโมจิ 📦 บนหัวหน้าอุปกรณ์ ให้เข้าชุดกับ favicon (image/brand-icon.png, index.html, admin.html, accessories.html, src/style.css)
 - [Claude] feat(seo): เปลี่ยน favicon/ไอคอนเว็บเป็นโลโก้รถเข็น+ใบกัญชาของร้าน (ครอปเฉพาะสัญลักษณ์ ไม่เอาตัวอักษร เพราะอ่านไม่ออกที่ 16–48px) บนพื้นขาวมุมมน · เอา favicon.svg (โลโก้ SC) ออก (image/*, index.html, accessories.html, admin.html, login.html, register.html)
 - [Claude] chore(brand): เปลี่ยนชื่อร้านจาก "Cannabis Flower" เป็น "Siam Cannabis" ทุกหน้า ทุกภาษา (TH/EN/中文/한국) รวม title/meta/OG/JSON-LD, llms.txt, SHOP_NAME (ใบปะหน้า/อีเมล), โลโก้ย่อ CF → SC และกฏแบรนด์ใน AGENTS.md (index.html, accessories.html, admin.html, login.html, register.html, src/*.js, src/style.css, GoogleAppsScript.js, llms.txt, package*.json, SETUP_BACKEND.md, AGENTS.md)
 - [Claude] feat(i18n): หน้าร้านเปิดครั้งแรกเป็นภาษาอังกฤษ (คนที่เคยเลือกภาษาไว้ยังได้ภาษาเดิม · หน้า admin ยังเริ่มที่ไทยผ่าน data-default-lang) + ซ่อนหน้าไว้จนแปลเสร็จกันกะพริบเป็นไทย + แปลข้อความที่ตกหล่น (1 ชม., แท็บเมนูน้ำ, หัวข้อหน้าอุปกรณ์, เมนูหน้าแรก) (src/i18n.js, index.html, accessories.html, login.html, register.html, admin.html, AGENTS.md)

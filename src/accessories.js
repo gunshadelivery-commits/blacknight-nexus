@@ -2,6 +2,7 @@ import './style.css';
 import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
+import { getLanguage } from './i18n.js';
 
 let products = []; // Keyed by Name
 let cart = [];
@@ -353,6 +354,7 @@ async function submitOrder() {
                 action: "log", name, phone, email, address, mapUrl: "-",
                 items: orderItems, itemsArray: itemsArray, total: finalTotal, slipUrl: slipUrl, 
                 paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน',
+                lang: getLanguage(),
                 status: "รอดำเนินการ"
             })
         });

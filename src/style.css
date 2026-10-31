@@ -1481,3 +1481,20 @@ body.sol-shell .category-row .category-inactive {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ============================================================
+   โลโก้ร้าน (รถเข็น + ใบกัญชา) บนกล่องขาว ใช้แทนตัวอักษรย่อเดิม
+   ให้เข้าชุดกับ favicon · ใช้คู่กับ .brand-mark / .orbit-core / .admin-brand-mark
+   ============================================================ */
+.brand-logo-tile {
+    background: #ffffff !important;
+    overflow: hidden;
+}
+.brand-logo-tile .brand-logo-img {
+    width: 74%;
+    height: 74%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+}

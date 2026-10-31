@@ -1,4 +1,4 @@
-// Utility functions for Cannabis Flower อ่อนนุช
+// Utility functions for Siam Cannabis อ่อนนุช
 
 // --- CUSTOM UI: TOAST ---
 export function showToast(message, type = 'success') {

@@ -1,11 +1,11 @@
 // ============================================================
-// CANNABIS FLOWER อ่อนนุช - Central Configuration
+// SIAM CANNABIS อ่อนนุช - Central Configuration
 // ============================================================
 // แก้ไขค่าต่างๆ ในไฟล์นี้เพียงไฟล์เดียว เพื่อเชื่อมต่อกับระบบภายนอก
 // ============================================================
 
 // --- ข้อมูลร้าน (Shop Branding) ---
-export const SHOP_NAME = "Cannabis Flower อ่อนนุช";
+export const SHOP_NAME = "Siam Cannabis อ่อนนุช";
 export const SHOP_VERSION = "1.0.0";
 export const SHOP_TAGLINE = "ดอกแท้คัดเกรด · ส่งด่วน ส่งฟรี ย่านอ่อนนุช สุขุมวิท 🌿";
 

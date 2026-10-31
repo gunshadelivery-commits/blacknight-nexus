@@ -18,9 +18,11 @@
     "vite": "^5.2.11"
   },
   "dependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.62.2",
     "canvas-confetti": "^1.9.2",
     "chart.js": "^4.4.2",
     "papaparse": "^5.4.1"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.62.2"
   }
 }

@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V27.1-BANK";
+const GAS_VERSION = "V28-ADMIN";
 // TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
 // (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
 const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
@@ -129,7 +129,7 @@ function doPost(e) {
         }
       }
       var hashed = hashPassword(data.password);
-      uSheet.appendRow([new Date(), data.name, emailLower, hashed, "active"]);
+      uSheet.appendRow([new Date(), cellSafe_(data.name), cellSafe_(emailLower), hashed, "active"]);
       SpreadsheetApp.flush();
       return sendResponse({ result: "success" });
     }
@@ -184,35 +184,72 @@ function doPost(e) {
     }
 
     if (action === "updateProduct" || action === "addProduct") {
+      if (!Array.isArray(data.variants) || data.variants.length === 0) {
+        return sendResponse({ error: "NO_VARIANTS" }); // กันลบสินค้าทิ้งทั้งชื่อโดยไม่มีแถวใหม่มาแทน
+      }
       const rows = sheet.getDataRange().getValues();
-      const targetName = data.oldName || data.name;
-      
-      // ลบรายการเดิมออก
+      const targetName = String(data.oldName || data.name).trim();
+
+      // หาแถวเดิมของสินค้านี้ แล้วลบ (จากล่างขึ้นบน)
+      let firstRow = -1;
       for (let i = rows.length - 1; i >= 1; i--) {
-        if (rows[i][0] == targetName) {
+        if (String(rows[i][0]).trim() === targetName) {
           sheet.deleteRow(i + 1);
+          firstRow = i + 1;
         }
       }
-      
-      // เพิ่มใหม่
-      if (data.variants && data.variants.length > 0) {
-        data.variants.forEach(v => {
-          sheet.appendRow([
-            data.name, 
-            v.size || "Standard", 
-            v.price || 0, 
-            data.note || "", 
-            data.image || "", 
-            data.tags || "", 
-            (parseInt(v.stock) > 0 ? "มีของ" : "หมด"), 
-            v.stock || 0, 
-            v.sold || 0,
-            data.category || "อื่นๆ"
-          ]);
-        });
+
+      const newRows = data.variants.map(v => [
+        data.name,
+        v.size || "Standard",
+        v.price || 0,
+        data.note || "",
+        data.image || "",
+        data.tags || "",
+        (parseInt(v.stock) > 0 ? "มีของ" : "หมด"),
+        v.stock || 0,
+        v.sold || 0,
+        data.category || "อื่นๆ"
+      ]);
+      if (firstRow > 0) {
+        // ใส่กลับที่ตำแหน่งเดิม ลำดับสินค้าบนหน้าร้านจึงไม่สลับทุกครั้งที่แก้
+        sheet.insertRowsBefore(firstRow, newRows.length);
+        sheet.getRange(firstRow, 1, newRows.length, newRows[0].length).setValues(newRows);
+      } else {
+        sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
       }
       SpreadsheetApp.flush();
       return sendResponse({ result: "success" });
+    }
+
+    // ===== แก้ราคา/สต๊อกหลายแถวในคำสั่งเดียว (หน้า "ราคา / สต๊อก") =====
+    // แก้ในแถวเดิม ไม่ลบ-เขียนใหม่ · items: [{ name, size, price, stock }]
+    if (action === "bulkUpdate") {
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (!items.length) return sendResponse({ error: "NO_ITEMS" });
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) return sendResponse({ error: "NO_PRODUCTS" });
+      const range = sheet.getRange(2, 1, lastRow - 1, 8); // A:H = name..stock
+      const values = range.getValues();
+      const key = (n, sz) => String(n).trim() + "|" + String(sz || "Standard").trim().toUpperCase();
+      const index = {};
+      values.forEach((r, i) => { index[key(r[0], r[1])] = i; });
+      const notFound = [];
+      let updated = 0;
+      items.forEach(it => {
+        const i = index[key(it.name, it.size)];
+        const price = Number(it.price), stock = parseInt(it.stock);
+        if (i === undefined || !(price > 0) || isNaN(stock) || stock < 0) { notFound.push(it.name + " " + (it.size || "")); return; }
+        values[i][2] = price;
+        values[i][7] = stock;
+        values[i][6] = stock > 0 ? "มีของ" : "หมด";
+        updated++;
+      });
+      // เขียนกลับเฉพาะคอลัมน์ C (ราคา) และ G:H (สถานะ, สต๊อก) ไม่แตะคอลัมน์อื่น
+      sheet.getRange(2, 3, values.length, 1).setValues(values.map(r => [r[2]]));
+      sheet.getRange(2, 7, values.length, 2).setValues(values.map(r => [r[6], r[7]]));
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success", updated: updated, notFound: notFound });
     }
 
     // ===== ลบสินค้าทั้งหมด (สำรองเป็นแท็บใหม่ก่อนเสมอ กู้คืนได้) =====
@@ -227,11 +264,14 @@ function doPost(e) {
     }
 
     if (action === "deleteProduct") {
+      const target = String(data.name || "").trim();
+      if (!target) return sendResponse({ error: "NO_NAME" });
       const rows = sheet.getDataRange().getValues();
+      let deleted = 0;
       for (let i = rows.length - 1; i >= 1; i--) {
-        if (rows[i][0] == data.name) sheet.deleteRow(i + 1);
+        if (String(rows[i][0]).trim() === target) { sheet.deleteRow(i + 1); deleted++; }
       }
-      return sendResponse({ result: "success" });
+      return sendResponse(deleted ? { result: "success", deleted: deleted } : { error: "NOT_FOUND" });
     }
 
     if (action === "log") {
@@ -242,7 +282,7 @@ function doPost(e) {
       if (oSheet.getLastRow() === 0) {
         oSheet.appendRow(["วันที่", "ชื่อ", "เบอร์โทร", "ที่อยู่", "mapUrl", "รายการ", "ยอดรวม", "สลิป", "ชำระเงิน", "สถานะ"]);
       }
-      oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"]);
+      oSheet.appendRow([new Date(), data.name, data.phone, data.address, data.mapUrl, data.items, data.total, data.slipUrl, data.paymentMethod, "รอดำเนินการ"].map(cellSafe_));
       // แจ้งเตือนอีเมลเมื่อมีออเดอร์ใหม่ (ไม่ให้ error เรื่องอีเมลทำให้บันทึกออเดอร์ล้มเหลว)
       try {
         notifyNewOrder(data);          // แจ้งเตือนร้าน
@@ -289,30 +329,52 @@ function doPost(e) {
       const nCol = nameIdx  !== -1 ? nameIdx  : 1;
       const slCol = slipIdx !== -1 ? slipIdx  : 7;
 
-      let found = false;
+      // หลายออเดอร์อาจมีชื่อ+สลิปเหมือนกัน (เช่น COD) ถ้าหน้า admin ส่งวันที่มา ใช้แยกให้ตรงแถว
+      const display = data.date ? oSheet.getDataRange().getDisplayValues() : null;
+      const dCol = Math.max(0, findCol(["วันที่", "date", "timestamp"]));
+      const wantDate = (data.date || "").toString().trim();
+      const sameOrder = (i) => (rows[i][nCol] || "").toString().trim() === (data.name || "").trim()
+        && (rows[i][slCol] || "").toString().trim() === (data.slipUrl || "").trim();
+      let target = -1;
       for (let i = 1; i < rows.length; i++) {
-        const rowName = (rows[i][nCol] || "").toString().trim();
-        const rowSlip = (rows[i][slCol] || "").toString().trim();
-        if (rowName === (data.name || "").trim() && rowSlip === (data.slipUrl || "").trim()) {
-          oSheet.getRange(i + 1, sCol + 1).setValue(data.status);
-          // บันทึกเลขพัสดุถ้ามี
-          if (data.tracking) {
-            const trackIdx = findCol(["tracking", "เลขพัสดุ", "หมายเหตุ"]);
-            if (trackIdx !== -1) oSheet.getRange(i + 1, trackIdx + 1).setValue(data.tracking);
-          }
-          found = true;
-          break;
-        }
+        if (!sameOrder(i)) continue;
+        if (target === -1) target = i;                       // เดิม: แถวแรกที่ตรง
+        if (display && display[i][dCol].toString().trim() === wantDate) { target = i; break; }
       }
 
+      if (target === -1) return sendResponse({ error: "Order not found" });
+
+      oSheet.getRange(target + 1, sCol + 1).setValue(data.status);
+      if (data.tracking) {
+        // ยังไม่มีคอลัมน์เลขพัสดุ → สร้างต่อท้ายหัวตาราง (เดิมเลขที่กรอกหายไปเฉยๆ)
+        let trackIdx = findCol(["tracking", "เลขพัสดุ", "หมายเหตุ"]);
+        if (trackIdx === -1) {
+          trackIdx = headers.length;
+          oSheet.getRange(1, trackIdx + 1).setValue("เลขพัสดุ");
+        }
+        oSheet.getRange(target + 1, trackIdx + 1).setValue(cellSafe_(String(data.tracking)));
+      }
       SpreadsheetApp.flush();
-      return sendResponse(found ? { result: "success" } : { error: "Order not found" });
+      return sendResponse({ result: "success" });
     }
 
     return sendResponse({ error: "UNKNOWN_ACTION: " + action });
   } catch (err) {
     return sendResponse({ error: "GAS doPost Error: " + err.toString() });
   }
+}
+
+// ค่าที่มาจากหน้าร้านสาธารณะ (ชื่อ/ที่อยู่/อีเมล) ถ้าขึ้นต้นด้วย = + - @ ชีตจะตีเป็นสูตร
+// ใส่ ' นำหน้าให้เป็นข้อความเสมอ (ชีตซ่อน ' ไว้ ค่าที่อ่านกลับยังเหมือนเดิม)
+function cellSafe_(v) {
+  return (typeof v === "string" && /^[=+\-@]/.test(v)) ? "'" + v : v;
+}
+
+// ข้อความที่ใส่ลงอีเมล HTML ต้อง escape ไม่งั้นใครก็ฝังลิงก์/HTML ส่งออกจากอีเมลร้านได้
+function h_(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function sendResponse(data) {
@@ -390,28 +452,28 @@ function notifyNewOrder(data) {
   let itemsHtml = "";
   if (Array.isArray(data.itemsArray) && data.itemsArray.length) {
     itemsHtml = data.itemsArray
-      .map(i => "<li>" + i.name + " [" + (i.size || "-") + "] x" + i.qty + "</li>")
+      .map(i => "<li>" + h_(i.name) + " [" + h_(i.size || "-") + "] x" + h_(i.qty) + "</li>")
       .join("");
     itemsHtml = "<ul>" + itemsHtml + "</ul>";
   } else {
-    itemsHtml = "<p>" + (data.items || "-") + "</p>";
+    itemsHtml = "<p>" + h_(data.items || "-") + "</p>";
   }
 
   const slipHtml = (data.slipUrl && /^https?:\/\//.test(data.slipUrl))
-    ? '<a href="' + data.slipUrl + '">ดูสลิป/หลักฐาน</a>'
-    : (data.slipUrl || "-");
+    ? '<a href="' + h_(data.slipUrl) + '">ดูสลิป/หลักฐาน</a>'
+    : h_(data.slipUrl || "-");
 
-  const subject = "🛒 ออเดอร์ใหม่ " + SHOP_NAME + " - " + (data.name || "ลูกค้า") + " (" + total + " บาท)";
+  const subject = "🛒 ออเดอร์ใหม่ " + SHOP_NAME + " - " + h_(data.name || "ลูกค้า") + " (" + total + " บาท)";
 
   const htmlBody =
     '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;">' +
       '<h2 style="margin:0 0 12px;">✨ มีออเดอร์ใหม่เข้ามา!</h2>' +
       '<table cellpadding="6" style="border-collapse:collapse;">' +
-        '<tr><td><b>👤 ผู้รับ</b></td><td>' + (data.name || "-") + '</td></tr>' +
-        '<tr><td><b>📞 เบอร์</b></td><td>' + (data.phone || "-") + '</td></tr>' +
-        '<tr><td><b>🏠 ที่อยู่</b></td><td>' + (data.address || "-") + '</td></tr>' +
-        '<tr><td><b>💳 วิธีชำระ</b></td><td>' + (data.paymentMethod || "-") + '</td></tr>' +
-        '<tr><td><b>💰 ยอดรวม</b></td><td>' + total + ' บาท</td></tr>' +
+        '<tr><td><b>👤 ผู้รับ</b></td><td>' + h_(data.name || "-") + '</td></tr>' +
+        '<tr><td><b>📞 เบอร์</b></td><td>' + h_(data.phone || "-") + '</td></tr>' +
+        '<tr><td><b>🏠 ที่อยู่</b></td><td>' + h_(data.address || "-") + '</td></tr>' +
+        '<tr><td><b>💳 วิธีชำระ</b></td><td>' + h_(data.paymentMethod || "-") + '</td></tr>' +
+        '<tr><td><b>💰 ยอดรวม</b></td><td>' + h_(total) + ' บาท</td></tr>' +
         '<tr><td><b>🖼️ หลักฐาน</b></td><td>' + slipHtml + '</td></tr>' +
       '</table>' +
       '<h3 style="margin:16px 0 4px;">🛒 รายการสินค้า</h3>' +
@@ -430,10 +492,10 @@ function notifyNewOrder(data) {
 function buildItemsHtml(data) {
   if (Array.isArray(data.itemsArray) && data.itemsArray.length) {
     return "<ul>" + data.itemsArray
-      .map(i => "<li>" + i.name + " [" + (i.size || "-") + "] x" + i.qty + "</li>")
+      .map(i => "<li>" + h_(i.name) + " [" + h_(i.size || "-") + "] x" + h_(i.qty) + "</li>")
       .join("") + "</ul>";
   }
-  return "<p>" + (data.items || "-") + "</p>";
+  return "<p>" + h_(data.items || "-") + "</p>";
 }
 
 /** ส่งอีเมลใบยืนยันออเดอร์ให้ลูกค้า (เฉพาะเมื่อลูกค้ากรอกอีเมล) */
@@ -452,14 +514,14 @@ function sendCustomerConfirmation(data) {
   const htmlBody =
     '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:560px;">' +
       '<h2 style="margin:0 0 4px;">ขอบคุณสำหรับการสั่งซื้อ 🙏</h2>' +
-      '<p style="margin:0 0 16px;color:#555;">สวัสดีคุณ ' + (data.name || "ลูกค้า") +
+      '<p style="margin:0 0 16px;color:#555;">สวัสดีคุณ ' + h_(data.name || "ลูกค้า") +
         ' เราได้รับออเดอร์ของคุณเรียบร้อยแล้ว และกำลังดำเนินการตรวจสอบ</p>' +
       '<table cellpadding="6" style="border-collapse:collapse;">' +
-        '<tr><td><b>👤 ชื่อผู้รับ</b></td><td>' + (data.name || "-") + '</td></tr>' +
-        '<tr><td><b>📞 เบอร์</b></td><td>' + (data.phone || "-") + '</td></tr>' +
-        '<tr><td><b>🏠 ที่อยู่จัดส่ง</b></td><td>' + (data.address || "-") + '</td></tr>' +
-        '<tr><td><b>💳 วิธีชำระ</b></td><td>' + (data.paymentMethod || "-") + '</td></tr>' +
-        '<tr><td><b>💰 ยอดรวม</b></td><td><b>' + total + ' บาท</b></td></tr>' +
+        '<tr><td><b>👤 ชื่อผู้รับ</b></td><td>' + h_(data.name || "-") + '</td></tr>' +
+        '<tr><td><b>📞 เบอร์</b></td><td>' + h_(data.phone || "-") + '</td></tr>' +
+        '<tr><td><b>🏠 ที่อยู่จัดส่ง</b></td><td>' + h_(data.address || "-") + '</td></tr>' +
+        '<tr><td><b>💳 วิธีชำระ</b></td><td>' + h_(data.paymentMethod || "-") + '</td></tr>' +
+        '<tr><td><b>💰 ยอดรวม</b></td><td><b>' + h_(total) + ' บาท</b></td></tr>' +
       '</table>' +
       '<h3 style="margin:16px 0 4px;">🛒 รายการสินค้า</h3>' +
       itemsHtml +

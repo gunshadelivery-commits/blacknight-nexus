@@ -44,6 +44,9 @@
 
 ---
 
+### Fixed
+- [Claude] fix(build): ย้าย `@rollup/rollup-linux-x64-gnu` จาก dependencies ไป optionalDependencies ให้ `npm ci` บน Windows/macOS ไม่ล้ม (บน Linux/CI ยังติดตั้งเหมือนเดิม) (package.json, package-lock.json)
+
 ## [2.5.0] - 2026-07-27
 ### Added
 - [Claude] feat(admin): การ์ด "ยอดขายวันนี้" + จำนวนออเดอร์วันนี้ (admin.html, src/adminApp.js)

@@ -8,7 +8,7 @@
 
 ## 1. โปรเจกต์นี้คืออะไร (30 วินาที)
 ร้านกัญชา **delivery** ย่านอ่อนนุช/สุขุมวิท — เว็บ sale page + หลังบ้าน admin
-- **Frontend:** static SPA, Vite + Tailwind, ฟอนต์ Kanit, ธีมเขียวมรกต (emerald), 2 ภาษา TH/EN (หน้าร้านเริ่มที่ EN ถ้ายังไม่เคยเลือก · admin เริ่มที่ TH ผ่าน `<html data-default-lang="th">`), age gate 20+
+- **Frontend:** static SPA, Vite + Tailwind, ฟอนต์ Kanit, ธีมเขียวมรกต (emerald), 4 ภาษา TH/EN/中文/한국 (หน้าร้านเริ่มที่ EN ถ้ายังไม่เคยเลือก ยกเว้นเบราว์เซอร์จีน/เกาหลีได้ภาษานั้น · ข้อความที่ไม่มีใน zh/ko ใช้ EN แทน · admin เริ่มที่ TH ผ่าน `<html data-default-lang="th">`), age gate 20+
 - **หน้าร้าน** `index.html` + `src/main.js` → อ่านสินค้าจาก Google Sheet **CSV** (`VITE_SHEET_CSV_URL`) ด้วย PapaParse
 - **หลังบ้าน** `admin.html` + `src/adminApp.js` → อ่าน/เขียนสินค้า + ออเดอร์ผ่าน **Apps Script** (`VITE_GAS_URL`)
 - **Backend:** `GoogleAppsScript.js` (เอาไปวางใน Google Apps Script ของร้าน) + Google Sheet 4 แท็บ: Products, Orders, BankAccounts, Users

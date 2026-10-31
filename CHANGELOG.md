@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Added
+- [Claude] feat(image): เพิ่มรูปสินค้าเมนู 11 รูป (จัตุรัส 900px JPEG) — green-apple, trim-vicious, sluricane, ultra-smooth, zupra, lemon-runtz, wedding-crasher, superboof-mid-pop, mac-1-mid-bud, granny-candy, pink-runtz (image/*.jpg)
 - [Claude] feat(gas): แยกข้อมูลลูกค้าออกจากไฟล์สาธารณะ — แท็บ `Orders`/`Users` ย้ายไปสเปรดชีตส่วนตัว (Script Properties → `PRIVATE_SHEET_ID` มี fallback ใช้ไฟล์หลักถ้ายังไม่ตั้ง) และเพิ่มคำสั่ง `getOrders` ที่ต้องมี ADMIN_KEY ให้หน้า admin ใช้แทน CSV (GoogleAppsScript.js, SETUP_BACKEND.md, AGENTS.md)
 - [Claude] fix(admin): หน้า admin เลิกอ่านออเดอร์จาก CSV สาธารณะ (`VITE_ORDERS_CSV_URL`) เปลี่ยนเป็นดึงผ่าน GAS `getOrders` หลังล็อกอิน พร้อมถอด PapaParse ออกจากหน้า admin (src/adminApp.js)
 - [Claude] feat(gas): เพิ่มการตรวจสิทธิ์ก่อนเขียนข้อมูลใน Apps Script — `addProduct` `updateProduct` `deleteProduct` `updateStatus` `saveSettings` `saveBank` `clearProducts` ต้องมี `ADMIN_KEY` (เก็บใน Script Properties ไม่อยู่ในโค้ด) ส่วนคำสั่งของลูกค้า `getProducts` `getBank` `register` `login` `log` ยังเปิดตามเดิม พร้อมคำสั่ง `verifyAdmin` สำหรับตรวจรหัสตอนล็อกอิน และคู่มือตั้งค่า (GoogleAppsScript.js, SETUP_BACKEND.md)

@@ -1,7 +1,12 @@
 import './style.css';
 import Papa from 'papaparse';
 import Chart from 'chart.js/auto';
-import { ADMIN_PASSWORD, ORDERS_CSV_URL, SHEET_CSV_URL as PRODUCTS_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, getImgbbUploadUrl } from './config.js';
+import { ORDERS_CSV_URL, SHEET_CSV_URL as PRODUCTS_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, getImgbbUploadUrl } from './config.js';
+
+// แนบรหัสแอดมินไปกับทุกคำสั่งที่ต้องใช้สิทธิ์ (GAS จะตอบ UNAUTHORIZED ถ้าไม่มี)
+// เก็บใน sessionStorage: ปิดแท็บแล้วหลุดเอง และไม่ถูกฝังในไฟล์ JS ที่ลูกค้าโหลด
+const withAdminKey = (payload) =>
+    JSON.stringify({ ...payload, adminKey: sessionStorage.getItem('adminKey') || '' });
 import { getLanguage, initI18n, t } from './i18n.js';
 
 let rawOrders = [];
@@ -222,7 +227,7 @@ async function saveAllBulk() {
             const res = await fetch(GAS_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({
+                body: withAdminKey({
                     action: "updateProduct",
                     oldName: p.name, name: p.name,
                     category: p.category, note: p.note, tags: p.tags, image: p.image,
@@ -240,12 +245,21 @@ async function saveAllBulk() {
 }
 
 // --- AUTH ---
-function checkPass() {
-    if (document.getElementById('passInput').value === ADMIN_PASSWORD) {
+async function checkPass() {
+    const key = document.getElementById('passInput').value;
+    try {
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: "verifyAdmin", adminKey: key })
+        });
+        const j = await res.json();
+        if (j.result !== "success") throw new Error(j.error || "unauthorized");
+        sessionStorage.setItem('adminKey', key);
         localStorage.setItem('adminAuth', 'true');
         showToast(t('admin.toast.loginSuccess'), "success");
         showDashboard();
-    } else {
+    } catch (err) {
         document.getElementById('errorMsg').classList.remove('hidden');
         showToast(t('admin.toast.wrongPassword'), "error");
     }
@@ -255,7 +269,7 @@ function showDashboard() {
     document.getElementById('dashboard').classList.remove('hidden');
     switchTab('overview');
 }
-function logout() { localStorage.removeItem('adminAuth'); location.reload(); }
+function logout() { localStorage.removeItem('adminAuth'); sessionStorage.removeItem('adminKey'); location.reload(); }
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -266,7 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Removed cannabis-specific category listener
 
-        if (localStorage.getItem('adminAuth') === 'true') showDashboard();
+        // ต้องมีรหัสใน sessionStorage ด้วย ไม่งั้นคำสั่งทุกตัวจะโดน GAS ปฏิเสธ
+        if (localStorage.getItem('adminAuth') === 'true' && sessionStorage.getItem('adminKey')) showDashboard();
     } catch (err) {
         console.error("Initialization error:", err);
     }
@@ -685,7 +700,7 @@ async function updateConfirm(btn, name, slip) {
         await fetch(GAS_URL, { 
             method: 'POST', 
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "ชำระเงินแล้ว" }) 
+            body: withAdminKey({ action: "updateStatus", name, slipUrl: slip, status: "ชำระเงินแล้ว" }) 
         });
     } catch (e) {
         console.warn("GAS CORS error ignored (update successful on backend):", e);
@@ -727,7 +742,7 @@ window.updateStatusToTransit = async function(btn, name, slip) {
         await fetch(GAS_URL, { 
             method: 'POST', 
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "updateStatus", name, slipUrl: slip, status: "อยู่ระหว่างจัดส่ง", tracking: tracking }) 
+            body: withAdminKey({ action: "updateStatus", name, slipUrl: slip, status: "อยู่ระหว่างจัดส่ง", tracking: tracking }) 
         });
     } catch (e) {
         console.warn("GAS CORS error ignored (update successful on backend):", e);
@@ -997,7 +1012,7 @@ async function deleteFullProduct(name) {
             await fetch(GAS_URL, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) 
+                body: withAdminKey({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) 
             });
         } catch(e) {}
     }
@@ -1014,7 +1029,7 @@ async function deleteAllProducts() {
             method: 'POST', 
             // สำหรับลบทั้งหมด เราต้องรอผล (success/error) จึงใช้ mode: 'cors' แต่ต้องเป็น text/plain
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "clearProducts" }) 
+            body: withAdminKey({ action: "clearProducts" }) 
         });
         const result = await res.json();
         if (result.result === "success") {
@@ -1076,7 +1091,7 @@ async function saveProduct() {
         const response = await fetch(GAS_URL, { 
             method: 'POST', 
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ 
+            body: withAdminKey({ 
                 action: "updateProduct", 
                 oldName: isEditMode ? oldProductName : name,
                 name: name, 
@@ -1272,7 +1287,7 @@ async function savePromptpay() {
         await fetch(GAS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+            body: withAdminKey({ action: "saveSettings", settings: settingsPayload })
         });
 
         renderPromptpayTable();
@@ -1309,7 +1324,7 @@ async function deletePromptpay(idx) {
             await fetch(GAS_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: "saveSettings", settings: settingsPayload })
+                body: withAdminKey({ action: "saveSettings", settings: settingsPayload })
             });
             showToast("ลบและซิงค์ข้อมูลสำเร็จ!", "success");
         } catch (err) {
@@ -1338,7 +1353,7 @@ async function syncPromptpayToGAS() {
         const res = await fetch(GAS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: "saveBank", settings: settingsPayload })
+            body: withAdminKey({ action: "saveBank", settings: settingsPayload })
         });
         
         const result = await res.json();

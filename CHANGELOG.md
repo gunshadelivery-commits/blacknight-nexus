@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Added
+- [Claude] feat(gas): เพิ่มการตรวจสิทธิ์ก่อนเขียนข้อมูลใน Apps Script — `addProduct` `updateProduct` `deleteProduct` `updateStatus` `saveSettings` `saveBank` `clearProducts` ต้องมี `ADMIN_KEY` (เก็บใน Script Properties ไม่อยู่ในโค้ด) ส่วนคำสั่งของลูกค้า `getProducts` `getBank` `register` `login` `log` ยังเปิดตามเดิม พร้อมคำสั่ง `verifyAdmin` สำหรับตรวจรหัสตอนล็อกอิน และคู่มือตั้งค่า (GoogleAppsScript.js, SETUP_BACKEND.md)
 - [Codex] feat(i18n): เพิ่มระบบเลือกภาษาไทย/อังกฤษแบบจำค่าบนอุปกรณ์เดียวกัน ครอบคลุมหน้าร้าน หน้ายืนยันอายุ ตะกร้า ชำระเงิน หน้าเข้าสู่ระบบ/สมัครสมาชิก และหน้า Admin (src/i18n.js, index.html, admin.html, login.html, register.html, src/agegate.js)
 - [Codex] feat(i18n): แปลข้อความแบบ dynamic ของรายการสินค้า การสั่งซื้อ ตัวชี้วัด ออเดอร์ สินค้า และ PromptPay พร้อมสวิตช์ภาษาที่รองรับ desktop/mobile (src/main.js, src/adminApp.js, src/style.css)
 - [Codex] feat(storefront): เพิ่มตัวเลือก “Find Your Flow”, spotlight ตามเมาส์, คีย์ลัด `/` สำหรับค้นหา และสถานะร้านพร้อมส่ง (index.html, src/main.js, src/style.css)
@@ -20,6 +21,8 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Claude] fix(admin): ล็อกอินหลังบ้านตรวจรหัสที่ Apps Script แทนการเทียบในเบราว์เซอร์ และแนบรหัสไปกับทุกคำสั่งที่ต้องใช้สิทธิ์ 9 จุด เก็บรหัสใน sessionStorage (ปิดแท็บแล้วหลุด) (src/adminApp.js)
+- [Claude] docs(agents): แก้กฏข้อ 7 ให้ตรงกับที่ย้ายรหัสแอดมินไปไว้ฝั่ง Apps Script (AGENTS.md)
 - [Codex] chore(domain): ใช้ blacknight69.com เป็น canonical และ custom domain หลักตามโดเมนที่มี DNS/HTTPS พร้อมใช้งาน โดยคงแบรนด์ Cannabis Flower อ่อนนุช (index.html, login.html, register.html, accessories.html, sitemap.xml, robots.txt, llms.txt, vite.config.js, .github/workflows/deploy.yml)
 - [Codex] chore(deploy): เปลี่ยน custom domain ใน GitHub Pages workflow จากแบรนด์เก่าเป็น gunshadelivery.com ให้ตรงกับ Google Business Profile (.github/workflows/deploy.yml)
 - [Codex] feat(brand): ปรับชื่อร้าน โดเมน เบอร์โทร เวลาเริ่มรับออเดอร์ พื้นที่บริการ และหน้า login/register/accessories ให้สอดคล้องกับ Google Business Profile ของร้าน (index.html, login.html, register.html, accessories.html, src/i18n.js, sitemap.xml, robots.txt, llms.txt, vite.config.js, src/utils.js)
@@ -32,6 +35,7 @@
 - [Codex] fix(admin): ลบ markup ซ้ำท้ายไฟล์และเพิ่มหมวดเครื่องดื่มในฟอร์มสินค้า (admin.html)
 
 ### Removed
+- [Claude] chore(security): เลิกใช้ `VITE_ADMIN_PASSWORD` ฝั่งหน้าเว็บ รหัสแอดมินจึงไม่ถูก build ฝังลงไฟล์ JS ที่ใครก็เปิดดูได้อีก (src/config.js, src/adminApp.js)
 - [Codex] fix(trust): ลบคะแนน 4.9 และข้อความรีวิวจำลองที่ไม่ปรากฏบน Google Business Profile เพื่อไม่ให้ลูกค้าเข้าใจผิด (index.html, src/i18n.js)
 
 ---

@@ -100,3 +100,25 @@ npm run build
 - สั่งซื้อทดสอบ 1 ออเดอร์ → เข้ามาที่แท็บ Orders และมีอีเมลแจ้งเตือน
 
 ติดตรงไหนบอกได้เลย เดี๋ยวช่วยไล่ทีละขั้น 🌿
+
+---
+
+## ตั้งรหัสแอดมิน (ADMIN_KEY) — จำเป็น
+
+ตั้งแต่เวอร์ชันนี้ คำสั่งที่เขียนข้อมูล (`addProduct`, `updateProduct`, `deleteProduct`, `updateStatus`, `saveSettings`, `saveBank`, `clearProducts`) **ต้องมีรหัสแอดมิน** ไม่งั้น Apps Script จะตอบ `UNAUTHORIZED`
+
+ส่วนคำสั่งของลูกค้า (`getProducts`, `getBank`, `register`, `login`, `log`) ยังเปิดตามปกติ ร้านขายได้เหมือนเดิม
+
+### วิธีตั้ง
+1. เปิด Apps Script ของร้าน → **Project Settings** (ไอคอนเฟือง)
+2. เลื่อนลงหา **Script Properties** → **Add script property**
+3. Property = `ADMIN_KEY` · Value = รหัสที่สุ่มมา ยาว 20 ตัวขึ้นไป
+4. **Deploy → Manage deployments → แก้ไข → Version: New version → Deploy**
+
+> ถ้ายังไม่ตั้ง `ADMIN_KEY` ระบบจะปฏิเสธคำสั่งแอดมินทั้งหมดไว้ก่อน (ปลอดภัยกว่าเปิดทิ้งไว้) — หน้าร้านยังขายได้ปกติ
+
+### เข้าหน้า admin
+ใช้รหัสเดียวกับ `ADMIN_KEY` — หน้าเว็บจะส่งไปให้ Apps Script ตรวจ ไม่ได้เทียบในเบราว์เซอร์อีกแล้ว
+รหัสเก็บใน `sessionStorage` ปิดแท็บแล้วหลุดเอง
+
+**ลบ `VITE_ADMIN_PASSWORD` ออกจาก `.env` ได้เลยหลังตั้ง `ADMIN_KEY` เสร็จ** (ค่าเดิมถูก build ฝังลงไฟล์ JS ที่ใครก็เปิดดูได้)

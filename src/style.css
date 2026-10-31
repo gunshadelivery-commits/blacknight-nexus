@@ -6,6 +6,29 @@
     /* Customize your styles here */
 }
 
+/* ============================================================
+   แถบเลื่อนแบบบาง โทนเขียวมรกตโปร่งแสง (ใช้ทุกหน้า)
+   Chrome/Edge/Safari ใช้ ::-webkit-scrollbar ได้หัวมน ไม่มีปุ่มลูกศร
+   Firefox ไม่รองรับ จึงใช้ scrollbar-width/color แทน (ใส่แยกใน @supports
+   เพราะ Chrome 121+ จะเมิน ::-webkit-scrollbar ทันทีถ้าเจอสองค่านี้)
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(52, 211, 153, 0.35);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(52, 211, 153, 0.6); }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+@supports not selector(::-webkit-scrollbar) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(52, 211, 153, 0.45) transparent;
+    }
+}
+
 @layer components {
     /* ============================================================
        GUNSHA CHECKOUT BUTTON - Primary Green Design

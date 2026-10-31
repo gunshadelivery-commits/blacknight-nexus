@@ -50,9 +50,27 @@ function generateToken() {
   return Utilities.getUuid();
 }
 
+// ===== ตรวจสิทธิ์ก่อนเขียนข้อมูล (Authorization) =====
+// รหัสแอดมินเก็บที่ Apps Script → Project Settings → Script Properties → ADMIN_KEY
+// ไม่อยู่ในโค้ด ไม่อยู่ใน repo ไม่ถูก build ลงไฟล์ JS ที่ลูกค้าโหลด
+// คำสั่งที่ไม่อยู่ในลิสต์นี้ = ต้องมีรหัสเสมอ (ของใหม่ที่เพิ่มทีหลังจึงถูกปิดไว้ก่อนโดยอัตโนมัติ)
+const PUBLIC_ACTIONS = ["checkVersion", "getProducts", "getBank", "register", "login", "log"];
+
+function isAuthorized_(action, key) {
+  if (PUBLIC_ACTIONS.indexOf(action) !== -1) return true;
+  const expected = PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
+  // ยังไม่ได้ตั้ง ADMIN_KEY = ปฏิเสธไว้ก่อน ปลอดภัยกว่าเปิดทิ้งไว้
+  return !!expected && key === expected;
+}
+
+function denyResponse_() {
+  return sendResponse({ error: "UNAUTHORIZED" });
+}
+
 function doGet(e) {
   try {
     const action = e.parameter.action;
+    if (!isAuthorized_(action, e.parameter.key)) return denyResponse_();
     if (action === "checkVersion") return sendResponse({ version: GAS_VERSION });
 
     const ss = getSS();
@@ -77,6 +95,10 @@ function doPost(e) {
     const ss = getSS();
     const data = JSON.parse(e.postData.contents);
     const action = data.action;
+    if (!isAuthorized_(action, data.adminKey)) return denyResponse_();
+
+    // ใช้ตรวจรหัสแอดมินตอนล็อกอิน (ผ่าน isAuthorized_ มาแล้ว = รหัสถูก)
+    if (action === "verifyAdmin") return sendResponse({ result: "success" });
 
     // ===== REGISTER =====
     if (action === "register") {

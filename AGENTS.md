@@ -65,7 +65,7 @@ npm run build      # build ไป dist/  (ต้องผ่านก่อน�
 npm run preview    # ดู build จริง
 rm -rf node_modules/.vite dist && npm run build   # เมื่อแก้ .env แล้วไม่อัปเดต
 ```
-รหัสผ่าน admin อยู่ใน `.env` (`VITE_ADMIN_PASSWORD`)
+รหัสผ่าน admin อยู่ที่ Apps Script → Project Settings → Script Properties → `ADMIN_KEY` (ไม่อยู่ใน `.env` แล้ว เพราะ `VITE_*` ถูกฝังลงไฟล์ JS ที่ลูกค้าโหลดได้)
 
 ---
 _เวอร์ชันกฏนี้: 1.0 · ปรับปรุงกฏได้ แต่ต้องบันทึกใน CHANGELOG พร้อมป้ายผู้ทำ_

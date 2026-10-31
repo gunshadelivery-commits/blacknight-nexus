@@ -24,8 +24,10 @@ export const LINE_OA_ID = import.meta.env.VITE_LINE_OA_ID || "";
 // --- ImgBB API Key - from environment (NEVER hardcode!) ---
 export const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "";
 
-// --- Admin Password - from environment (should use proper auth in production!) ---
-export const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "";
+// --- Admin Password ---
+// ย้ายไปฝั่ง Apps Script แล้ว (Script Properties → ADMIN_KEY)
+// อย่าเอากลับมาไว้ที่นี่: ค่า VITE_* ทุกตัวถูก build ฝังลงไฟล์ JS ที่ลูกค้าโหลดได้
+// ลบ VITE_ADMIN_PASSWORD ออกจาก .env ได้หลังตั้ง ADMIN_KEY เรียบร้อย
 
 // ============================================================
 // ฟังก์ชันช่วยเหลือ (Helper Functions)

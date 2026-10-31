@@ -39,6 +39,7 @@
 - [Codex] fix(admin): ลบ markup ซ้ำท้ายไฟล์และเพิ่มหมวดเครื่องดื่มในฟอร์มสินค้า (admin.html)
 
 ### Removed
+- [Claude] chore(ci): เลิกอ้างถึง secrets `VITE_ORDERS_CSV_URL` และ `VITE_ADMIN_PASSWORD` ที่ลบออกจาก GitHub แล้ว (ไม่มีโค้ดใช้) + ลบ export `ORDERS_CSV_URL` ที่ไม่มีใครเรียก + อัปเดตคู่มือให้ไม่แนะนำเปิด Orders เป็น CSV สาธารณะ (.github/workflows/deploy.yml, src/config.js, SETUP_BACKEND.md)
 - [Claude] chore(security): เลิกใช้ `VITE_ADMIN_PASSWORD` ฝั่งหน้าเว็บ รหัสแอดมินจึงไม่ถูก build ฝังลงไฟล์ JS ที่ใครก็เปิดดูได้อีก (src/config.js, src/adminApp.js)
 - [Codex] fix(trust): ลบคะแนน 4.9 และข้อความรีวิวจำลองที่ไม่ปรากฏบน Google Business Profile เพื่อไม่ให้ลูกค้าเข้าใจผิด (index.html, src/i18n.js)
 

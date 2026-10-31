@@ -59,27 +59,24 @@
 
 ---
 
-## ขั้นที่ 4 — เอา URL ชีต (CSV) มา 2 อัน
+## ขั้นที่ 4 — เอา URL ชีตสินค้า (CSV)
 
 1. **สินค้า (Products):** เปิดแท็บ Products → คัดลอก URL แบบนี้ (แทน `<ID>`):
    ```
    https://docs.google.com/spreadsheets/d/<ID>/gviz/tq?tqx=out:csv&sheet=Products
    ```
-2. **ออเดอร์ (Orders):** เปลี่ยน `sheet=Products` เป็น `sheet=Orders`
-   ```
-   https://docs.google.com/spreadsheets/d/<ID>/gviz/tq?tqx=out:csv&sheet=Orders
-   ```
-3. ต้องเปิดสิทธิ์ให้อ่านได้: **Share → General access → Anyone with the link → Viewer**
+2. ต้องเปิดสิทธิ์ให้อ่านได้: **Share → General access → Anyone with the link → Viewer**
+
+> ออเดอร์**ไม่**อ่านผ่าน CSV แล้ว (เป็นข้อมูลลูกค้า) หน้า admin ดึงผ่าน Apps Script `getOrders` หลังล็อกอิน — ดูหัวข้อ PRIVATE_SHEET_ID ด้านล่าง
 
 ---
 
 ## ขั้นที่ 5 — ใส่ค่าลงไฟล์ `.env`
 
-เปิดไฟล์ [`.env`](.env) แล้วแก้ 4 บรรทัดนี้ให้เป็นของคุณ:
+เปิดไฟล์ [`.env`](.env) แล้วแก้ 3 บรรทัดนี้ให้เป็นของคุณ:
 
 ```env
 VITE_SHEET_CSV_URL=<< URL Products CSV จากขั้น 4 >>
-VITE_ORDERS_CSV_URL=<< URL Orders CSV จากขั้น 4 >>
 VITE_GAS_URL=<< Web app /exec URL จากขั้น 3 >>
 VITE_LINE_OA_ID=@your-line-id      # เปลี่ยนเป็น LINE OA จริงของร้าน
 ```
@@ -96,7 +93,7 @@ npm run build
 ## เสร็จแล้วตรวจสอบ
 
 - หน้าร้าน (`index.html`) → เห็นสินค้าของคุณเอง จัดหมวดถูก
-- หน้า admin (`admin.html`, รหัสผ่านตั้งใน `.env` = `VITE_ADMIN_PASSWORD`) → **เพิ่ม/แก้/ลบสินค้าได้จริง** และมีผลกับหน้าร้าน
+- หน้า admin (`admin.html`, รหัสผ่าน = `ADMIN_KEY` ใน Script Properties ของ Apps Script) → **เพิ่ม/แก้/ลบสินค้าได้จริง** และมีผลกับหน้าร้าน
 - สั่งซื้อทดสอบ 1 ออเดอร์ → เข้ามาที่แท็บ Orders และมีอีเมลแจ้งเตือน
 
 ติดตรงไหนบอกได้เลย เดี๋ยวช่วยไล่ทีละขั้น 🌿

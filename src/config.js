@@ -12,9 +12,6 @@ export const SHOP_TAGLINE = "ดอกแท้คัดเกรด · ส่�
 // --- Google Sheets CSV URL (Product List) - from environment ---
 export const SHEET_CSV_URL = import.meta.env.VITE_SHEET_CSV_URL || "";
 
-// --- Google Sheets Orders CSV URL - from environment ---
-export const ORDERS_CSV_URL = import.meta.env.VITE_ORDERS_CSV_URL || "";
-
 // --- Google Apps Script (GAS) Web App URL - from environment ---
 export const GAS_URL = import.meta.env.VITE_GAS_URL || "";
 
@@ -27,7 +24,7 @@ export const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "";
 // --- Admin Password ---
 // ย้ายไปฝั่ง Apps Script แล้ว (Script Properties → ADMIN_KEY)
 // อย่าเอากลับมาไว้ที่นี่: ค่า VITE_* ทุกตัวถูก build ฝังลงไฟล์ JS ที่ลูกค้าโหลดได้
-// ลบ VITE_ADMIN_PASSWORD ออกจาก .env ได้หลังตั้ง ADMIN_KEY เรียบร้อย
+// VITE_ADMIN_PASSWORD และ VITE_ORDERS_CSV_URL เลิกใช้แล้ว (ออเดอร์อ่านผ่าน GAS getOrders)
 
 // ============================================================
 // ฟังก์ชันช่วยเหลือ (Helper Functions)

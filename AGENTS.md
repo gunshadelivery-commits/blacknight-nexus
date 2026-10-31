@@ -41,7 +41,8 @@
 
 ## 5. อย่าแตะ / ระวังพิเศษ (Guardrails)
 - **`.env` เปลี่ยนแล้ว build ไม่อัปเดต** → ต้อง `rm -rf node_modules/.vite dist` แล้ว `npm run build` (Vite ฝัง env ตอน build)
-- **`updateProduct` ใน GAS ลบ+เขียนแถวใหม่** → บันทึกสินค้าแล้วลำดับแถวในชีตจะสลับ (หมวดหมู่ไม่หายเพราะส่งไปด้วย) เป็นพฤติกรรมปกติ
+- **`updateProduct` ใน GAS ลบ+เขียนแถวใหม่** → ตั้งแต่ V28 ใส่แถวใหม่กลับที่ตำแหน่งเดิม (ก่อนหน้านั้นแถวจะย้ายไปท้ายชีต) · แก้ราคา/สต๊อกหลายแถวให้ใช้ `bulkUpdate` (แก้ในแถวเดิม ไม่ลบ)
+- **ข้อความจากชีต/ออเดอร์ต้องผ่าน `esc()` ก่อนใส่ `innerHTML` ในหน้า admin เสมอ** · ลิงก์ที่กดได้ใช้ `safeHref()` · ปุ่มในตารางอ้างแถวด้วย index ห้ามฝังชื่อ/สลิปลงใน `onclick`
 - **หน้าร้านอ่าน CSV / admin อ่าน-เขียน GAS** → ทั้งคู่ต้องชี้ชีตเดียวกันเสมอ
 - **Orders + Users อยู่คนละไฟล์กับ Products** → ไฟล์ส่วนตัว (Script Properties → `PRIVATE_SHEET_ID`) ไม่แชร์สาธารณะ เพราะเป็นข้อมูลลูกค้า · admin อ่านออเดอร์ผ่าน GAS `getOrders` (ต้องมี ADMIN_KEY) ห้ามกลับไปอ่านผ่าน CSV
 - **คอลัมน์ชีต Products (เรียงตามนี้):** `name, size, price, note, image, tags, status, stock, sold_count, category`

@@ -8,13 +8,20 @@ const withAdminKey = (payload) =>
     JSON.stringify({ ...payload, adminKey: sessionStorage.getItem('adminKey') || '' });
 import { getLanguage, initI18n, t } from './i18n.js';
 
+// ข้อความจากชีต/ลูกค้าต้องผ่าน esc() ก่อนใส่ลง innerHTML เสมอ
+// ออเดอร์มาจากหน้าร้านสาธารณะ ใครก็พิมพ์ HTML/สคริปต์มาในช่องชื่อหรือที่อยู่ได้ และหน้านี้ถือรหัสแอดมินอยู่
+const esc = (s) => (s == null ? "" : s.toString())
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+// ลิงก์ที่กดได้ต้องเป็น http(s) เท่านั้น (กัน javascript: ในช่องสลิป)
+const safeHref = (u) => { const v = (u || "").toString().trim(); return /^https?:\/\//i.test(v) ? esc(v) : ""; };
+
 let rawOrders = [];
 let rawProducts = [];
 let salesChart = null;
 let isEditMode = false;
 let currentPage = 1; // หน้าปัจจุบันของออเดอร์
 const ITEMS_PER_PAGE = 10;
-const MAX_PAGES = 5;
 let originalVariants = [];
 let oldProductName = "";
 
@@ -23,7 +30,9 @@ function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
+    const span = document.createElement('span');
+    span.textContent = message; // ข้อความ error อาจมีข้อมูลจากภายนอก ห้ามตีความเป็น HTML
+    toast.appendChild(span);
     container.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('hide');
@@ -63,20 +72,20 @@ function addVariant(size="", price="", stock=0, sold=0) {
         <div class="w-20">
             <label class="text-[10px] text-slate-400 font-bold uppercase">รุ่น/ขนาด</label>
             <div class="relative mt-1">
-                <input type="text" placeholder="เช่น XL" value="${size}" class="v-size w-full border rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+                <input type="text" placeholder="เช่น XL" value="${esc(size)}" class="v-size w-full border rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
             </div>
         </div>
         <div class="w-16">
             <label class="text-[10px] text-slate-400 font-bold uppercase">ราคา</label>
-            <input type="number" placeholder="฿" value="${price}" class="v-price w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+            <input type="number" placeholder="฿" value="${esc(price)}" class="v-price w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
         </div>
         <div class="w-16">
             <label class="text-[10px] text-slate-400 font-bold uppercase">คลัง</label>
-            <input type="number" placeholder="ชิ้น" value="${stock}" class="v-stock w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+            <input type="number" placeholder="ชิ้น" value="${esc(stock)}" class="v-stock w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
         </div>
         <div class="w-16">
             <label class="text-[10px] text-slate-400 font-bold uppercase">ขายแล้ว</label>
-            <input type="number" placeholder="ชิ้น" value="${sold}" class="v-sold w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+            <input type="number" placeholder="ชิ้น" value="${esc(sold)}" class="v-sold w-full border rounded-lg px-2 py-1.5 mt-1 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
         </div>
         <button type="button" onclick="removeVariant(this)" class="mt-4 p-1 text-red-300 hover:text-red-500">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
@@ -120,6 +129,7 @@ function switchTab(tabId) {
 
     if (tabId === 'products') loadProducts();
     else if (tabId === 'bulk') loadBulkEditor();
+    else if (tabId === 'promptpay') loadPromptpayData();
     else loadData();
 }
 
@@ -129,9 +139,7 @@ function switchTab(tabId) {
 // ============================================================
 let bulkRows = []; // หนึ่ง element = หนึ่งแถวสินค้า (สินค้า+ขนาด)
 
-function bulkEsc(s) {
-    return (s == null ? "" : s.toString()).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+const bulkEsc = esc;
 
 async function loadBulkEditor() {
     const body = document.getElementById('bulkTableBody');
@@ -149,7 +157,7 @@ async function loadBulkEditor() {
             category: r[9] || "อื่นๆ",
             price: parseFloat(r[2]) || 0,
             stock: parseInt(r[7]) || 0
-        })).filter(x => x.name.trim());
+        })).filter(x => x.name.trim()).map(x => ({ ...x, origPrice: x.price, origStock: x.stock }));
         renderBulkTable();
     } catch (e) {
         console.error("Bulk load error:", e);
@@ -201,23 +209,57 @@ function bulkApplyStock() {
 
 async function saveAllBulk() {
     // อ่านค่าจากช่อง input กลับเข้า bulkRows
-    document.querySelectorAll('.bulk-price').forEach(inp => { bulkRows[+inp.dataset.i].price = parseFloat(inp.value) || 0; });
-    document.querySelectorAll('.bulk-stock').forEach(inp => { bulkRows[+inp.dataset.i].stock = parseInt(inp.value) || 0; });
+    document.querySelectorAll('.bulk-price').forEach(inp => { bulkRows[+inp.dataset.i].price = Math.max(0, parseFloat(inp.value) || 0); });
+    document.querySelectorAll('.bulk-stock').forEach(inp => { bulkRows[+inp.dataset.i].stock = Math.max(0, parseInt(inp.value) || 0); });
 
-    // จัดกลุ่มตามชื่อสินค้า (updateProduct จะแทนที่ทุกแถวของสินค้านั้น)
-    const groups = {};
-    bulkRows.forEach(r => {
-        if (!groups[r.name]) groups[r.name] = { name: r.name, note: r.note, image: r.image, tags: r.tags, category: r.category, variants: [] };
-        groups[r.name].variants.push({ size: r.size || "Standard", price: r.price, stock: r.stock, sold: r.sold });
-    });
-    const list = Object.values(groups);
-    if (!list.length) return;
-    if (!confirm(`ยืนยันบันทึกราคา/สต๊อกของ ${list.length} รายการ?`)) return;
+    // ส่งเฉพาะแถวที่แก้จริง: เร็วขึ้น และไม่เขียนทับสิ่งที่คนอื่นเพิ่งแก้ในชีต
+    const changed = bulkRows.filter(r => r.price !== r.origPrice || r.stock !== r.origStock);
+    if (!changed.length) return showToast("ยังไม่มีราคา/สต๊อกที่เปลี่ยน", "error");
+    if (changed.some(r => !(r.price > 0))) return showToast("มีราคาเป็น 0 กรุณาตรวจสอบก่อนบันทึก", "error");
+    if (!(await customConfirm("บันทึกราคา/สต๊อก", `ยืนยันบันทึก ${changed.length} แถวที่แก้ไข?`, ""))) return;
 
     const btn = document.getElementById('saveAllBtn');
     const status = document.getElementById('bulkStatus');
     btn.disabled = true;
     status.classList.remove('hidden');
+    status.textContent = `กำลังบันทึก ${changed.length} แถว...`;
+    let ok = 0, fail = 0;
+    try {
+        // GAS V28+: แก้ราคา/สต๊อกในแถวเดิมทีเดียวจบ (ไม่ลบ-เขียนใหม่ ลำดับแถวไม่สลับ)
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: withAdminKey({ action: "bulkUpdate", items: changed.map(r => ({ name: r.name, size: r.size, price: r.price, stock: r.stock })) })
+        });
+        const j = await res.json();
+        if (j.result === "success") {
+            ok = j.updated || 0;
+            fail = (j.notFound || []).length;
+            if (fail) console.error("bulkUpdate not found:", j.notFound);
+        } else if (/UNKNOWN_ACTION/.test(j.error || "")) {
+            ({ ok, fail } = await saveBulkLegacy(changed, status));
+        } else {
+            throw new Error(j.error || "bulkUpdate failed");
+        }
+    } catch (e) {
+        console.error("bulk save error:", e);
+        fail = changed.length;
+    }
+    status.textContent = `บันทึกเสร็จ ✓ สำเร็จ ${ok}${fail ? ` · ล้มเหลว ${fail}` : ''}`;
+    btn.disabled = false;
+    showToast(fail ? `บันทึกเสร็จ (ล้มเหลว ${fail})` : "บันทึกทั้งหมดสำเร็จ!", fail ? "error" : "success");
+    setTimeout(loadBulkEditor, 1500);
+}
+
+// สำรองสำหรับ GAS เวอร์ชันก่อน V28: updateProduct ทีละสินค้า (เฉพาะสินค้าที่มีแถวถูกแก้)
+async function saveBulkLegacy(changed, status) {
+    const names = new Set(changed.map(r => r.name));
+    const groups = {};
+    bulkRows.filter(r => names.has(r.name)).forEach(r => {
+        if (!groups[r.name]) groups[r.name] = { name: r.name, note: r.note, image: r.image, tags: r.tags, category: r.category, variants: [] };
+        groups[r.name].variants.push({ size: r.size || "Standard", price: r.price, stock: r.stock, sold: r.sold });
+    });
+    const list = Object.values(groups);
     let ok = 0, fail = 0;
     for (let i = 0; i < list.length; i++) {
         const p = list[i];
@@ -225,22 +267,14 @@ async function saveAllBulk() {
         try {
             const res = await fetch(GAS_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: withAdminKey({
-                    action: "updateProduct",
-                    oldName: p.name, name: p.name,
-                    category: p.category, note: p.note, tags: p.tags, image: p.image,
-                    variants: p.variants
-                })
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: withAdminKey({ action: "updateProduct", oldName: p.name, name: p.name, category: p.category, note: p.note, tags: p.tags, image: p.image, variants: p.variants })
             });
             const j = await res.json();
-            if (j.result === "success") ok++; else { fail++; console.error("bulk save fail:", p.name, j); }
-        } catch (e) { fail++; console.error("bulk save error:", p.name, e); }
+            if (j.result === "success") ok += p.variants.length; else { fail += p.variants.length; console.error("bulk save fail:", p.name, j); }
+        } catch (e) { fail += p.variants.length; console.error("bulk save error:", p.name, e); }
     }
-    status.textContent = `บันทึกเสร็จ ✓ สำเร็จ ${ok} รายการ${fail ? ` · ล้มเหลว ${fail}` : ''}`;
-    btn.disabled = false;
-    showToast(fail ? `บันทึกเสร็จ (ล้มเหลว ${fail})` : "บันทึกทั้งหมดสำเร็จ!", fail ? "error" : "success");
-    setTimeout(loadBulkEditor, 1500);
+    return { ok, fail };
 }
 
 // --- AUTH ---
@@ -257,8 +291,7 @@ async function checkPass() {
         sessionStorage.setItem('adminKey', key);
         localStorage.setItem('adminAuth', 'true');
         showToast(t('admin.toast.loginSuccess'), "success");
-        showDashboard();
-        loadData(); // เพิ่งได้รหัสมา ค่อยดึงออเดอร์ได้
+        showDashboard(); // switchTab('overview') ดึงออเดอร์ให้แล้ว ไม่ต้องเรียก loadData ซ้ำ
     } catch (err) {
         document.getElementById('errorMsg').classList.remove('hidden');
         showToast(t('admin.toast.wrongPassword'), "error");
@@ -279,6 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPromptpayData();
         
         // Removed cannabis-specific category listener
+
+        document.getElementById('passInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkPass(); });
 
         // ต้องมีรหัสใน sessionStorage ด้วย ไม่งั้นคำสั่งทุกตัวจะโดน GAS ปฏิเสธ
         if (localStorage.getItem('adminAuth') === 'true' && sessionStorage.getItem('adminKey')) showDashboard();
@@ -456,7 +491,7 @@ function processSales() {
 
         const status = (getVal(["สถานะ", "status"]) || "").toString().trim();
         const total = parseFloat(getVal(["ยอดรวม", "total", "ราคา", "price"]) || 0);
-        const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
+        const dateRaw = getVal(["วันที่-เวลา", "วันที่", "Timestamp", "date"]);
         let orderDate = new Date();
         if (dateRaw) {
             const str = dateRaw.toString().trim();
@@ -497,9 +532,12 @@ function processSales() {
             if (orderDate >= (new Date().setDate(now.getDate()-14))) dailyStats[dKey] = (dailyStats[dKey] || 0) + total;
             
             if (items) {
-                items.split(',').forEach(it => {
-                    const n = it.split('(')[0].trim();
-                    productCounts[n] = (productCounts[n] || 0) + 1;
+                // รูปแบบจากหน้าร้าน: "ชื่อ [ขนาด] xจำนวน, ชื่อ [ขนาด] xจำนวน" → รวมตามชื่อสินค้า นับจำนวนชิ้นจริง
+                items.toString().split(',').forEach(it => {
+                    const m = it.trim().match(/^(.*?)(?:\s*\[[^\]]*\])?\s*x\s*(\d+)\s*$/i);
+                    const n = (m ? m[1] : it.split('(')[0]).trim();
+                    if (!n) return;
+                    productCounts[n] = (productCounts[n] || 0) + (m ? parseInt(m[2], 10) : 1);
                 });
             }
         } else if (status === "รอดำเนินการ" || status === "") {
@@ -538,7 +576,7 @@ function processSales() {
     document.getElementById('monthlyCount').textContent = t('admin.dynamic.orders', { count: countMonth });
     document.getElementById('weeklyTotal').textContent = totalWeek.toLocaleString() + " ฿";
     document.getElementById('weeklyCount').textContent = t('admin.dynamic.orders', { count: countWeek });
-    document.getElementById('avgOrder').textContent = (countMonth > 0 ? (totalMonth / countMonth).toFixed(2) : 0) + " ฿";
+    document.getElementById('avgOrder').textContent = (countMonth > 0 ? Math.round(totalMonth / countMonth) : 0).toLocaleString() + " ฿";
     document.getElementById('totalLifetime').textContent = t('admin.dynamic.lifetime', { total: totalLife.toLocaleString() });
 
     renderChart(dailyStats); renderTop(productCounts); renderOrdersTable();
@@ -563,21 +601,39 @@ function renderChart(dataMap) {
 function renderTop(counts) {
     const list = document.getElementById('topProductsList'); list.innerHTML = "";
     Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([name, count]) => {
-        list.innerHTML += `<div class="flex justify-between p-3 bg-slate-50 rounded-xl border"><span>${name}</span><span class="font-bold text-emerald-600">${count}</span></div>`;
+        list.innerHTML += `<div class="flex justify-between p-3 bg-slate-50 rounded-xl border"><span>${esc(name)}</span><span class="font-bold text-emerald-600">${count}</span></div>`;
     });
 }
 
-function renderOrdersTable() {
-    const body = document.getElementById('orderTableBody'); body.innerHTML = "";
-    
-    // กรองและเรียงลำดับ
-    const sortedOrders = [...rawOrders].reverse();
-    
-    // คำนวณขอบเขตการแสดงผลตามหน้า (Pagination)
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const paginatedOrders = sortedOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+// ออเดอร์ที่แสดงอยู่ในตารางตอนนี้ ปุ่มในแถวอ้างถึงด้วย index ของ array นี้
+// (สร้างใหม่ทุกครั้งที่ render พร้อมปุ่ม จึงไม่ชี้ผิดแถวแม้ rawOrders ถูกโหลดใหม่)
+let visibleOrders = [];
 
-    paginatedOrders.forEach(order => {
+// ฟิลด์ที่ใช้ระบุออเดอร์ตอนส่งไปอัปเดตสถานะ (ตรงกับที่ GAS updateStatus ใช้ค้นหา)
+function orderKeyFields(order) {
+    const keys = Object.keys(order);
+    const pick = (targets, fallbackIdx) => {
+        for (const k of targets) if (order[k] !== undefined) return order[k];
+        const f = keys.find(k => targets.some(x => k.toLowerCase().includes(x.toLowerCase())));
+        if (f) return order[f];
+        return order[keys[fallbackIdx]];
+    };
+    return {
+        name: (pick(["ชื่อลูกค้า", "ชื่อ", "name"], 1) || "").toString().trim(),
+        slip: (pick(["ลิงก์สลิป", "slipUrl", "slip"], 7) || "").toString().trim(),
+        date: (pick(["วันที่-เวลา", "Timestamp", "date", "วันที่"], 0) || "").toString().trim()
+    };
+}
+
+function renderOrdersTable() {
+    const body = document.getElementById('orderTableBody');
+    const sortedOrders = [...rawOrders].reverse();
+    const totalPages = Math.max(1, Math.ceil(sortedOrders.length / ITEMS_PER_PAGE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    visibleOrders = sortedOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    body.innerHTML = visibleOrders.map((order, vi) => {
         const keys = Object.keys(order);
         const getVal = (targets) => {
             for (let t of targets) { if (order[t] !== undefined) return order[t]; }
@@ -594,29 +650,23 @@ function renderOrdersTable() {
             return "";
         };
 
-        let rawStatus = (getVal(["สถานะ", "status"]) || "").toString().trim();
-        let slip = (getVal(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
-        let payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "").toString().trim();
-        
-        let isCOD = slip.includes("COD") || rawStatus.includes("เก็บเงินปลายทาง") || payMethod.includes("เก็บเงินปลายทาง");
-        if (isCOD) payMethod = "เก็บเงินปลายทาง";
-        else if (payMethod === "") payMethod = "โอนเงิน";
+        const rawStatus = (getVal(["สถานะ", "status"]) || "").toString().trim();
+        const slip = (getVal(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
+        const payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "").toString().trim();
+        const isCOD = slip.includes("COD") || rawStatus.includes("เก็บเงินปลายทาง") || payMethod.includes("เก็บเงินปลายทาง");
 
         // Handle shifted columns where status holds payment method
         let status = rawStatus;
-        if (rawStatus === "เก็บเงินปลายทาง" || rawStatus === "COD" || rawStatus === "") {
-            status = "รอดำเนินการ";
-        }
-        
+        if (rawStatus === "เก็บเงินปลายทาง" || rawStatus === "COD" || rawStatus === "") status = "รอดำเนินการ";
         const isConfirmed = status === "ชำระเงินแล้ว";
-        
+
         let phoneStr = (getVal(["เบอร์โทร", "phone"]) || "").toString().trim();
         if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
         const custName = getVal(["ชื่อลูกค้า", "name"]);
         const displayIdentity = (custName && custName !== "N/A") ? custName : (phoneStr || "N/A");
         const addressText = getVal(["ที่อยู่", "address"]) || "";
         const shippingFee = getVal(["ค่าส่ง", "shipping"]) || "";
-        const dateRaw = getVal(["วันที่-เวลา", "Timestamp", "date"]);
+        const dateRaw = getVal(["วันที่-เวลา", "วันที่", "Timestamp", "date"]);
         const dateStr = dateRaw ? dateRaw.toString().split('GMT')[0].trim() : "N/A";
         const total = parseFloat(getVal(["ยอดรวม", "ราคา", "total", "price"]) || 0);
         const displayStatus = {
@@ -625,26 +675,28 @@ function renderOrdersTable() {
             'อยู่ระหว่างจัดส่ง': t('admin.orders.inTransit')
         }[status] || status;
         const displayPayment = isCOD ? t('admin.orders.cod') : t('admin.orders.transfer');
-        
-        body.innerHTML += `
+        const slipHref = safeHref(slip);
+
+        return `
             <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-50">
-                <td class="px-6 py-4 w-[180px] text-[11px] font-mono text-slate-400 whitespace-nowrap">${dateStr}</td>
+                <td class="px-6 py-4 w-[180px] text-[11px] font-mono text-slate-400 whitespace-nowrap">${esc(dateStr)}</td>
                 <td class="px-6 py-4">
                     <div class="flex flex-col">
-                        <span class="font-bold text-slate-700 text-sm">${displayIdentity}</span>
+                        <span class="font-bold text-slate-700 text-sm">${esc(displayIdentity)}</span>
+                        ${phoneStr && phoneStr !== displayIdentity ? `<span class="text-[11px] font-mono text-slate-500">${esc(phoneStr)}</span>` : ''}
                         <div class="flex items-center gap-1">
-                            <span class="text-[10px] text-slate-400 truncate max-w-[200px]">${addressText}</span>
+                            <span class="text-[10px] text-slate-400 truncate max-w-[200px]" title="${esc(addressText)}">${esc(addressText)}</span>
                         </div>
                     </div>
                 </td>
                 <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">
                     ${total.toLocaleString()} ฿
-                    ${shippingFee ? `<div class="text-[9px] text-slate-400 font-normal">${t('admin.orders.shipping')} ${shippingFee}</div>` : ''}
+                    ${shippingFee ? `<div class="text-[9px] text-slate-400 font-normal">${t('admin.orders.shipping')} ${esc(shippingFee)}</div>` : ''}
                 </td>
                 <td class="px-6 py-4 w-[120px] text-center">
                     <div class="flex flex-col items-center gap-1">
-                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight ${isConfirmed?'bg-emerald-50 text-emerald-600 border border-emerald-100':'bg-amber-50 text-amber-600 border border-amber-100'}">
-                            ${displayStatus}
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight whitespace-nowrap ${isConfirmed ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}">
+                            ${esc(displayStatus)}
                         </span>
                         <span class="text-[9px] font-bold ${isCOD ? 'text-blue-500' : 'text-slate-400'} uppercase tracking-tighter">
                             ${displayPayment}
@@ -653,28 +705,32 @@ function renderOrdersTable() {
                 </td>
                 <td class="px-6 py-4 w-[250px] text-right">
                     <div class="flex justify-end gap-2 flex-wrap">
-                        <button onclick="window.printLabel(${rawOrders.indexOf(order)})" 
+                        <button onclick="window.printLabel(${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition active:scale-95 shadow-md">
                             ${t('admin.orders.print')}
                         </button>
-                        <a href="${slip}" target="_blank" 
+                        ${slipHref ? `
+                        <a href="${slipHref}" target="_blank" rel="noopener noreferrer"
                            class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
                             ${t('admin.orders.slip')}
-                        </a>
+                        </a>` : `
+                        <span class="flex items-center gap-1.5 px-3 py-2 bg-slate-50 text-slate-300 text-xs font-bold rounded-xl border border-slate-100 cursor-not-allowed" title="${esc(slip || '-')}">
+                            ${t('admin.orders.slip')}
+                        </span>`}
                         ${status === 'รอดำเนินการ' || status === 'เก็บเงินปลายทาง' ? `
-                        <button onclick="window.updateConfirm(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
+                        <button onclick="window.updateConfirm(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
                             ${t('admin.orders.receive')}
                         </button>` : ''}
                         ${status !== 'อยู่ระหว่างจัดส่ง' ? `
-                        <button onclick="window.updateStatusToTransit(this, '${(custName || "").replace(/'/g, "\\'")}', '${slip}')" 
+                        <button onclick="window.updateStatusToTransit(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
                             ${t('admin.orders.ship')}
                         </button>` : ''}
                     </div>
                 </td>
             </tr>`;
-    });
+    }).join('');
 
     renderPagination(sortedOrders.length);
 }
@@ -682,100 +738,80 @@ function renderOrdersTable() {
 function renderPagination(totalItems) {
     const container = document.getElementById('orderPagination');
     container.innerHTML = "";
-    
-    const totalPagesAvailable = Math.ceil(totalItems / ITEMS_PER_PAGE);
-    const finalPageCount = Math.min(totalPagesAvailable, MAX_PAGES);
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    if (totalPages <= 1) return;
 
-    if (finalPageCount <= 1) return;
-
-    for (let i = 1; i <= finalPageCount; i++) {
+    const go = (page) => {
+        currentPage = Math.min(totalPages, Math.max(1, page));
+        renderOrdersTable();
+        document.getElementById('orderTableBody')?.closest('section, div')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const mkBtn = (label, page, { active = false, disabled = false } = {}) => {
         const btn = document.createElement('button');
-        btn.textContent = i;
-        btn.className = `w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === i ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300'}`;
-        btn.onclick = () => {
-            currentPage = i;
-            renderOrdersTable();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+        btn.textContent = label;
+        btn.disabled = disabled;
+        btn.className = `min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition-all ${active ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100' : 'bg-white text-slate-500 border border-slate-200 hover:border-emerald-300'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`;
+        if (!disabled && !active) btn.onclick = () => go(page);
         container.appendChild(btn);
-    }
+    };
+    const gap = () => { const s = document.createElement('span'); s.textContent = '…'; s.className = 'px-1 text-slate-400 text-xs self-center'; container.appendChild(s); };
+
+    mkBtn('‹', currentPage - 1, { disabled: currentPage === 1 });
+    // แสดงหน้าแรก หน้าสุดท้าย และหน้ารอบๆ หน้าปัจจุบัน ที่เหลือย่อเป็น …
+    const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1].filter(n => n >= 1 && n <= totalPages));
+    let prev = 0;
+    [...pages].sort((a, b) => a - b).forEach(n => {
+        if (n - prev > 1) gap();
+        mkBtn(String(n), n, { active: n === currentPage });
+        prev = n;
+    });
+    mkBtn('›', currentPage + 1, { disabled: currentPage === totalPages });
 }
 
-async function updateConfirm(btn, name, slip) {
-    if(!(await customConfirm("ยืนยันออเดอร์", `ต้องการยืนยันการรับเงินของคุณ ${name} ใช่หรือไม่?`, ""))) return;
-    
-    const parent = btn.parentElement;
-    
+// ส่งสถานะใหม่ไป GAS แล้วตรวจผลจริง (ตอบเป็น JSON อ่านได้เพราะใช้ text/plain ไม่ติด CORS)
+async function postOrderStatus(order, status, tracking) {
+    const { name, slip, date } = orderKeyFields(order);
+    const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: withAdminKey({ action: "updateStatus", name, slipUrl: slip, date, status, ...(tracking ? { tracking } : {}) })
+    });
+    const j = await res.json();
+    if (j.result !== "success") throw new Error(j.error || "update failed");
+    return { name, slip };
+}
+
+async function changeOrderStatus(btn, vi, newStatus, confirmTitle, confirmMsg, tracking) {
+    const order = visibleOrders[vi];
+    if (!order) return;
+    if (!(await customConfirm(confirmTitle, confirmMsg(orderKeyFields(order).name), ""))) return;
+    const label = btn.textContent;
     btn.disabled = true;
     btn.textContent = "กำลังอัปเดต...";
-    
     try {
-        await fetch(GAS_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: withAdminKey({ action: "updateStatus", name, slipUrl: slip, status: "ชำระเงินแล้ว" }) 
-        });
+        const { name, slip } = await postOrderStatus(order, newStatus, tracking);
+        showToast("อัปเดตสถานะเรียบร้อย", "success");
+        updateLocalOrderStatus(name, slip, newStatus); // render ตารางใหม่ทันที
+        setTimeout(loadData, 5000);
     } catch (e) {
-        console.warn("GAS CORS error ignored (update successful on backend):", e);
+        console.error("updateStatus failed:", e);
+        showToast("อัปเดตสถานะไม่สำเร็จ: " + e.message, "error");
+        btn.disabled = false;
+        btn.textContent = label;
     }
-    
-    showToast("อัปเดตเรียบร้อย กรุณารอข้อมูลอัปเดตสักครู่", "success");
-    
-    // Optimistic Update Local Data
-    updateLocalOrderStatus(name, slip, "ชำระเงินแล้ว");
-    
-    parent.innerHTML = `
-        <a href="${slip}" target="_blank" 
-           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
-            📄 ดูสลิป
-        </a>
-        <span class="text-xs text-emerald-600 font-bold ml-2">✅ ยืนยันแล้ว</span>
-    `;
-    
-    setTimeout(loadData, 5000);
 }
 
-window.updateStatusToTransit = async function(btn, name, slip) {
+function updateConfirm(btn, vi) {
+    return changeOrderStatus(btn, vi, "ชำระเงินแล้ว", "ยืนยันออเดอร์",
+        (name) => `ต้องการยืนยันการรับเงินของคุณ ${name} ใช่หรือไม่?`);
+}
+
+window.updateStatusToTransit = function(btn, vi) {
     const tracking = prompt("กรุณากรอกเลขพัสดุ / หมายเหตุการจัดส่ง (ถ้ามี):", "");
-    if(tracking === null) return; // Cancelled
-    
-    if(!(await customConfirm("ยืนยันจัดส่ง", `ต้องการอัปเดตสถานะของคุณ ${name} เป็น 'อยู่ระหว่างจัดส่ง' ใช่หรือไม่?`, ""))) return;
-    
-    const parent = btn.parentElement;
-    
-    btn.disabled = true;
-    btn.textContent = "กำลังอัปเดต...";
-    
-    // We send tracking info by appending it to the name or as a separate field if backend supports. 
-    // Wait, the backend only takes action, name, slipUrl, status. 
-    // If we want to save tracking, we'd need backend changes. But we can update status for now.
-    // Let's pass tracking in slipUrl if needed? Or just ignore tracking if backend doesn't support it, but the prompt is useful.
-    
-    try {
-        await fetch(GAS_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: withAdminKey({ action: "updateStatus", name, slipUrl: slip, status: "อยู่ระหว่างจัดส่ง", tracking: tracking }) 
-        });
-    } catch (e) {
-        console.warn("GAS CORS error ignored (update successful on backend):", e);
-    }
-    
-    showToast("อัปเดตเรียบร้อย กรุณารอข้อมูลอัปเดตสักครู่", "success");
-    
-    // Optimistic Update Local Data
-    updateLocalOrderStatus(name, slip, "อยู่ระหว่างจัดส่ง");
-    
-    parent.innerHTML = `
-        <a href="${slip}" target="_blank" 
-           class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
-            📄 ดูสลิป
-        </a>
-        <span class="text-xs text-blue-600 font-bold ml-2">🚚 อยู่ระหว่างจัดส่ง</span>
-    `;
-    
-    setTimeout(loadData, 5000);
-}
+    if (tracking === null) return; // Cancelled
+    return changeOrderStatus(btn, vi, "อยู่ระหว่างจัดส่ง", "ยืนยันจัดส่ง",
+        (name) => `ต้องการอัปเดตสถานะของคุณ ${name} เป็น 'อยู่ระหว่างจัดส่ง' ใช่หรือไม่?`, tracking.trim());
+};
 
 function updateLocalOrderStatus(name, slip, newStatus) {
     if (!rawOrders) return;
@@ -810,8 +846,10 @@ function updateLocalOrderStatus(name, slip, newStatus) {
     }
 }
 
-function printLabel(idx) {
-    const order = rawOrders[idx];
+function printLabel(vi) {
+    const order = visibleOrders[vi];
+    if (!order) return;
+    const idx = rawOrders.indexOf(order);
     const keys = Object.keys(order);
     const getVal = (targets) => {
         for (let t of targets) { if (order[t] !== undefined) return order[t]; }
@@ -827,7 +865,7 @@ function printLabel(idx) {
         return "";
     };
 
-    const nameRaw = (getVal(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").trim();
+    const nameRaw = (getVal(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").toString().trim();
     let name = nameRaw;
     if (name && !name.startsWith("คุณ")) {
         name = "คุณ " + name;
@@ -845,10 +883,11 @@ function printLabel(idx) {
     let isCOD = slip.includes("COD") || rawStatus.includes("เก็บเงินปลายทาง") || payMethod.includes("เก็บเงินปลายทาง");
 
     const printWindow = window.open('', '_blank');
+    if (!printWindow) { showToast("เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต pop-up ของเว็บนี้", "error"); return; }
     printWindow.document.write(`
         <html>
         <head>
-            <title>Shipping Label - ${name}</title>
+            <title>Shipping Label - ${esc(name)}</title>
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap');
                 body { font-family: 'Kanit', sans-serif; padding: 20px; color: #333; }
@@ -866,26 +905,26 @@ function printLabel(idx) {
         <body onload="window.print()">
             <div class="label-container">
                 <div class="shop-name">
-                    <span>${SHOP_NAME}</span>
+                    <span>${esc(SHOP_NAME)}</span>
                     <span style="font-size: 12px;">Order #${idx + 1}</span>
                 </div>
                 
                 <div class="recipient-section">
                     <div class="recipient-title">ผู้รับ (To):</div>
-                    <div class="recipient-name">${name}</div>
-                    <div class="recipient-name">${phoneStr}</div>
-                    <div class="recipient-address">${address}</div>
+                    <div class="recipient-name">${esc(name)}</div>
+                    <div class="recipient-name">${esc(phoneStr)}</div>
+                    <div class="recipient-address">${esc(address)}</div>
                 </div>
 
                 ${isCOD ? `
                 <div class="cod-badge">
                     เก็บเงินปลายทาง (COD)<br>
-                    ยอดเงิน: ${parseFloat(total).toLocaleString()} ฿
+                    ยอดเงิน: ${(parseFloat(total) || 0).toLocaleString()} ฿
                 </div>
                 ` : ''}
 
                 <div class="footer">
-                    ขอบคุณที่ใช้บริการ ${SHOP_NAME}
+                    ขอบคุณที่ใช้บริการ ${esc(SHOP_NAME)}
                 </div>
             </div>
             <div style="text-align: center; margin-top: 20px;" class="no-print">
@@ -905,7 +944,6 @@ async function loadProducts() {
     try {
         const res = await fetch(`${GAS_URL}?action=getProducts&t=${Date.now()}`);
         const data = await res.json();
-        console.log("Admin Data Fetched:", data);
         if (!data || data.error || data.length < 1) {
             rawProducts = [];
         } else {
@@ -933,6 +971,9 @@ async function loadProducts() {
     }
 }
 
+// ชื่อสินค้าตามลำดับแถวในตาราง ปุ่มแก้ไข/ลบอ้างด้วย index (ชื่อที่มี ' หรือ " จะไม่ทำ onclick พัง)
+let productGroupNames = [];
+
 function renderProductsTable() {
     const body = document.getElementById('productTableBody'); 
     if(!body) return;
@@ -947,22 +988,23 @@ function renderProductsTable() {
         grouped[p.name].totalSold += (parseInt(p.sold_count) || 0);
     });
 
-    Object.values(grouped).forEach(p => {
+    productGroupNames = Object.keys(grouped);
+    Object.values(grouped).forEach((p, gi) => {
         const outOfStock = p.totalStock <= 0 || ['หมด','0','sold out'].includes(p.status?.toLowerCase());
         body.innerHTML += `<tr>
-            <td class="px-6 py-3"><img src="${p.image}" class="w-10 h-10 object-cover rounded-lg bg-slate-100" onerror="this.outerHTML='<div class=\\'w-10 h-10 bg-slate-100 rounded-lg\\'></div>'"></td>
-            <td class="px-6 py-3 font-bold">${p.name}</td>
-            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">${p.category || 'N/A'}</span></td>
-            <td class="px-6 py-3 text-slate-500 text-xs">${p.sizes.join(', ')}</td>
+            <td class="px-6 py-3"><img src="${esc((p.image || '').toString().split(',')[0].trim())}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-lg bg-slate-100" onerror="this.style.visibility='hidden'"></td>
+            <td class="px-6 py-3 font-bold">${esc(p.name)}</td>
+            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">${esc(p.category || 'N/A')}</span></td>
+            <td class="px-6 py-3 text-slate-500 text-xs">${esc(p.sizes.join(', '))}</td>
             <td class="px-6 py-3 font-bold text-emerald-600">${p.minPrice.toLocaleString()} ฿ +</td>
             <td class="px-6 py-3 font-bold ${p.totalStock < 5 ? 'text-red-500' : 'text-slate-600'}">${p.totalStock}</td>
             <td class="px-6 py-3 text-slate-400 font-bold">${p.totalSold}</td>
             <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${outOfStock ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${outOfStock ? t('admin.products.out') : t('admin.products.available')}</span></td>
             <td class="px-6 py-3 text-right">
-                <button onclick="editProduct('${p.name.replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-emerald-600 transition">
+                <button onclick="editProductAt(${gi})" class="p-2 text-slate-400 hover:text-emerald-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 </button>
-                <button onclick="deleteFullProduct('${p.name.replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-red-500 transition">
+                <button onclick="deleteProductAt(${gi})" class="p-2 text-slate-400 hover:text-red-500 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
             </td>
@@ -1019,17 +1061,20 @@ function editProduct(name) {
 async function deleteFullProduct(name) {
     if(!(await customConfirm("ลบสินค้า", `คุณแน่ใจใช่ไหมที่จะลบ "${name}" ออกจากระบบถาวร?`, ""))) return;
     showToast("กำลังลบข้อมูล...", "success");
-    const variants = rawProducts.filter(p => p.name === name);
-    for(let v of variants) {
-        try {
-            await fetch(GAS_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: withAdminKey({ action: "deleteProduct", name: v.name.trim(), size: v.size.toString().trim() }) 
-            });
-        } catch(e) {}
+    try {
+        // GAS ลบทุกขนาดของชื่อนี้ในคำสั่งเดียว · ส่งชื่อตามที่อยู่ในชีตเป๊ะ (ห้าม trim ไม่งั้นชื่อที่มีช่องว่างท้ายจะหาไม่เจอ)
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: withAdminKey({ action: "deleteProduct", name })
+        });
+        const j = await res.json();
+        if (j.result !== "success") throw new Error(j.error || "delete failed");
+        showToast("ลบสินค้าเรียบร้อยแล้ว", "success");
+    } catch (e) {
+        console.error("Delete product failed:", e);
+        showToast("ลบสินค้าไม่สำเร็จ: " + e.message, "error");
     }
-    showToast("ลบสินค้าเรียบร้อยแล้ว", "success");
     loadProducts();
 }
 
@@ -1068,12 +1113,21 @@ async function saveProduct() {
     
     const variants = Array.from(variantRows).map(row => ({
         size: row.querySelector('.v-size').value.trim() || "Standard",
-        price: parseFloat(row.querySelector('.v-price').value) || 0,
-        stock: parseInt(row.querySelector('.v-stock').value) || 0,
-        sold: parseInt(row.querySelector('.v-sold').value) || 0
-    })).filter(v => v.size && v.price >= 0);
+        price: parseFloat(row.querySelector('.v-price').value),
+        stock: Math.max(0, parseInt(row.querySelector('.v-stock').value) || 0),
+        sold: Math.max(0, parseInt(row.querySelector('.v-sold').value) || 0)
+    }));
 
-    if(!name || variants.length === 0) return alert("กรุณากรอกข้อมูลที่สำคัญให้ครบ");
+    if (!name || variants.length === 0) return showToast("กรุณากรอกชื่อสินค้าและตัวเลือกราคาอย่างน้อย 1 แบบ", "error");
+    // ราคาว่าง/0 เคยถูกบันทึกเป็น 0 บาทเงียบๆ
+    if (variants.some(v => !(v.price > 0))) return showToast("กรุณากรอกราคาให้ครบทุกขนาด (มากกว่า 0)", "error");
+    const sizeKeys = variants.map(v => v.size.toUpperCase());
+    if (new Set(sizeKeys).size !== sizeKeys.length) return showToast("มีขนาดซ้ำกัน กรุณาตรวจสอบช่อง รุ่น/ขนาด", "error");
+
+    // updateProduct แทนที่ทุกแถวของชื่อปลายทาง: ชื่อซ้ำสินค้าอื่น = ทับสินค้าเดิมทั้งหมด
+    const clash = rawProducts.some(p => (p.name || "").toString().trim().toLowerCase() === name.toLowerCase()
+        && (!isEditMode || (p.name || "").toString().trim().toLowerCase() !== oldProductName.toString().trim().toLowerCase()));
+    if (clash && !(await customConfirm("ชื่อสินค้าซ้ำ", `มีสินค้าชื่อ "${name}" อยู่แล้ว ถ้าบันทึกต่อ ข้อมูลเดิมของสินค้านั้นจะถูกแทนที่ทั้งหมด ต้องการบันทึกต่อหรือไม่?`, "⚠️"))) return;
 
     btn.disabled = true;
     btn.innerHTML = isEditMode ? "กำลังบันทึก..." : "กำลังอัปโหลดรูป...";
@@ -1185,11 +1239,11 @@ function renderPromptpayTable() {
     promptpayList.forEach((pp, idx) => {
         tbody.innerHTML += `<tr class="hover:bg-slate-50 transition">
             <td class="px-6 py-4">
-                ${pp.qrImage ? `<img src="${pp.qrImage}" class="w-12 h-12 object-cover rounded-lg shadow-sm border border-slate-100">` : '<div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center"><span class="text-xs text-slate-400">ไม่มี</span></div>'}
+                ${pp.qrImage ? `<img src="${esc(pp.qrImage)}" alt="" class="w-12 h-12 object-cover rounded-lg shadow-sm border border-slate-100">` : '<div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center"><span class="text-xs text-slate-400">ไม่มี</span></div>'}
             </td>
-            <td class="px-6 py-4 font-bold text-slate-800">${pp.name}</td>
-            <td class="px-6 py-4 text-slate-600">${pp.bank}</td>
-            <td class="px-6 py-4 font-mono text-sm text-slate-600">${pp.number}</td>
+            <td class="px-6 py-4 font-bold text-slate-800">${esc(pp.name)}</td>
+            <td class="px-6 py-4 text-slate-600">${esc(pp.bank)}</td>
+            <td class="px-6 py-4 font-mono text-sm text-slate-600">${esc(pp.number)}</td>
             <td class="px-6 py-4">
                 <span class="px-3 py-1 rounded-full text-[10px] font-bold ${pp.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
                     ${pp.status === 'active' ? t('admin.promptpay.active') : t('admin.promptpay.inactive')}
@@ -1270,7 +1324,7 @@ function togglePromptpayModal(show, idx = null) {
         document.getElementById('ppNumber').value = pp.number;
         document.getElementById('ppStatus').value = pp.status || 'active';
         if (pp.qrImage) {
-            document.getElementById('qrPreview').innerHTML = `<img src="${pp.qrImage}" class="w-full h-full object-cover">`;
+            document.getElementById('qrPreview').innerHTML = `<img src="${esc(pp.qrImage)}" class="w-full h-full object-cover">`;
         }
     } else {
         titleEl.innerText = "เพิ่ม Promptpay ใหม่";
@@ -1439,6 +1493,8 @@ window.updateConfirm = updateConfirm;
 window.toggleProductModal = toggleProductModal;
 window.editProduct = editProduct;
 window.deleteFullProduct = deleteFullProduct;
+window.editProductAt = (i) => productGroupNames[i] !== undefined && editProduct(productGroupNames[i]);
+window.deleteProductAt = (i) => productGroupNames[i] !== undefined && deleteFullProduct(productGroupNames[i]);
 window.saveProduct = saveProduct;
 window.addVariant = addVariant;
 window.removeVariant = removeVariant;

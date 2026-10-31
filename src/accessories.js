@@ -68,7 +68,9 @@ function loadProductsFromSheet() {
                         note: row[3] || '',
                         image: row[4] || '',
                         category: cat,
+                        status: (row[6] || '').toString().trim(),
                         variants: [],
+                        selectedVariantIdx: 0, // เดิมไม่ได้ตั้งค่า → variants[undefined].stock พัง หน้าอุปกรณ์ไม่แสดงสินค้าเลย
                         totalSold: 0,
                         aiType: cat
                     };

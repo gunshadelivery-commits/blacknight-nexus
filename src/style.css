@@ -1501,3 +1501,18 @@ body.sol-shell .category-row .category-inactive {
     pointer-events: none;
     user-select: none;
 }
+
+/* ============================================================
+   มือถือจอแคบมาก (iPhone SE / Android เล็ก 320–374px)
+   หัวเว็บเดิมกว้างเกินจอ ~10px ปุ่มตะกร้าโดนตัด → ย่อช่องไฟ ปุ่มภาษา และซ่อนบรรทัดรอง
+   ============================================================ */
+@media (max-width: 374px) {
+    .site-nav-inner { padding-left: 10px; padding-right: 10px; gap: 6px; }
+    .brand-lockup { gap: 7px; min-width: 0; }
+    .brand-mark { width: 34px; height: 34px; border-radius: 11px; }
+    .brand-name { font-size: 12px; white-space: nowrap; }
+    .brand-place { display: none; }
+    .language-switcher { gap: 1px; padding: 2px; }
+    .language-switcher button { min-width: 26px; min-height: 26px; padding: 0 4px; font-size: 8.5px; letter-spacing: 0.02em; }
+    .cart-nav-button { width: 38px; height: 38px; border-radius: 12px; }
+}

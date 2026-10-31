@@ -532,6 +532,25 @@
             .admin-header-actions { justify-self: end; }
         }
 
+        /* มือถือ: ตารางให้เลื่อนแนวนอนในกล่อง แทนการบีบคอลัมน์จนตัดคำทีละตัวอักษร */
+        @media (max-width: 720px) {
+            .overflow-x-auto > table { min-width: 680px; }
+            .overflow-x-auto > table th { white-space: nowrap; }
+        }
+
+        /* มือถือ: หัวแดชบอร์ดเดิมชื่อร้านและปุ่มออกจากระบบตกบรรทัด */
+        @media (max-width: 480px) {
+            .admin-header-inner { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+            .admin-header-brand { min-width: 0; gap: 8px; }
+            .admin-header .admin-brand-mark { width: 36px; height: 36px; flex: none; }
+            .admin-header-subtitle { display: none; }
+            .admin-header-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+            .admin-header-actions { gap: 6px; }
+            .admin-header-actions .language-switcher button { min-width: 28px; padding: 0 6px; }
+            .admin-store-link { display: none; }
+            .admin-logout { white-space: nowrap; padding-left: 10px; padding-right: 10px; }
+        }
+
         @media (max-width: 720px) {
             body.admin-shell {
                 background: linear-gradient(180deg, #07120c 0 340px, #edf2ed 340px 100%);

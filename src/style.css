@@ -388,9 +388,9 @@
     margin: 0;
     color: #f6faf7;
     font-size: clamp(3.35rem, 6.2vw, 6.1rem);
-    line-height: 0.96;
-    font-weight: 800;
-    letter-spacing: -0.062em;
+    line-height: 1;
+    font-weight: 700;          /* หัวข้อสไตล์ Apple: หนาระดับกลาง ระยะชิดเล็กน้อย */
+    letter-spacing: -0.035em;
     text-wrap: balance;
     text-shadow: 0 28px 70px rgba(0,0,0,0.32);
 }
@@ -669,9 +669,9 @@
     margin-top: 8px;
     color: #f5faf6;
     font-size: clamp(30px, 4vw, 48px);
-    line-height: 1;
-    font-weight: 750;
-    letter-spacing: -0.045em;
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.03em;
 }
 
 .result-meta {
@@ -734,7 +734,10 @@
     display: grid;
     place-items: center;
     color: rgba(229,246,235,0.38);
-    font: 600 11px/1 Kanit, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    font-family: inherit;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(0,0,0,0.22);

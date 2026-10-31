@@ -889,8 +889,8 @@ function printLabel(vi) {
         <head>
             <title>Shipping Label - ${esc(name)}</title>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap');
-                body { font-family: 'Kanit', sans-serif; padding: 20px; color: #333; }
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+Thai:wght@400;700&display=swap');
+                body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Sukhumvit Set', 'Helvetica Neue', 'Inter', 'Noto Sans Thai', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, sans-serif; padding: 20px; color: #333; }
                 .label-container { border: 2px solid #000; padding: 20px; width: 400px; margin: 0 auto; position: relative; }
                 .shop-name { font-size: 24px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
                 .recipient-section { margin-bottom: 20px; }

@@ -1,7 +1,7 @@
 {
-  "name": "cannabis-flower-onnut",
+  "name": "siam-cannabis-onnut",
   "version": "2.5.0",
-  "description": "Cannabis Flower อ่อนนุช — ร้านกัญชา delivery sale page + admin",
+  "description": "Siam Cannabis อ่อนนุช — ร้านกัญชา delivery sale page + admin",
   "main": "index.js",
   "scripts": {
     "dev": "vite",

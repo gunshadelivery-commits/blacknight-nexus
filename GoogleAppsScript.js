@@ -15,7 +15,7 @@ const SHEET_USERS = "Users";
 
 // --- อีเมลแจ้งเตือนออเดอร์ใหม่ (ใส่หลายอีเมลได้ คั่นด้วย ,) ---
 const NOTIFY_EMAIL = "ped.siraphob@gmail.com";
-const SHOP_NAME = "Cannabis Flower อ่อนนุช";
+const SHOP_NAME = "Siam Cannabis อ่อนนุช";
 
 function getSS() {
   try {

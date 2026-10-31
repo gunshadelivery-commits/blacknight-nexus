@@ -1,6 +1,6 @@
 # AGENTS.md — กฏการทำงานสำหรับ AI ทุกตัว
 
-> ไฟล์นี้คือ **กติกากลาง** ของโปรเจกต์ **Cannabis Flower อ่อนนุช**
+> ไฟล์นี้คือ **กติกากลาง** ของโปรเจกต์ **Siam Cannabis อ่อนนุช**
 > AI ทุกตัว (Claude, Codex, Cursor, Gemini ฯลฯ) **ต้องอ่านไฟล์นี้ + `CHANGELOG.md` ก่อนเริ่มงานทุกครั้ง** และทำตามเท่านั้น
 > มาตรฐานที่ใช้: [AGENTS.md](https://agents.md) · [Keep a Changelog](https://keepachangelog.com) · [SemVer](https://semver.org) · [Conventional Commits](https://www.conventionalcommits.org)
 
@@ -22,7 +22,7 @@
 5. **`npm run build` ต้องผ่าน** ก่อนบอกว่าเสร็จ และควรเปิด preview ยืนยันด้วยตา
 6. **ตัวเลขปลอมใน dashboard (`FAKE_SALES` ใน `src/adminApp.js`) เป็นของหลังบ้านส่วนตัว** ห้ามนำไปอ้างเป็นยอดจริงกับลูกค้า
 7. **ตอบ/คอมเมนต์เป็นภาษาไทย** (เจ้าของเป็นคนไทย) โค้ด/ตัวแปรเป็นอังกฤษได้
-8. **รักษาแบรนด์:** ชื่อ "Cannabis Flower อ่อนนุช", ธีมเขียว, หมวดหมู่ Sativa/Indica/Hybrid/Pre-roll/อุปกรณ์
+8. **รักษาแบรนด์:** ชื่อ "Siam Cannabis อ่อนนุช", ธีมเขียว, หมวดหมู่ Sativa/Indica/Hybrid/Pre-roll/อุปกรณ์
 
 ## 3. ป้ายกำกับผู้ทำ (Author Tags) — สำคัญ
 ทุกบรรทัดใน `CHANGELOG.md` ต้องมีป้ายว่า **ใครทำ**:

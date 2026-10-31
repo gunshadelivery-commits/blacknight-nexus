@@ -1,4 +1,4 @@
-# คู่มือตั้งค่า Backend ร้าน (Cannabis Flower อ่อนนุช)
+# คู่มือตั้งค่า Backend ร้าน (Siam Cannabis อ่อนนุช)
 
 ทำตามขั้นตอนนี้ครั้งเดียว แล้ว **หน้า admin จะเพิ่ม/แก้ไข/ลบสินค้าได้จริง** และหน้าร้านจะแสดงสินค้าของคุณเอง
 
@@ -9,7 +9,7 @@
 
 ## ขั้นที่ 1 — สร้าง Google Sheet ของร้าน
 
-1. ไปที่ https://sheets.new สร้างไฟล์ใหม่ ตั้งชื่อไฟล์ว่า `Cannabis Flower อ่อนนุช - Data`
+1. ไปที่ https://sheets.new สร้างไฟล์ใหม่ ตั้งชื่อไฟล์ว่า `Siam Cannabis อ่อนนุช - Data`
 2. สร้าง **แท็บ (tab ด้านล่าง)** ให้ครบ 4 แท็บ โดยตั้งชื่อให้ตรงเป๊ะ:
    - `Products`
    - `Orders`
@@ -39,7 +39,7 @@
    const SPREADSHEET_ID = "วาง ID ชีตของคุณ";   // เอาจาก URL ชีต docs.google.com/spreadsheets/d/<<ID>>/edit
    const SHEET_PRODUCTS = "Products";            // ให้ตรงกับชื่อแท็บ
    const NOTIFY_EMAIL   = "อีเมลรับแจ้งออเดอร์";  // ปัจจุบันตั้งไว้ ped.siraphob@gmail.com
-   const SHOP_NAME      = "Cannabis Flower อ่อนนุช";
+   const SHOP_NAME      = "Siam Cannabis อ่อนนุช";
    ```
 4. กด **Save** (ไอคอนแผ่นดิสก์)
 

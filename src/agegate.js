@@ -13,7 +13,7 @@ function createAgeGateHTML() {
     align-items: center;
     justify-content: center;
     padding: 24px;
-    font-family: 'Kanit', 'Prompt', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Sukhumvit Set", "Helvetica Neue", "Inter", "Noto Sans Thai", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
 ">
     <div style="
         max-width: 420px;

@@ -106,6 +106,10 @@ const translations = {
         'store.success.total': 'ยอดโอน:',
         'store.success.line': 'แจ้งชำระเงินใน LINE',
         'store.success.home': 'กลับไปหน้าแรก',
+        'store.hero.signalHour': '1 ชม.',
+        'nav.home': 'หน้าแรก',
+        'accessories.hero.title': 'อุปกรณ์กัญชาพร้อมส่ง 🌿',
+        'accessories.hero.subtitle': 'คัดรายการใช้งานง่าย ส่งด่วนในอ่อนนุช สุขุมวิท สวนหลวง และอุดมสุข · 20+',
         'store.line.tooltip': 'ทัก LINE สั่งด่วน 💬',
         'store.profile.kicker': 'GOOGLE BUSINESS PROFILE',
         'store.profile.heading': 'ข้อมูลร้านที่ตรวจสอบได้ ก่อนสั่งทุกครั้ง',
@@ -348,6 +352,10 @@ const translations = {
         'store.success.total': 'Transfer total:',
         'store.success.line': 'Confirm payment on LINE',
         'store.success.home': 'Back to home',
+        'store.hero.signalHour': '1 hr',
+        'nav.home': 'Home',
+        'accessories.hero.title': 'Accessories, ready to ship 🌿',
+        'accessories.hero.subtitle': 'Easy-to-use picks · express delivery in On Nut, Sukhumvit, Suan Luang and Udom Suk · 20+',
         'store.line.tooltip': 'Order now on LINE 💬',
         'store.profile.kicker': 'GOOGLE BUSINESS PROFILE',
         'store.profile.heading': 'Verified store details before you order',
@@ -494,8 +502,15 @@ let observer = null;
 const textNodeKeys = new WeakMap();
 const attributeKeys = new WeakMap();
 
+// ภาษาเริ่มต้นเมื่อผู้เข้าชมยังไม่เคยเลือกเอง: อังกฤษ
+// หน้าที่ต้องการเริ่มเป็นไทย (เช่น admin) ใส่ <html data-default-lang="th">
+function defaultLanguage() {
+    const preferred = document.documentElement?.dataset?.defaultLang;
+    return SUPPORTED_LANGUAGES.includes(preferred) ? preferred : 'en';
+}
+
 function normalizeLanguage(language) {
-    return SUPPORTED_LANGUAGES.includes(language) ? language : 'th';
+    return SUPPORTED_LANGUAGES.includes(language) ? language : defaultLanguage();
 }
 
 function buildLiteralIndex() {
@@ -511,7 +526,7 @@ export function getLanguage() {
     try {
         currentLanguage = normalizeLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY));
     } catch {
-        currentLanguage = 'th';
+        currentLanguage = defaultLanguage();
     }
     return currentLanguage;
 }
@@ -638,4 +653,5 @@ export function initI18n() {
     });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     applyTranslations(document);
+    document.documentElement.classList.remove('i18n-pending'); // ดู guard ใน <head> ของแต่ละหน้า
 }

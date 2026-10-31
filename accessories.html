@@ -2,6 +2,18 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+    <!-- ภาษาเริ่มต้นคืออังกฤษ แต่ข้อความใน HTML เป็นไทย: ซ่อนหน้าไว้จนแปลเสร็จ กันกะพริบเป็นไทยแวบหนึ่ง (สูงสุด 1.5 วิ) -->
+    <script>
+        (function () {
+            var lang = null;
+            try { lang = localStorage.getItem('cf_language'); } catch (e) {}
+            if (lang === 'th') return;
+            var root = document.documentElement;
+            root.classList.add('i18n-pending');
+            setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
+        })();
+    </script>
+    <style>html.i18n-pending body { visibility: hidden; }</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>อุปกรณ์กัญชา | Cannabis Flower อ่อนนุช</title>
     <meta name="description" content="เลือกซื้ออุปกรณ์กัญชาจาก Cannabis Flower อ่อนนุช พร้อมบริการส่งด่วนในย่านอ่อนนุช สุขุมวิท สวนหลวง และอุดมสุข สำหรับผู้ใหญ่อายุ 20 ปีขึ้นไป">
@@ -122,8 +134,8 @@
     <div class="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4 mt-4">
         <div class="bg-gradient-to-br from-emerald-800 to-emerald-950 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-emerald-100">
             <div class="relative z-10">
-                <h1 class="text-2xl font-bold mb-1">อุปกรณ์กัญชาพร้อมส่ง 🌿</h1>
-                <p class="text-emerald-200 text-xs">คัดรายการใช้งานง่าย ส่งด่วนในอ่อนนุช สุขุมวิท สวนหลวง และอุดมสุข · 20+</p>
+                <h1 class="text-2xl font-bold mb-1" data-i18n="accessories.hero.title">อุปกรณ์กัญชาพร้อมส่ง 🌿</h1>
+                <p class="text-emerald-200 text-xs" data-i18n="accessories.hero.subtitle">คัดรายการใช้งานง่าย ส่งด่วนในอ่อนนุช สุขุมวิท สวนหลวง และอุดมสุข · 20+</p>
             </div>
             <span class="absolute -right-4 -bottom-4 text-8xl opacity-10 rotate-12">📦</span>
         </div>
@@ -269,7 +281,7 @@
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center py-2 z-50 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.05)]">
         <a href="index.html" class="flex flex-col items-center gap-1 group">
             <span class="text-xl opacity-40 group-[.active]:opacity-100 transition-opacity">🏠</span>
-            <span class="text-[10px] font-bold text-slate-400 group-[.active]:text-emerald-600 transition-colors">หน้าแรก</span>
+            <span class="text-[10px] font-bold text-slate-400 group-[.active]:text-emerald-600 transition-colors" data-i18n="nav.home">หน้าแรก</span>
         </a>
         <a href="accessories.html" class="flex flex-col items-center gap-1 active group">
             <span class="text-xl opacity-40 group-[.active]:opacity-100 transition-opacity">📦</span>

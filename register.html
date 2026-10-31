@@ -2,6 +2,18 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+    <!-- ภาษาเริ่มต้นคืออังกฤษ แต่ข้อความใน HTML เป็นไทย: ซ่อนหน้าไว้จนแปลเสร็จ กันกะพริบเป็นไทยแวบหนึ่ง (สูงสุด 1.5 วิ) -->
+    <script>
+        (function () {
+            var lang = null;
+            try { lang = localStorage.getItem('cf_language'); } catch (e) {}
+            if (lang === 'th') return;
+            var root = document.documentElement;
+            root.classList.add('i18n-pending');
+            setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
+        })();
+    </script>
+    <style>html.i18n-pending body { visibility: hidden; }</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สมัครสมาชิก | Cannabis Flower อ่อนนุช</title>
     <meta name="description" content="สมัครสมาชิก Cannabis Flower อ่อนนุช สำหรับผู้ใหญ่อายุ 20 ปีขึ้นไป เพื่อเลือกสินค้าและสั่งส่งด่วนในย่านอ่อนนุช สุขุมวิท สวนหลวง และอุดมสุข">

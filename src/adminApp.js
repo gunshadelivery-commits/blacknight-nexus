@@ -1297,11 +1297,13 @@ async function savePromptpay() {
             ...promptpayList.map(pp => [pp.name, pp.bank, pp.number, pp.qrImage, pp.status])
         ];
 
-        await fetch(GAS_URL, {
+        const res = await fetch(GAS_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: withAdminKey({ action: "saveSettings", settings: settingsPayload })
         });
+        const result = await res.json();
+        if (result.result !== "success") throw new Error(result.error || "sync failed");
 
         renderPromptpayTable();
         togglePromptpayModal(false);
@@ -1334,11 +1336,13 @@ async function deletePromptpay(idx) {
         ];
 
         try {
-            await fetch(GAS_URL, {
+            const res = await fetch(GAS_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: withAdminKey({ action: "saveSettings", settings: settingsPayload })
             });
+            const result = await res.json();
+            if (result.result !== "success") throw new Error(result.error || "sync failed");
             showToast("ลบและซิงค์ข้อมูลสำเร็จ!", "success");
         } catch (err) {
             console.error("Sync error:", err);

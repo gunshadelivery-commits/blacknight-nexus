@@ -27,6 +27,7 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Claude] style(ui): ขยายตัวหนังสือหน้าร้านที่เล็กเกินไป — เมนูหัวเว็บ 13→15px, ช่องค้นหา 13→16px (กัน iPhone ซูมตอนพิมพ์), ปุ่มหมวด 11→14px, ป้ายประเภท/เริ่มต้น 8→11px, ชื่อสินค้า 15→18px (มือถือ 13→15), คำอธิบาย 10→13px (มือถือ 9→12), ปุ่มขนาด 9→12px (มือถือ 8→11), ราคา 18→22px (มือถือ 16→19) และเพิ่มความเข้มสีตัวหนังสือจางๆ (index.html, src/style.css)
 - [Claude] style(ui): เปลี่ยนฟอนต์ทั้งเว็บจาก Kanit/Prompt เป็นแบบเว็บ Apple — เครื่อง Apple ใช้ SF Pro + Sukhumvit Set ของเครื่อง (ฝัง SF Pro ไม่ได้ตามลิขสิทธิ์) เครื่องอื่นใช้ Inter + Noto Sans Thai · จีน/เกาหลีใช้ฟอนต์ระบบ (PingFang / Apple SD Gothic / YaHei / Malgun) · หัวข้อหลักลดน้ำหนักเป็น 700 และระยะตัวอักษรชิดพอดีแบบ Apple (index.html, accessories.html, admin.html, login.html, register.html, src/agegate.js, src/style.css, src/adminApp.js, AGENTS.md)
 - [Claude] feat(ui): โลโก้บนหัวเว็บเปลี่ยนจากตัวอักษร SC เป็นรูปรถเข็น+ใบกัญชาบนกล่องขาว (หัวเว็บหน้าแรก, วงกลมกลางหน้าแรก, หน้า admin 2 จุด) และแทนอีโมจิ 📦 บนหัวหน้าอุปกรณ์ ให้เข้าชุดกับ favicon (image/brand-icon.png, index.html, admin.html, accessories.html, src/style.css)
 - [Claude] feat(seo): เปลี่ยน favicon/ไอคอนเว็บเป็นโลโก้รถเข็น+ใบกัญชาของร้าน (ครอปเฉพาะสัญลักษณ์ ไม่เอาตัวอักษร เพราะอ่านไม่ออกที่ 16–48px) บนพื้นขาวมุมมน · เอา favicon.svg (โลโก้ SC) ออก (image/*, index.html, accessories.html, admin.html, login.html, register.html)

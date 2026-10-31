@@ -45,6 +45,9 @@
 ---
 
 ### Fixed
+- [Claude] fix(accessories): ส่งออเดอร์จากหน้าอุปกรณ์ด้วย `application/json` ติด CORS preflight ทำให้ออเดอร์ไม่ถูกบันทึกลงชีต → เปลี่ยนเป็น `text/plain` เหมือนหน้าร้านหลัก (src/accessories.js)
+- [Claude] fix(gas): ปุ่ม "ลบสินค้าทั้งหมด" เรียก `clearProducts` ที่ไม่มีใน GAS → เพิ่มให้ โดยสำรองแท็บ Products เป็น `Products_backup_<เวลา>` ก่อนล้างทุกครั้ง · action ที่ไม่รู้จักตอบ `UNKNOWN_ACTION` แทนค่าว่าง (GoogleAppsScript.js)
+- [Claude] fix(admin): บันทึก/ลบบัญชี Promptpay ในหน้า admin ไม่เคยถึงชีต (ส่ง `application/json` ทำให้ติด CORS preflight + GAS ไม่มี action `saveSettings`/`saveBank`) → แท็บ BankAccounts ว่าง หน้าชำระเงินไม่แสดงช่องทางโอน · เพิ่ม `saveSettings`/`saveBank` ใน GAS V27-BANK (เก็บเป็นข้อความ เลข 0 นำหน้าไม่หาย, ปฏิเสธ QR ที่อัปโหลดไม่สำเร็จ) และเปลี่ยนเป็น `text/plain` + ตรวจผลจาก GAS (GoogleAppsScript.js, src/adminApp.js)
 - [Claude] fix(build): ย้าย `@rollup/rollup-linux-x64-gnu` จาก dependencies ไป optionalDependencies ให้ `npm ci` บน Windows/macOS ไม่ล้ม (บน Linux/CI ยังติดตั้งเหมือนเดิม) (package.json, package-lock.json)
 
 ## [2.5.0] - 2026-07-27

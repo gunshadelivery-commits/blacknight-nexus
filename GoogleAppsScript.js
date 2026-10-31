@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V26-PRIVATE";
+const GAS_VERSION = "V27-BANK";
 // TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
 // (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
 const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
@@ -96,6 +96,7 @@ function doGet(e) {
       const sheet = ss.getSheetByName(SHEET_BANK);
       return sendResponse(sheet ? sheet.getDataRange().getValues() : []);
     }
+    return sendResponse({ error: "UNKNOWN_ACTION: " + action });
   } catch (err) {
     return sendResponse({ error: "GAS doGet Error: " + err.toString() });
   }
@@ -153,6 +154,27 @@ function doPost(e) {
       return sendResponse({ error: "Email หรือ Password ไม่ถูกต้อง" });
     }
 
+    // ===== SAVE PROMPTPAY / บัญชีรับโอน (หน้า admin → แท็บ BankAccounts) =====
+    // หน้าร้านอ่านแท็บนี้ผ่าน getBank เพื่อแสดงช่องทางโอนตอนชำระเงิน
+    if (action === "saveSettings" || action === "saveBank") {
+      const rows = data.settings;
+      const valid = Array.isArray(rows) && rows.length >= 1 && rows.length <= 51 &&
+        rows.every(r => Array.isArray(r) && r.length === 5);
+      if (!valid) return sendResponse({ error: "INVALID_SETTINGS" });
+      const clean = rows.map(r => r.map(c => String(c == null ? "" : c)));
+      // ลิงก์ QR ต้องเป็น URL (เช่น ImgBB) ถ้าอัปโหลดไม่สำเร็จจะได้ base64 ยาวมาก → ปฏิเสธดีกว่าตัดทิ้งจนรูปเสีย
+      if (clean.some(r => r.some(c => c.length > 2000))) return sendResponse({ error: "VALUE_TOO_LONG (อัปโหลดรูป QR ไม่สำเร็จ?)" });
+      let bSheet = ss.getSheetByName(SHEET_BANK);
+      if (!bSheet) bSheet = ss.insertSheet(SHEET_BANK);
+      bSheet.clearContents();
+      const range = bSheet.getRange(1, 1, clean.length, 5);
+      // เก็บเป็นข้อความล้วน: เลขพร้อมเพย์/บัญชีที่ขึ้นต้นด้วย 0 จะไม่หาย และค่าที่ขึ้นต้นด้วย = จะไม่กลายเป็นสูตร
+      range.setNumberFormat("@");
+      range.setValues(clean);
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success" });
+    }
+
     // ===== PRODUCTS & ORDERS =====
     let sheet = ss.getSheetByName(SHEET_PRODUCTS);
     if (!sheet) {
@@ -190,6 +212,17 @@ function doPost(e) {
       }
       SpreadsheetApp.flush();
       return sendResponse({ result: "success" });
+    }
+
+    // ===== ลบสินค้าทั้งหมด (สำรองเป็นแท็บใหม่ก่อนเสมอ กู้คืนได้) =====
+    if (action === "clearProducts") {
+      const backupName = "Products_backup_" + Utilities.formatDate(new Date(), "Asia/Bangkok", "yyyyMMdd_HHmmss");
+      sheet.copyTo(ss).setName(backupName);
+      const last = sheet.getLastRow();
+      // ล้างเฉพาะข้อมูล ไม่ลบแถว: หัวคอลัมน์และ gid ของแท็บ Products (ที่หน้าร้านอ่าน CSV) อยู่ครบ
+      if (last > 1) sheet.getRange(2, 1, last - 1, sheet.getLastColumn()).clearContent();
+      SpreadsheetApp.flush();
+      return sendResponse({ result: "success", backup: backupName });
     }
 
     if (action === "deleteProduct") {
@@ -275,6 +308,7 @@ function doPost(e) {
       return sendResponse(found ? { result: "success" } : { error: "Order not found" });
     }
 
+    return sendResponse({ error: "UNKNOWN_ACTION: " + action });
   } catch (err) {
     return sendResponse({ error: "GAS doPost Error: " + err.toString() });
   }

@@ -25,6 +25,7 @@
 - [Codex] feat(storefront): เพิ่มหมวดเครื่องดื่ม น้ำท่อมมี่ น้ำโยเกิร์ต น้ำผลไม้ ราคาแพ็ก 3 ขวด และเซ็ตโปรโมชั่นที่สั่งลงตะกร้าได้ (index.html, src/main.js, src/style.css)
 
 ### Changed
+- [Claude] feat(i18n): หน้าร้านเปิดครั้งแรกเป็นภาษาอังกฤษ (คนที่เคยเลือกภาษาไว้ยังได้ภาษาเดิม · หน้า admin ยังเริ่มที่ไทยผ่าน data-default-lang) + ซ่อนหน้าไว้จนแปลเสร็จกันกะพริบเป็นไทย + แปลข้อความที่ตกหล่น (1 ชม., แท็บเมนูน้ำ, หัวข้อหน้าอุปกรณ์, เมนูหน้าแรก) (src/i18n.js, index.html, accessories.html, login.html, register.html, admin.html, AGENTS.md)
 - [Claude] style(ui): เปลี่ยนแถบเลื่อนทุกหน้าเป็นแบบบาง 6px สีเขียวมรกตโปร่งแสง หัวมน ไม่มีปุ่มลูกศร/พื้นขาว (Firefox ใช้ scrollbar-width: thin) (src/style.css)
 - [Claude] fix(admin): ล็อกอินหลังบ้านตรวจรหัสที่ Apps Script แทนการเทียบในเบราว์เซอร์ และแนบรหัสไปกับทุกคำสั่งที่ต้องใช้สิทธิ์ 9 จุด เก็บรหัสใน sessionStorage (ปิดแท็บแล้วหลุด) (src/adminApp.js)
 - [Claude] docs(agents): แก้กฏข้อ 7 ให้ตรงกับที่ย้ายรหัสแอดมินไปไว้ฝั่ง Apps Script (AGENTS.md)

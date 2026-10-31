@@ -3,6 +3,18 @@
 
 <head>
     <meta charset="UTF-8">
+    <!-- ภาษาเริ่มต้นคืออังกฤษ แต่ข้อความใน HTML เป็นไทย: ซ่อนหน้าไว้จนแปลเสร็จ กันกะพริบเป็นไทยแวบหนึ่ง (สูงสุด 1.5 วิ) -->
+    <script>
+        (function () {
+            var lang = null;
+            try { lang = localStorage.getItem('cf_language'); } catch (e) {}
+            if (lang === 'th') return;
+            var root = document.documentElement;
+            root.classList.add('i18n-pending');
+            setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
+        })();
+    </script>
+    <style>html.i18n-pending body { visibility: hidden; }</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="ONzKRa2tvCzIy03s6GN8vTw603K6-Omom-_57txoe6U">
     <title>Cannabis Flower อ่อนนุช | ร้านกัญชา สุขุมวิท สวนหลวง อุดมสุข ส่งด่วน ส่งฟรี</title>
@@ -384,7 +396,7 @@
                     </div>
 
                     <div class="hero-signals">
-                        <div><strong>1 ชม.</strong><span>ส่งด่วนในพื้นที่</span></div>
+                        <div><strong data-i18n="store.hero.signalHour">1 ชม.</strong><span>ส่งด่วนในพื้นที่</span></div>
                         <div><strong>ฟรี</strong><span>ค่าส่งย่านอ่อนนุช</span></div>
                         <div><strong>20+</strong><span>สำหรับผู้ใหญ่เท่านั้น</span></div>
                     </div>
@@ -458,7 +470,7 @@
                     <button onclick="switchCategory('Indica')" class="category-inactive" id="tab-Indica">☾ Indica</button>
                     <button onclick="switchCategory('Pre-roll')" class="category-inactive" id="tab-Pre-roll">Pre-roll</button>
                     <button onclick="switchCategory('อุปกรณ์')" class="category-inactive" id="tab-อุปกรณ์">อุปกรณ์</button>
-                    <button onclick="switchCategory('เครื่องดื่ม')" class="category-inactive" id="tab-เครื่องดื่ม">🥤 เมนูน้ำ</button>
+                    <button onclick="switchCategory('เครื่องดื่ม')" class="category-inactive" id="tab-เครื่องดื่ม" data-i18n="store.category.drinks">🧃 เมนูน้ำ</button>
                 </div>
             </div>
 

@@ -1,7 +1,6 @@
 import './style.css';
-import Papa from 'papaparse';
 import Chart from 'chart.js/auto';
-import { ORDERS_CSV_URL, SHEET_CSV_URL as PRODUCTS_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, getImgbbUploadUrl } from './config.js';
+import { SHEET_CSV_URL as PRODUCTS_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, getImgbbUploadUrl } from './config.js';
 
 // แนบรหัสแอดมินไปกับทุกคำสั่งที่ต้องใช้สิทธิ์ (GAS จะตอบ UNAUTHORIZED ถ้าไม่มี)
 // เก็บใน sessionStorage: ปิดแท็บแล้วหลุดเอง และไม่ถูกฝังในไฟล์ JS ที่ลูกค้าโหลด
@@ -259,6 +258,7 @@ async function checkPass() {
         localStorage.setItem('adminAuth', 'true');
         showToast(t('admin.toast.loginSuccess'), "success");
         showDashboard();
+        loadData(); // เพิ่งได้รหัสมา ค่อยดึงออเดอร์ได้
     } catch (err) {
         document.getElementById('errorMsg').classList.remove('hidden');
         showToast(t('admin.toast.wrongPassword'), "error");
@@ -288,17 +288,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- DASHBOARD DATA ---
-function loadData() {
-    if (!ORDERS_CSV_URL) return;
-    const cacheBuster = `&nocache=${Math.random()}&t=${Date.now()}`;
-    Papa.parse(ORDERS_CSV_URL + cacheBuster, {
-        download: true, header: true, skipEmptyLines: true,
-        complete: (results) => { 
-            rawOrders = results.data; 
-            applyLocalOrderUpdates();
-            processSales(); 
-        }
-    });
+async function loadData() {
+    // ออเดอร์เป็นข้อมูลส่วนตัวของลูกค้า — ดึงผ่าน GAS ด้วย ADMIN_KEY เท่านั้น (เลิกอ่าน CSV สาธารณะ)
+    if (!GAS_URL || !sessionStorage.getItem('adminKey')) return;
+    try {
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: withAdminKey({ action: "getOrders" })
+        });
+        const rows = await res.json();
+        if (!Array.isArray(rows) || rows.length < 2) { rawOrders = []; processSales(); return; }
+        // แปลงเป็น object ต่อแถวแบบเดียวกับที่ PapaParse (header: true) เคยให้
+        const headers = [];
+        rows[0].forEach((h) => {
+            let k = (h || "").toString(); let n = 1;
+            while (headers.includes(k)) k = h + "_" + (++n);   // กันหัวคอลัมน์ซ้ำ
+            headers.push(k);
+        });
+        rawOrders = rows.slice(1)
+            .filter((r) => r.some((c) => c !== "" && c !== null))
+            .map((r) => { const o = {}; headers.forEach((k, i) => { o[k] = (r[i] ?? "").toString(); }); return o; });
+        applyLocalOrderUpdates();
+        processSales();
+    } catch (err) { console.error("โหลดออเดอร์ไม่สำเร็จ:", err); }
 }
 
 function applyLocalOrderUpdates() {

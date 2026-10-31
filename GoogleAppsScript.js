@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V28-ADMIN";
+const GAS_VERSION = "V29-MAIL-I18N";
 // TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
 // (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
 const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
@@ -473,6 +473,7 @@ function notifyNewOrder(data) {
         '<tr><td><b>📞 เบอร์</b></td><td>' + h_(data.phone || "-") + '</td></tr>' +
         '<tr><td><b>🏠 ที่อยู่</b></td><td>' + h_(data.address || "-") + '</td></tr>' +
         '<tr><td><b>💳 วิธีชำระ</b></td><td>' + h_(data.paymentMethod || "-") + '</td></tr>' +
+        '<tr><td><b>🌐 ภาษาลูกค้า</b></td><td>' + MAIL_I18N[mailLang_(data.lang)].label + '</td></tr>' +
         '<tr><td><b>💰 ยอดรวม</b></td><td>' + h_(total) + ' บาท</td></tr>' +
         '<tr><td><b>🖼️ หลักฐาน</b></td><td>' + slipHtml + '</td></tr>' +
       '</table>' +
@@ -498,43 +499,111 @@ function buildItemsHtml(data) {
   return "<p>" + h_(data.items || "-") + "</p>";
 }
 
-/** ส่งอีเมลใบยืนยันออเดอร์ให้ลูกค้า (เฉพาะเมื่อลูกค้ากรอกอีเมล) */
+// ===== อีเมลยืนยันถึงลูกค้า: ภาษาเดียวกับที่ลูกค้าใช้ตอนสั่ง (หน้าเว็บส่ง data.lang มา) =====
+const MAIL_I18N = {
+  th: {
+    shop: "Siam Cannabis อ่อนนุช", locale: "th-TH", currency: "บาท",
+    subject: "✅ ขอบคุณที่สั่งซื้อกับ {shop} — ยอดรวม {total} บาท",
+    heading: "ขอบคุณสำหรับการสั่งซื้อ 🙏",
+    greeting: "สวัสดีคุณ {name}",
+    received: "เราได้รับออเดอร์ของคุณเรียบร้อยแล้ว และกำลังตรวจสอบให้อยู่ค่ะ",
+    name: "ชื่อผู้รับ", phone: "เบอร์โทร", address: "ที่อยู่จัดส่ง", payment: "วิธีชำระ", total: "ยอดรวม",
+    items: "รายการสินค้า",
+    next: "ทางร้านจะติดต่อกลับเพื่อยืนยันการจัดส่งอีกครั้ง หากมีข้อสงสัยตอบกลับอีเมลนี้ได้เลย",
+    thanks: "ขอบคุณที่ไว้วางใจ {shop} 💚 หวังว่าจะได้ดูแลคุณอีกนะคะ",
+    transfer: "โอนเงิน", cod: "เก็บเงินปลายทาง", label: "ไทย"
+  },
+  en: {
+    shop: "Siam Cannabis On Nut", locale: "en-US", currency: "THB",
+    subject: "✅ Thank you for your order at {shop} — total {total} THB",
+    heading: "Thank you for your order 🙏",
+    greeting: "Hi {name},",
+    received: "We've received your order and are reviewing it now.",
+    name: "Recipient", phone: "Phone", address: "Delivery address", payment: "Payment", total: "Total",
+    items: "Your items",
+    next: "We'll contact you shortly to confirm delivery. If you have any questions, just reply to this email.",
+    thanks: "Thank you for choosing {shop} 💚 We look forward to serving you again!",
+    transfer: "Bank transfer", cod: "Cash on delivery", label: "English"
+  },
+  zh: {
+    shop: "Siam Cannabis 安努店", locale: "zh-CN", currency: "泰铢",
+    subject: "✅ 感谢您在 {shop} 下单 — 合计 {total} 泰铢",
+    heading: "感谢您的订购 🙏",
+    greeting: "{name}，您好！",
+    received: "我们已收到您的订单，正在为您确认。",
+    name: "收件人", phone: "电话", address: "收货地址", payment: "付款方式", total: "合计",
+    items: "商品清单",
+    next: "我们会尽快联系您确认配送。如有任何疑问，直接回复此邮件即可。",
+    thanks: "感谢您选择 {shop} 💚 期待再次为您服务！",
+    transfer: "银行转账", cod: "货到付款", label: "中文"
+  },
+  ko: {
+    shop: "Siam Cannabis 온눗점", locale: "ko-KR", currency: "바트",
+    subject: "✅ {shop}에서 주문해 주셔서 감사합니다 — 합계 {total} 바트",
+    heading: "주문해 주셔서 감사합니다 🙏",
+    greeting: "{name}님, 안녕하세요!",
+    received: "주문이 정상적으로 접수되었으며 지금 확인하고 있습니다.",
+    name: "받는 분", phone: "전화번호", address: "배송 주소", payment: "결제 방법", total: "합계",
+    items: "주문 상품",
+    next: "배송 확인을 위해 곧 연락드리겠습니다. 궁금한 점은 이 메일에 회신해 주세요.",
+    thanks: "{shop}을 이용해 주셔서 감사합니다 💚 다시 만나기를 기대합니다!",
+    transfer: "계좌 이체", cod: "착불 결제", label: "한국어"
+  }
+};
+
+function mailLang_(lang) {
+  return MAIL_I18N[String(lang || "").toLowerCase()] ? String(lang).toLowerCase() : "th";
+}
+
+function fill_(tpl, vars) {
+  return String(tpl).replace(/\{(\w+)\}/g, function (_, k) { return vars[k] == null ? "" : vars[k]; });
+}
+
+// หน้าเว็บส่งวิธีชำระเป็นภาษาไทยเสมอ → แปลงเป็นภาษาของอีเมล
+function paymentLabel_(method, L) {
+  const m = String(method || "");
+  if (m.indexOf("ปลายทาง") !== -1 || /cod/i.test(m)) return L.cod;
+  if (m.indexOf("โอน") !== -1 || /transfer/i.test(m)) return L.transfer;
+  return m || "-";
+}
+
+/** ส่งอีเมลใบยืนยันออเดอร์ให้ลูกค้า (เฉพาะเมื่อลูกค้ากรอกอีเมล) เป็นภาษาที่ลูกค้าใช้ */
 function sendCustomerConfirmation(data) {
   var email = (data.email || "").trim();
   // ส่งเฉพาะเมื่อมีอีเมลที่อยู่ในรูปแบบถูกต้อง
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
 
-  const total = (typeof data.total === "number")
-    ? data.total.toLocaleString()
-    : data.total;
-
-  const itemsHtml = buildItemsHtml(data);
-  const subject = "✅ ยืนยันการสั่งซื้อจาก " + SHOP_NAME + " (ยอดรวม " + total + " บาท)";
+  const lang = mailLang_(data.lang);
+  const L = MAIL_I18N[lang];
+  const totalNum = Number(data.total);
+  const total = isNaN(totalNum) ? String(data.total || "-") : totalNum.toLocaleString(L.locale);
+  const row = (label, value, bold) =>
+    '<tr><td style="color:#555;padding:6px 12px 6px 0;">' + label + '</td><td style="padding:6px 0;">' +
+    (bold ? '<b>' + value + '</b>' : value) + '</td></tr>';
 
   const htmlBody =
-    '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:560px;">' +
-      '<h2 style="margin:0 0 4px;">ขอบคุณสำหรับการสั่งซื้อ 🙏</h2>' +
-      '<p style="margin:0 0 16px;color:#555;">สวัสดีคุณ ' + h_(data.name || "ลูกค้า") +
-        ' เราได้รับออเดอร์ของคุณเรียบร้อยแล้ว และกำลังดำเนินการตรวจสอบ</p>' +
-      '<table cellpadding="6" style="border-collapse:collapse;">' +
-        '<tr><td><b>👤 ชื่อผู้รับ</b></td><td>' + h_(data.name || "-") + '</td></tr>' +
-        '<tr><td><b>📞 เบอร์</b></td><td>' + h_(data.phone || "-") + '</td></tr>' +
-        '<tr><td><b>🏠 ที่อยู่จัดส่ง</b></td><td>' + h_(data.address || "-") + '</td></tr>' +
-        '<tr><td><b>💳 วิธีชำระ</b></td><td>' + h_(data.paymentMethod || "-") + '</td></tr>' +
-        '<tr><td><b>💰 ยอดรวม</b></td><td><b>' + h_(total) + ' บาท</b></td></tr>' +
+    '<div lang="' + lang + '" style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Arial,sans-serif;font-size:14px;color:#222;max-width:560px;">' +
+      '<h2 style="margin:0 0 6px;">' + L.heading + '</h2>' +
+      '<p style="margin:0 0 4px;">' + fill_(L.greeting, { name: h_(data.name || "-") }) + '</p>' +
+      '<p style="margin:0 0 16px;color:#555;">' + L.received + '</p>' +
+      '<table cellpadding="0" style="border-collapse:collapse;">' +
+        row("👤 " + L.name, h_(data.name || "-")) +
+        row("📞 " + L.phone, h_(data.phone || "-")) +
+        row("🏠 " + L.address, h_(data.address || "-")) +
+        row("💳 " + L.payment, h_(paymentLabel_(data.paymentMethod, L))) +
+        row("💰 " + L.total, h_(total) + " " + L.currency, true) +
       '</table>' +
-      '<h3 style="margin:16px 0 4px;">🛒 รายการสินค้า</h3>' +
-      itemsHtml +
-      '<p style="margin-top:16px;color:#555;">ทางร้านจะติดต่อกลับเพื่อยืนยันการจัดส่งอีกครั้ง ' +
-        'หากมีข้อสงสัยสามารถตอบกลับอีเมลนี้ได้เลย</p>' +
-      '<p style="color:#888;font-size:12px;margin-top:16px;">' + SHOP_NAME +
-        ' • ' + new Date().toLocaleString("th-TH") + '</p>' +
+      '<h3 style="margin:18px 0 4px;">🛒 ' + L.items + '</h3>' +
+      buildItemsHtml(data) +
+      '<p style="margin-top:16px;color:#555;">' + L.next + '</p>' +
+      '<p style="margin-top:12px;font-weight:600;color:#1a7f43;">' + fill_(L.thanks, { shop: L.shop }) + '</p>' +
+      '<p style="color:#888;font-size:12px;margin-top:16px;">' + L.shop + ' • ' + new Date().toLocaleString(L.locale) + '</p>' +
     '</div>';
 
   MailApp.sendEmail({
     to: email,
-    subject: subject,
+    subject: fill_(L.subject, { shop: L.shop, total: total }),
     htmlBody: htmlBody,
-    name: SHOP_NAME
+    name: L.shop
   });
 }

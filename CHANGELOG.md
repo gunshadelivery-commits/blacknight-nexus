@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Added
+- [Claude] feat(mail): อีเมลยืนยันออเดอร์ถึงลูกค้าเป็นภาษาเดียวกับที่ลูกค้าใช้ตอนสั่ง (ไทย/อังกฤษ/จีน/เกาหลี) พร้อมคำขอบคุณ — หน้าร้านและหน้าอุปกรณ์ส่ง lang ไปกับออเดอร์ · GAS V29-MAIL-I18N แปลหัวข้อ เนื้อหา วิธีชำระ สกุลเงิน รูปแบบวันที่ และชื่อผู้ส่ง · ภาษาที่ไม่รู้จัก/ออเดอร์เก่าใช้ไทย · อีเมลแจ้งร้านยังเป็นไทยแต่บอกภาษาลูกค้า (GoogleAppsScript.js, src/main.js, src/accessories.js)
 - [Claude] feat(seo): เพิ่ม favicon/โลโก้ SC (แทนรูปโลกในผลค้นหา Google และแท็บเบราว์เซอร์) — favicon.ico (16/32/48), favicon.svg, icon-192/512, maskable-512, apple-touch-icon, site.webmanifest, theme-color ทุกหน้า + JSON-LD logo ชี้ไป icon-512.png (image/*, index.html, accessories.html, admin.html, login.html, register.html)
 - [Claude] feat(i18n): เพิ่มภาษาจีน (ตัวย่อ) และเกาหลี ครบทุกข้อความที่ลูกค้าเห็น (หน้าร้าน อุปกรณ์ ยืนยันอายุ สมัคร/ล็อกอิน) + ปุ่ม 中文 / 한국 · เบราว์เซอร์จีน/เกาหลีได้ภาษานั้นอัตโนมัติ · ข้อความที่ไม่มีใน zh/ko ใช้อังกฤษแทน · หน้า admin ยังมีแค่ TH/EN (src/i18n.js, index.html, login.html, register.html, src/agegate.js, src/style.css, AGENTS.md)
 - [Claude] feat(image): เพิ่มรูปสินค้าเมนูชุด 2 จำนวน 13 รูป (จัตุรัส 900px JPEG) — lemon-cherry-gelato, vice-city, marmalade, khalifa-kush, alien-mint, king-juice, mimosa, zapple, permanent, homegrown-1111, kief-mac-1, kief-dosidos, trim-super-boof (image/*.jpg)

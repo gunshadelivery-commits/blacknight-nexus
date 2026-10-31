@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V27-BANK";
+const GAS_VERSION = "V27.1-BANK";
 // TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
 // (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
 const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
@@ -162,8 +162,9 @@ function doPost(e) {
         rows.every(r => Array.isArray(r) && r.length === 5);
       if (!valid) return sendResponse({ error: "INVALID_SETTINGS" });
       const clean = rows.map(r => r.map(c => String(c == null ? "" : c)));
-      // ลิงก์ QR ต้องเป็น URL (เช่น ImgBB) ถ้าอัปโหลดไม่สำเร็จจะได้ base64 ยาวมาก → ปฏิเสธดีกว่าตัดทิ้งจนรูปเสีย
-      if (clean.some(r => r.some(c => c.length > 2000))) return sendResponse({ error: "VALUE_TOO_LONG (อัปโหลดรูป QR ไม่สำเร็จ?)" });
+      // รูป QR อาจเป็นลิงก์ ImgBB หรือรูปแบบ base64 (data:image/...) ถ้าอัปโหลดไม่สำเร็จ ซึ่งยาวหลายหมื่นตัวอักษร
+      // เซลล์ Google Sheets รับได้ไม่เกิน 50,000 ตัวอักษร จึงเผื่อไว้ที่ 45,000 เกินกว่านี้ต้องย่อรูปก่อน
+      if (clean.some(r => r.some(c => c.length > 45000))) return sendResponse({ error: "VALUE_TOO_LONG: รูป QR ใหญ่เกินไป กรุณาใช้ไฟล์ที่เล็กลง" });
       let bSheet = ss.getSheetByName(SHEET_BANK);
       if (!bSheet) bSheet = ss.insertSheet(SHEET_BANK);
       bSheet.clearContents();

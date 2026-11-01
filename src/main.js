@@ -200,11 +200,19 @@ function initRevealObserver() {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
+                observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.1 });
-    
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    }, { threshold: 0, rootMargin: '0px 0px 60px 0px' });
+
+    document.querySelectorAll('.reveal:not(.active)').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight) {
+            el.classList.add('active');
+        } else {
+            observer.observe(el);
+        }
+    });
 }
 
 function escapeProductArtText(value = '') {
@@ -305,11 +313,12 @@ function renderProducts(filter = "") {
             const pNameEscaped = p.name.replace(/'/g, "\\'");
             const premium = isPremiumProduct(p);
             card.className = `product-card reveal ${p.isDrink ? 'drink-card' : 'cursor-pointer'} ${p.isDrinkPromotion ? 'drink-promotion-card' : ''} ${premium ? 'premium-card' : ''}`;
-            card.style.transitionDelay = `${(idx % 4) * 100}ms`;
+            card.style.transitionDelay = `${(idx % 4) * 50}ms`;
             card.onclick = (e) => {
                 if(e.target.closest('button') || e.target.closest('a')) return;
                 if(p.isDrink) { window.openProductDetails(p.name); return; }
                 const slug = p.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+                card.style.transitionDelay = '0ms';
                 window.location.href = `strain.html?s=${encodeURIComponent(slug)}`;
             };
             const isOutOfStock = p.status === 'หมด' || p.status === 'sold out' || p.status === '0';

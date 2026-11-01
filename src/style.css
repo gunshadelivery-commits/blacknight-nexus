@@ -6,6 +6,29 @@
     /* Customize your styles here */
 }
 
+/* ============================================================
+   แถบเลื่อนแบบบาง โทนเขียวมรกตโปร่งแสง (ใช้ทุกหน้า)
+   Chrome/Edge/Safari ใช้ ::-webkit-scrollbar ได้หัวมน ไม่มีปุ่มลูกศร
+   Firefox ไม่รองรับ จึงใช้ scrollbar-width/color แทน (ใส่แยกใน @supports
+   เพราะ Chrome 121+ จะเมิน ::-webkit-scrollbar ทันทีถ้าเจอสองค่านี้)
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(52, 211, 153, 0.35);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(52, 211, 153, 0.6); }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+@supports not selector(::-webkit-scrollbar) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(52, 211, 153, 0.45) transparent;
+    }
+}
+
 @layer components {
     /* ============================================================
        GUNSHA CHECKOUT BUTTON - Primary Green Design
@@ -90,7 +113,7 @@
 }
 
 /* ============================================================
-   CANNABIS FLOWER — EMERALD INTELLIGENCE STOREFRONT
+   SIAM CANNABIS — EMERALD INTELLIGENCE STOREFRONT
    Scoped to index.html via .sol-shell
    ============================================================ */
 
@@ -365,9 +388,9 @@
     margin: 0;
     color: #f6faf7;
     font-size: clamp(3.35rem, 6.2vw, 6.1rem);
-    line-height: 0.96;
-    font-weight: 800;
-    letter-spacing: -0.062em;
+    line-height: 1;
+    font-weight: 700;          /* หัวข้อสไตล์ Apple: หนาระดับกลาง ระยะชิดเล็กน้อย */
+    letter-spacing: -0.035em;
     text-wrap: balance;
     text-shadow: 0 28px 70px rgba(0,0,0,0.32);
 }
@@ -646,14 +669,14 @@
     margin-top: 8px;
     color: #f5faf6;
     font-size: clamp(30px, 4vw, 48px);
-    line-height: 1;
-    font-weight: 750;
-    letter-spacing: -0.045em;
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.03em;
 }
 
 .result-meta {
     color: rgba(223,244,230,0.4);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .discovery-panel {
@@ -695,7 +718,7 @@
 .search-shell input {
     width: 100%;
     color: #fff;
-    font-size: 13px;
+    font-size: 16px;
     background: transparent;
     border: 0;
     outline: 0;
@@ -711,7 +734,10 @@
     display: grid;
     place-items: center;
     color: rgba(229,246,235,0.38);
-    font: 600 11px/1 Kanit, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    font-family: inherit;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(0,0,0,0.22);
@@ -726,11 +752,11 @@
 
 .category-row button {
     flex: none;
-    min-height: 38px;
+    min-height: 42px;
     padding: 0 15px;
     border-radius: 12px;
-    color: rgba(230,246,235,0.46);
-    font-size: 11px;
+    color: rgba(230,246,235,0.66);
+    font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
     border: 1px solid transparent;
@@ -1154,9 +1180,9 @@ body.sol-shell .category-row .category-inactive {
 .product-pill {
     max-width: min(190px, calc(100vw - 80px));
     overflow: hidden;
-    padding: 5px 8px;
+    padding: 6px 10px;
     color: rgba(247,255,249,0.88);
-    font-size: 8px;
+    font-size: 11px;
     line-height: 1;
     font-weight: 700;
     text-overflow: ellipsis;
@@ -1180,7 +1206,7 @@ body.sol-shell .category-row .category-inactive {
 
 .product-type {
     color: rgba(143,255,183,0.48);
-    font-size: 8px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -1189,7 +1215,7 @@ body.sol-shell .category-row .category-inactive {
 .product-name {
     margin-top: 7px;
     color: #f4faf6;
-    font-size: 15px;
+    font-size: 18px;
     line-height: 1.28;
     font-weight: 650;
     letter-spacing: -0.02em;
@@ -1198,7 +1224,7 @@ body.sol-shell .category-row .category-inactive {
 .product-note {
     margin-top: 5px;
     color: rgba(231,244,235,0.38);
-    font-size: 10px;
+    font-size: 13px;
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1214,10 +1240,10 @@ body.sol-shell .category-row .category-inactive {
 }
 
 .variant-chip {
-    min-height: 28px;
-    padding: 0 9px;
-    color: rgba(233,247,237,0.38);
-    font-size: 9px;
+    min-height: 32px;
+    padding: 0 11px;
+    color: rgba(233,247,237,0.62);
+    font-size: 12px;
     font-weight: 600;
     border-radius: 9px;
     border: 1px solid rgba(255,255,255,0.07);
@@ -1238,7 +1264,7 @@ body.sol-shell .category-row .category-inactive {
 .stock-alert {
     margin-top: 8px;
     color: #fdbb74;
-    font-size: 8px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -1253,13 +1279,13 @@ body.sol-shell .category-row .category-inactive {
 
 .product-price-label {
     color: rgba(224,244,231,0.3);
-    font-size: 8px;
+    font-size: 11px;
 }
 
 .product-price {
     margin-top: 2px;
     color: #fff;
-    font-size: 18px;
+    font-size: 22px;
     line-height: 1;
     font-weight: 750;
     letter-spacing: -0.025em;
@@ -1384,6 +1410,7 @@ body.sol-shell .category-row .category-inactive {
 }
 
 .language-switcher button {
+    white-space: nowrap;
     min-width: 36px;
     min-height: 30px;
     padding: 0 9px;
@@ -1581,22 +1608,22 @@ body.sol-shell .category-row .category-inactive {
     }
 
     .product-name {
-        font-size: 13px;
+        font-size: 15px;
     }
 
     .product-note {
-        font-size: 9px;
+        font-size: 12px;
         -webkit-line-clamp: 1;
     }
 
     .variant-chip {
-        min-height: 25px;
-        padding: 0 7px;
-        font-size: 8px;
+        min-height: 30px;
+        padding: 0 9px;
+        font-size: 11px;
     }
 
     .product-price {
-        font-size: 16px;
+        font-size: 19px;
     }
 
     .add-button {
@@ -1623,4 +1650,36 @@ body.sol-shell .category-row .category-inactive {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ============================================================
+   โลโก้ร้าน (รถเข็น + ใบกัญชา) บนกล่องขาว ใช้แทนตัวอักษรย่อเดิม
+   ให้เข้าชุดกับ favicon · ใช้คู่กับ .brand-mark / .orbit-core / .admin-brand-mark
+   ============================================================ */
+.brand-logo-tile {
+    background: #ffffff !important;
+    overflow: hidden;
+}
+.brand-logo-tile .brand-logo-img {
+    width: 74%;
+    height: 74%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ============================================================
+   มือถือจอแคบมาก (iPhone SE / Android เล็ก 320–374px)
+   หัวเว็บเดิมกว้างเกินจอ ~10px ปุ่มตะกร้าโดนตัด → ย่อช่องไฟ ปุ่มภาษา และซ่อนบรรทัดรอง
+   ============================================================ */
+@media (max-width: 374px) {
+    .site-nav-inner { padding-left: 10px; padding-right: 10px; gap: 6px; }
+    .brand-lockup { gap: 7px; min-width: 0; }
+    .brand-mark { width: 34px; height: 34px; border-radius: 11px; }
+    .brand-name { font-size: 12px; white-space: nowrap; }
+    .brand-place { display: none; }
+    .language-switcher { gap: 1px; padding: 2px; }
+    .language-switcher button { min-width: 26px; min-height: 26px; padding: 0 4px; font-size: 8.5px; letter-spacing: 0.02em; }
+    .cart-nav-button { width: 38px; height: 38px; border-radius: 12px; }
 }

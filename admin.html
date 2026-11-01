@@ -1,16 +1,24 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-default-lang="th">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ฝ่ายบริหาร - Cannabis Flower อ่อนนุช</title>
+    <!-- ไอคอนเว็บ (แท็บเบราว์เซอร์ / ผลค้นหา Google / หน้าจอโฮมมือถือ) -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#04150b">
+    <title>ฝ่ายบริหาร - Siam Cannabis อ่อนนุช</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- ฟอนต์แบบเว็บ Apple: เครื่อง Apple ใช้ SF Pro / Sukhumvit Set ของเครื่อง (ฝัง SF Pro ในเว็บไม่ได้ตามลิขสิทธิ์) เครื่องอื่นใช้ Inter + Noto Sans Thai ที่หน้าตาใกล้เคียง -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Kanit', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Sukhumvit Set", "Helvetica Neue", "Inter", "Noto Sans Thai", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
         .glass {
@@ -524,6 +532,25 @@
             .admin-header-actions { justify-self: end; }
         }
 
+        /* มือถือ: ตารางให้เลื่อนแนวนอนในกล่อง แทนการบีบคอลัมน์จนตัดคำทีละตัวอักษร */
+        @media (max-width: 720px) {
+            .overflow-x-auto > table { min-width: 680px; }
+            .overflow-x-auto > table th { white-space: nowrap; }
+        }
+
+        /* มือถือ: หัวแดชบอร์ดเดิมชื่อร้านและปุ่มออกจากระบบตกบรรทัด */
+        @media (max-width: 480px) {
+            .admin-header-inner { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+            .admin-header-brand { min-width: 0; gap: 8px; }
+            .admin-header .admin-brand-mark { width: 36px; height: 36px; flex: none; }
+            .admin-header-subtitle { display: none; }
+            .admin-header-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+            .admin-header-actions { gap: 6px; }
+            .admin-header-actions .language-switcher button { min-width: 28px; padding: 0 6px; }
+            .admin-store-link { display: none; }
+            .admin-logout { white-space: nowrap; padding-left: 10px; padding-right: 10px; }
+        }
+
         @media (max-width: 720px) {
             body.admin-shell {
                 background: linear-gradient(180deg, #07120c 0 340px, #edf2ed 340px 100%);
@@ -573,10 +600,10 @@
         </div>
         <div class="admin-login-card">
             <section class="admin-login-brand">
-                <div class="admin-brand-mark">CF</div>
+                <div class="admin-brand-mark brand-logo-tile"><img src="/brand-icon.png" alt="" class="brand-logo-img"></div>
                 <div class="relative z-10">
                     <h1>ควบคุมร้าน<br><span>จากที่เดียว</span></h1>
-                    <p>ติดตามยอดขาย จัดการสินค้า ปรับสต๊อก และช่องทางชำระเงินของ Cannabis Flower อ่อนนุช</p>
+                    <p>ติดตามยอดขาย จัดการสินค้า ปรับสต๊อก และช่องทางชำระเงินของ Siam Cannabis อ่อนนุช</p>
                 </div>
                 <div class="admin-login-status relative z-10"><span></span> SECURE OPERATIONS CENTER</div>
             </section>
@@ -597,9 +624,9 @@
         <header class="admin-header sticky top-0 z-40">
             <div class="admin-header-inner">
                 <div class="admin-header-brand">
-                    <span class="admin-brand-mark" onclick="location.href='index.html'" title="Cannabis Flower อ่อนนุช">CF</span>
+                    <span class="admin-brand-mark brand-logo-tile" onclick="location.href='index.html'" title="Siam Cannabis อ่อนนุช"><img src="/brand-icon.png" alt="" class="brand-logo-img"></span>
                     <div>
-                        <h1 class="admin-header-title">Cannabis Flower</h1>
+                        <h1 class="admin-header-title">Siam Cannabis</h1>
                         <div class="admin-header-subtitle">ON NUT · CONTROL CENTER · <span id="appVersion">v2.1.0</span></div>
                     </div>
                 </div>

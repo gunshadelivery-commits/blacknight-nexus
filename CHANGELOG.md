@@ -48,9 +48,25 @@
 - [Codex] fix(admin): ลบ markup ซ้ำท้ายไฟล์และเพิ่มหมวดเครื่องดื่มในฟอร์มสินค้า (admin.html)
 
 ### Removed
+- [Claude] chore(ci): เลิกอ้างถึง secrets `VITE_ORDERS_CSV_URL` และ `VITE_ADMIN_PASSWORD` ที่ลบออกจาก GitHub แล้ว (ไม่มีโค้ดใช้) + ลบ export `ORDERS_CSV_URL` ที่ไม่มีใครเรียก + อัปเดตคู่มือให้ไม่แนะนำเปิด Orders เป็น CSV สาธารณะ (.github/workflows/deploy.yml, src/config.js, SETUP_BACKEND.md)
+- [Claude] chore(security): เลิกใช้ `VITE_ADMIN_PASSWORD` ฝั่งหน้าเว็บ รหัสแอดมินจึงไม่ถูก build ฝังลงไฟล์ JS ที่ใครก็เปิดดูได้อีก (src/config.js, src/adminApp.js)
 - [Codex] fix(trust): ลบคะแนน 4.9 และข้อความรีวิวจำลองที่ไม่ปรากฏบน Google Business Profile เพื่อไม่ให้ลูกค้าเข้าใจผิด (index.html, src/i18n.js)
 
 ---
+
+### Fixed
+- [Claude] fix(responsive): ตรวจทุกหน้า 8 ขนาดจอ (320–1440px) · หน้าล็อกอิน/สมัครเลื่อนซ้ายขวาได้ 100–125px เพราะวงกลมตกแต่งยื่นนอกจอ → ห่อด้วยกล่อง fixed overflow-hidden · หัวเว็บหน้าแรกล้นจอ 320px (ปุ่มตะกร้าโดนตัด) → ย่อสำหรับจอ < 375px · หน้า admin บนมือถือ: ตารางเลื่อนแนวนอนแทนบีบคอลัมน์จนตัดคำทีละตัว และหัวแดชบอร์ดไม่ตกบรรทัด · หน้าล็อกอิน/สมัครยังเขียน "Cannabis Flower" (ชื่อแยกคนละแท็ก) → Siam Cannabis (login.html, register.html, admin.html, src/style.css)
+- [Claude] fix(accessories): หน้าอุปกรณ์ไม่แสดงสินค้าเลย ขึ้น "โหลดข้อมูลสินค้าล้มเหลว" ทุกครั้ง เพราะไม่ได้ตั้ง selectedVariantIdx → variants[undefined].stock พัง · ตั้งค่าเริ่มต้น 0 และเก็บ status จากชีต (src/accessories.js)
+- [Claude] feat(gas): V28-ADMIN — bulkUpdate แก้ราคา/สต๊อกในแถวเดิมทีเดียวจบ (หน้า ราคา/สต๊อก ส่งเฉพาะแถวที่แก้ มี fallback สำหรับ GAS เก่า) · updateProduct คงตำแหน่งแถว + ปฏิเสธเมื่อไม่มี variant · deleteProduct เทียบแบบ trim และบอกเมื่อไม่เจอ · updateStatus แยกออเดอร์ด้วยวันที่และบันทึกเลขพัสดุลงคอลัมน์ใหม่ · กันสูตรในข้อมูลออเดอร์/ผู้ใช้ (cellSafe_) · escape HTML ในอีเมลแจ้งเตือน/ยืนยัน (GoogleAppsScript.js, AGENTS.md)
+- [Claude] fix(admin): ลบสินค้าที่ชื่อมีช่องว่างท้ายไม่ได้แต่ขึ้นว่าสำเร็จ · บันทึกสินค้าราคาว่างกลายเป็น 0 บาท · เพิ่มสินค้าชื่อซ้ำทับของเดิมเงียบๆ → ตรวจและเตือนก่อนบันทึก (src/adminApp.js)
+- [Claude] fix(admin): วันที่ออเดอร์ขึ้น N/A และยอดขายถูกนับเป็นยอดวันนี้ทั้งหมด เพราะหาหัวคอลัมน์ "วันที่-เวลา" แต่ GAS สร้างหัว "วันที่" · สินค้าขายดีรวมตามชื่อและนับจำนวนชิ้นจริง · แบ่งหน้าออเดอร์ไม่จำกัด 5 หน้า · ล็อกอินไม่ดึงออเดอร์ซ้ำ + กด Enter ล็อกอินได้ (src/adminApp.js)
+- [Claude] fix(admin): ปุ่มรับยอด/จัดส่งขึ้น "สำเร็จ" ทุกครั้งแม้ GAS ปฏิเสธ → ตรวจผลจริงและคืนปุ่มเมื่อพลาด · ส่งวันที่ไปช่วยแยกออเดอร์ชื่อ+สลิปซ้ำ (เช่น COD) (src/adminApp.js)
+- [Claude] fix(security): หน้า admin แสดงชื่อ/ที่อยู่/สลิปจากออเดอร์ลง innerHTML โดยไม่ escape → ใครสั่งของพร้อมฝัง HTML/สคริปต์ในช่องชื่อก็รันโค้ดในหน้า admin (ที่ถือ ADMIN_KEY) ได้ · เพิ่ม esc()/safeHref() ใช้กับตารางออเดอร์ สินค้า Promptpay ใบปะหน้า และช่องตัวเลือก · ปุ่มในตารางอ้างแถวด้วย index แทนการฝังชื่อใน onclick (src/adminApp.js)
+- [Claude] fix(admin): ซิงค์ Promptpay ล้มเมื่อรูป QR เป็น base64 (อัปโหลด ImgBB ไม่สำเร็จ) เพราะ V27 ปฏิเสธค่าที่ยาวเกิน 2,000 ตัวอักษร (บั๊กจาก [Claude]) → GAS V27.1 รับได้ถึง 45,000 ตัวอักษร + หน้า admin ย่อ QR เป็น PNG ไม่เกิน 400px ก่อนส่ง + ข้อความ error แสดงสาเหตุจริง (GoogleAppsScript.js, src/adminApp.js)
+- [Claude] fix(accessories): ส่งออเดอร์จากหน้าอุปกรณ์ด้วย `application/json` ติด CORS preflight ทำให้ออเดอร์ไม่ถูกบันทึกลงชีต → เปลี่ยนเป็น `text/plain` เหมือนหน้าร้านหลัก (src/accessories.js)
+- [Claude] fix(gas): ปุ่ม "ลบสินค้าทั้งหมด" เรียก `clearProducts` ที่ไม่มีใน GAS → เพิ่มให้ โดยสำรองแท็บ Products เป็น `Products_backup_<เวลา>` ก่อนล้างทุกครั้ง · action ที่ไม่รู้จักตอบ `UNKNOWN_ACTION` แทนค่าว่าง (GoogleAppsScript.js)
+- [Claude] fix(admin): บันทึก/ลบบัญชี Promptpay ในหน้า admin ไม่เคยถึงชีต (ส่ง `application/json` ทำให้ติด CORS preflight + GAS ไม่มี action `saveSettings`/`saveBank`) → แท็บ BankAccounts ว่าง หน้าชำระเงินไม่แสดงช่องทางโอน · เพิ่ม `saveSettings`/`saveBank` ใน GAS V27-BANK (เก็บเป็นข้อความ เลข 0 นำหน้าไม่หาย, ปฏิเสธ QR ที่อัปโหลดไม่สำเร็จ) และเปลี่ยนเป็น `text/plain` + ตรวจผลจาก GAS (GoogleAppsScript.js, src/adminApp.js)
+- [Claude] fix(build): ย้าย `@rollup/rollup-linux-x64-gnu` จาก dependencies ไป optionalDependencies ให้ `npm ci` บน Windows/macOS ไม่ล้ม (บน Linux/CI ยังติดตั้งเหมือนเดิม) (package.json, package-lock.json)
 
 ## [2.5.0] - 2026-07-27
 ### Added

@@ -3,6 +3,18 @@
 
 <head>
     <meta charset="UTF-8">
+    <!-- ภาษาเริ่มต้นคืออังกฤษ แต่ข้อความใน HTML เป็นไทย: ซ่อนหน้าไว้จนแปลเสร็จ กันกะพริบเป็นไทยแวบหนึ่ง (สูงสุด 1.5 วิ) -->
+    <script>
+        (function () {
+            var lang = null;
+            try { lang = localStorage.getItem('cf_language'); } catch (e) {}
+            if (lang === 'th') return;
+            var root = document.documentElement;
+            root.classList.add('i18n-pending');
+            setTimeout(function () { root.classList.remove('i18n-pending'); }, 1500);
+        })();
+    </script>
+    <style>html.i18n-pending body { visibility: hidden; }</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="ONzKRa2tvCzIy03s6GN8vTw603K6-Omom-_57txoe6U">
     <title>Siam Cannabis On Nut | Best Weed Shop Bangkok · Delivery Sukhumvit · ร้านกัญชา อ่อนนุช</title>
@@ -116,11 +128,14 @@
       gtag('config', 'G-70NV9ZCP1L');
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- ฟอนต์แบบเว็บ Apple: เครื่อง Apple ใช้ SF Pro / Sukhumvit Set ของเครื่อง (ฝัง SF Pro ในเว็บไม่ได้ตามลิขสิทธิ์) เครื่องอื่นใช้ Inter + Noto Sans Thai ที่หน้าตาใกล้เคียง -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: 'Kanit', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Sukhumvit Set", "Helvetica Neue", "Inter", "Noto Sans Thai", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -356,14 +371,14 @@
     <nav id="siteNav" class="site-nav sticky top-0 z-50">
         <div class="site-nav-inner max-w-7xl mx-auto px-4 sm:px-6">
             <div class="brand-lockup cursor-pointer" onclick="handleLogoClick()">
-                <div class="brand-mark" aria-label="Cannabis Flower อ่อนนุช Logo">CF</div>
+                <div class="brand-mark brand-logo-tile" role="img" aria-label="Siam Cannabis อ่อนนุช Logo"><img src="/brand-icon.png" alt="" class="brand-logo-img"></div>
                 <div class="flex flex-col">
-                    <span class="brand-name">Cannabis Flower</span>
+                    <span class="brand-name">Siam Cannabis</span>
                     <span class="brand-place">ON NUT · BANGKOK</span>
                 </div>
             </div>
 
-            <div class="hidden lg:flex items-center gap-7 text-[13px] font-medium text-white/55">
+            <div class="hidden lg:flex items-center gap-7 text-[15px] font-medium text-white/70">
                 <a href="#products" class="nav-link" data-i18n="store.nav.catalog">สายพันธุ์</a>
                 <a href="#business-profile" class="nav-link" data-i18n="store.nav.profile">ข้อมูลร้าน</a>
                 <span class="open-status"><span class="status-dot"></span> <span data-i18n="store.nav.open">เริ่มรับออเดอร์ 09:00</span></span>
@@ -373,6 +388,8 @@
                 <div class="language-switcher" role="group" data-i18n-aria="language.label">
                     <button type="button" data-language-option="th" data-i18n-title="language.thai">TH</button>
                     <button type="button" data-language-option="en" data-i18n-title="language.english">EN</button>
+                    <button type="button" data-language-option="zh" data-i18n-title="language.chinese" lang="zh">中文</button>
+                    <button type="button" data-language-option="ko" data-i18n-title="language.korean" lang="ko">한국</button>
                 </div>
                 <!-- User Auth Area -->
                 <div id="authArea" class="text-xs font-bold flex items-center gap-3">
@@ -425,7 +442,7 @@
                     </div>
 
                     <div class="hero-signals">
-                        <div><strong>1 ชม.</strong><span>ส่งด่วนในพื้นที่</span></div>
+                        <div><strong data-i18n="store.hero.signalHour">1 ชม.</strong><span>ส่งด่วนในพื้นที่</span></div>
                         <div><strong>ฟรี</strong><span>ค่าส่งย่านอ่อนนุช</span></div>
                         <div><strong>20+</strong><span>สำหรับผู้ใหญ่เท่านั้น</span></div>
                     </div>
@@ -443,7 +460,7 @@
                     <div class="flow-orbit" aria-hidden="true">
                         <div class="orbit-ring orbit-ring-one"></div>
                         <div class="orbit-ring orbit-ring-two"></div>
-                        <div class="orbit-core">CF</div>
+                        <div class="orbit-core brand-logo-tile"><img src="/brand-icon.png" alt="" class="brand-logo-img"></div>
                         <span class="orbit-node node-one">S</span>
                         <span class="orbit-node node-two">H</span>
                         <span class="orbit-node node-three">I</span>
@@ -499,7 +516,7 @@
                     <button onclick="switchCategory('Indica')" class="category-inactive" id="tab-Indica">☾ Indica</button>
                     <button onclick="switchCategory('Pre-roll')" class="category-inactive" id="tab-Pre-roll">Pre-roll</button>
                     <button onclick="switchCategory('อุปกรณ์')" class="category-inactive" id="tab-อุปกรณ์">อุปกรณ์</button>
-                    <button onclick="switchCategory('เครื่องดื่ม')" class="category-inactive" id="tab-เครื่องดื่ม">🥤 เมนูน้ำ</button>
+                    <button onclick="switchCategory('เครื่องดื่ม')" class="category-inactive" id="tab-เครื่องดื่ม" data-i18n="store.category.drinks">🧃 เมนูน้ำ</button>
                 </div>
             </div>
 
@@ -520,7 +537,7 @@
                     </div>
                     <h2 class="mt-5 text-3xl sm:text-4xl font-black text-white leading-tight" data-i18n="store.profile.heading">ข้อมูลร้านที่ตรวจสอบได้<br class="hidden sm:block"> ก่อนสั่งทุกครั้ง</h2>
                     <p class="mt-4 text-sm sm:text-base text-white/55 leading-relaxed max-w-xl" data-i18n="store.profile.description">
-                        Cannabis Flower อ่อนนุช ให้บริการส่งด่วนในย่านอ่อนนุช สุขุมวิท สวนหลวง และอุดมสุข
+                        Siam Cannabis อ่อนนุช ให้บริการส่งด่วนในย่านอ่อนนุช สุขุมวิท สวนหลวง และอุดมสุข
                         ตรวจสอบข้อมูลร้านล่าสุดหรือโทรสอบถามได้จากช่องทางทางการ
                     </p>
 

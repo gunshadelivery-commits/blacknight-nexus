@@ -1,6 +1,6 @@
 # AGENTS.md — กฏการทำงานสำหรับ AI ทุกตัว
 
-> ไฟล์นี้คือ **กติกากลาง** ของโปรเจกต์ **Cannabis Flower อ่อนนุช**
+> ไฟล์นี้คือ **กติกากลาง** ของโปรเจกต์ **Siam Cannabis อ่อนนุช**
 > AI ทุกตัว (Claude, Codex, Cursor, Gemini ฯลฯ) **ต้องอ่านไฟล์นี้ + `CHANGELOG.md` ก่อนเริ่มงานทุกครั้ง** และทำตามเท่านั้น
 > มาตรฐานที่ใช้: [AGENTS.md](https://agents.md) · [Keep a Changelog](https://keepachangelog.com) · [SemVer](https://semver.org) · [Conventional Commits](https://www.conventionalcommits.org)
 
@@ -8,7 +8,7 @@
 
 ## 1. โปรเจกต์นี้คืออะไร (30 วินาที)
 ร้านกัญชา **delivery** ย่านอ่อนนุช/สุขุมวิท — เว็บ sale page + หลังบ้าน admin
-- **Frontend:** static SPA, Vite + Tailwind, ฟอนต์ Kanit, ธีมเขียวมรกต (emerald), ภาษาไทย, age gate 20+
+- **Frontend:** static SPA, Vite + Tailwind, ฟอนต์แบบ Apple (SF Pro/Sukhumvit Set ของเครื่อง Apple · เครื่องอื่นใช้ Inter + Noto Sans Thai), ธีมเขียวมรกต (emerald), 4 ภาษา TH/EN/中文/한국 (หน้าร้านเริ่มที่ EN ถ้ายังไม่เคยเลือก ยกเว้นเบราว์เซอร์จีน/เกาหลีได้ภาษานั้น · ข้อความที่ไม่มีใน zh/ko ใช้ EN แทน · admin เริ่มที่ TH ผ่าน `<html data-default-lang="th">`), age gate 20+
 - **หน้าร้าน** `index.html` + `src/main.js` → อ่านสินค้าจาก Google Sheet **CSV** (`VITE_SHEET_CSV_URL`) ด้วย PapaParse
 - **หลังบ้าน** `admin.html` + `src/adminApp.js` → อ่าน/เขียนสินค้า + ออเดอร์ผ่าน **Apps Script** (`VITE_GAS_URL`)
 - **Backend:** `GoogleAppsScript.js` (เอาไปวางใน Google Apps Script ของร้าน) + Google Sheet 4 แท็บ: Products, Orders, BankAccounts, Users
@@ -22,7 +22,7 @@
 5. **`npm run build` ต้องผ่าน** ก่อนบอกว่าเสร็จ และควรเปิด preview ยืนยันด้วยตา
 6. **ตัวเลขปลอมใน dashboard (`FAKE_SALES` ใน `src/adminApp.js`) เป็นของหลังบ้านส่วนตัว** ห้ามนำไปอ้างเป็นยอดจริงกับลูกค้า
 7. **ตอบ/คอมเมนต์เป็นภาษาไทย** (เจ้าของเป็นคนไทย) โค้ด/ตัวแปรเป็นอังกฤษได้
-8. **รักษาแบรนด์:** ชื่อ "Cannabis Flower อ่อนนุช", ธีมเขียว, หมวดหมู่ Sativa/Indica/Hybrid/Pre-roll/อุปกรณ์
+8. **รักษาแบรนด์:** ชื่อ "Siam Cannabis อ่อนนุช", ธีมเขียว, หมวดหมู่ Sativa/Indica/Hybrid/Pre-roll/อุปกรณ์
 
 ## 3. ป้ายกำกับผู้ทำ (Author Tags) — สำคัญ
 ทุกบรรทัดใน `CHANGELOG.md` ต้องมีป้ายว่า **ใครทำ**:
@@ -41,8 +41,10 @@
 
 ## 5. อย่าแตะ / ระวังพิเศษ (Guardrails)
 - **`.env` เปลี่ยนแล้ว build ไม่อัปเดต** → ต้อง `rm -rf node_modules/.vite dist` แล้ว `npm run build` (Vite ฝัง env ตอน build)
-- **`updateProduct` ใน GAS ลบ+เขียนแถวใหม่** → บันทึกสินค้าแล้วลำดับแถวในชีตจะสลับ (หมวดหมู่ไม่หายเพราะส่งไปด้วย) เป็นพฤติกรรมปกติ
+- **`updateProduct` ใน GAS ลบ+เขียนแถวใหม่** → ตั้งแต่ V28 ใส่แถวใหม่กลับที่ตำแหน่งเดิม (ก่อนหน้านั้นแถวจะย้ายไปท้ายชีต) · แก้ราคา/สต๊อกหลายแถวให้ใช้ `bulkUpdate` (แก้ในแถวเดิม ไม่ลบ)
+- **ข้อความจากชีต/ออเดอร์ต้องผ่าน `esc()` ก่อนใส่ `innerHTML` ในหน้า admin เสมอ** · ลิงก์ที่กดได้ใช้ `safeHref()` · ปุ่มในตารางอ้างแถวด้วย index ห้ามฝังชื่อ/สลิปลงใน `onclick`
 - **หน้าร้านอ่าน CSV / admin อ่าน-เขียน GAS** → ทั้งคู่ต้องชี้ชีตเดียวกันเสมอ
+- **Orders + Users อยู่คนละไฟล์กับ Products** → ไฟล์ส่วนตัว (Script Properties → `PRIVATE_SHEET_ID`) ไม่แชร์สาธารณะ เพราะเป็นข้อมูลลูกค้า · admin อ่านออเดอร์ผ่าน GAS `getOrders` (ต้องมี ADMIN_KEY) ห้ามกลับไปอ่านผ่าน CSV
 - **คอลัมน์ชีต Products (เรียงตามนี้):** `name, size, price, note, image, tags, status, stock, sold_count, category`
 - อย่า commit คีย์/ความลับใหม่ลง repo สาธารณะ
 
@@ -65,7 +67,7 @@ npm run build      # build ไป dist/  (ต้องผ่านก่อน�
 npm run preview    # ดู build จริง
 rm -rf node_modules/.vite dist && npm run build   # เมื่อแก้ .env แล้วไม่อัปเดต
 ```
-รหัสผ่าน admin อยู่ใน `.env` (`VITE_ADMIN_PASSWORD`)
+รหัสผ่าน admin อยู่ที่ Apps Script → Project Settings → Script Properties → `ADMIN_KEY` (ไม่อยู่ใน `.env` แล้ว เพราะ `VITE_*` ถูกฝังลงไฟล์ JS ที่ลูกค้าโหลดได้)
 
 ---
 _เวอร์ชันกฏนี้: 1.0 · ปรับปรุงกฏได้ แต่ต้องบันทึกใน CHANGELOG พร้อมป้ายผู้ทำ_

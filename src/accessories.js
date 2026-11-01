@@ -2,6 +2,7 @@ import './style.css';
 import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
+import { getLanguage } from './i18n.js';
 
 let products = []; // Keyed by Name
 let cart = [];
@@ -68,7 +69,9 @@ function loadProductsFromSheet() {
                         note: row[3] || '',
                         image: row[4] || '',
                         category: cat,
+                        status: (row[6] || '').toString().trim(),
                         variants: [],
+                        selectedVariantIdx: 0, // เดิมไม่ได้ตั้งค่า → variants[undefined].stock พัง หน้าอุปกรณ์ไม่แสดงสินค้าเลย
                         totalSold: 0,
                         aiType: cat
                     };
@@ -346,11 +349,12 @@ async function submitOrder() {
 
         await fetch(GAS_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
                 action: "log", name, phone, email, address, mapUrl: "-",
                 items: orderItems, itemsArray: itemsArray, total: finalTotal, slipUrl: slipUrl, 
                 paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน',
+                lang: getLanguage(),
                 status: "รอดำเนินการ"
             })
         });

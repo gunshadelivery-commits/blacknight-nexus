@@ -1,19 +1,16 @@
 // ============================================================
-// CANNABIS FLOWER อ่อนนุช - Central Configuration
+// SIAM CANNABIS อ่อนนุช - Central Configuration
 // ============================================================
 // แก้ไขค่าต่างๆ ในไฟล์นี้เพียงไฟล์เดียว เพื่อเชื่อมต่อกับระบบภายนอก
 // ============================================================
 
 // --- ข้อมูลร้าน (Shop Branding) ---
-export const SHOP_NAME = "Cannabis Flower อ่อนนุช";
+export const SHOP_NAME = "Siam Cannabis อ่อนนุช";
 export const SHOP_VERSION = "1.0.0";
 export const SHOP_TAGLINE = "ดอกแท้คัดเกรด · ส่งด่วน ส่งฟรี ย่านอ่อนนุช สุขุมวิท 🌿";
 
 // --- Google Sheets CSV URL (Product List) - from environment ---
 export const SHEET_CSV_URL = import.meta.env.VITE_SHEET_CSV_URL || "";
-
-// --- Google Sheets Orders CSV URL - from environment ---
-export const ORDERS_CSV_URL = import.meta.env.VITE_ORDERS_CSV_URL || "";
 
 // --- Google Apps Script (GAS) Web App URL - from environment ---
 export const GAS_URL = import.meta.env.VITE_GAS_URL || "";
@@ -24,8 +21,10 @@ export const LINE_OA_ID = import.meta.env.VITE_LINE_OA_ID || "";
 // --- ImgBB API Key - from environment (NEVER hardcode!) ---
 export const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "";
 
-// --- Admin Password - from environment (should use proper auth in production!) ---
-export const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "";
+// --- Admin Password ---
+// ย้ายไปฝั่ง Apps Script แล้ว (Script Properties → ADMIN_KEY)
+// อย่าเอากลับมาไว้ที่นี่: ค่า VITE_* ทุกตัวถูก build ฝังลงไฟล์ JS ที่ลูกค้าโหลดได้
+// VITE_ADMIN_PASSWORD และ VITE_ORDERS_CSV_URL เลิกใช้แล้ว (ออเดอร์อ่านผ่าน GAS getOrders)
 
 // ============================================================
 // ฟังก์ชันช่วยเหลือ (Helper Functions)

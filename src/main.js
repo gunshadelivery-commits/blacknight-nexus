@@ -356,12 +356,12 @@ function renderProducts(filter = "") {
                             <span class="drink-orb drink-orb-two"></span>
                             <div class="drink-bottle ${p.isDrinkPromotion ? 'drink-bottle-left' : ''}">
                                 <span class="drink-cap"></span>
-                                <span class="drink-label"><small>CF</small><strong>${p.drinkLabel}</strong></span>
+                                <span class="drink-label"><small>SC</small><strong>${p.drinkLabel}</strong></span>
                             </div>
                             ${p.isDrinkPromotion ? `
                                 <div class="drink-bottle drink-bottle-right">
                                     <span class="drink-cap"></span>
-                                    <span class="drink-label"><small>CF</small><strong>SET</strong></span>
+                                    <span class="drink-label"><small>SC</small><strong>SET</strong></span>
                                 </div>` : ''}
                         </div>
                     ` : (p.image ? `
@@ -824,6 +824,7 @@ async function submitOrder() {
                     total: finalTotal,
                     slipUrl: slipUrl,
                     paymentMethod: data.paymentMethod,
+                    lang: getLanguage(), // ภาษาที่ลูกค้าใช้ตอนสั่ง → อีเมลยืนยันส่งเป็นภาษานี้
                     status: "รอดำเนินการ"
                 })
             });

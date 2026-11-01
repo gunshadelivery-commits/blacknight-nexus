@@ -307,8 +307,10 @@ function renderProducts(filter = "") {
             card.className = `product-card reveal ${p.isDrink ? 'drink-card' : 'cursor-pointer'} ${p.isDrinkPromotion ? 'drink-promotion-card' : ''} ${premium ? 'premium-card' : ''}`;
             card.style.transitionDelay = `${(idx % 4) * 100}ms`;
             card.onclick = (e) => {
-                if(p.isDrink || e.target.closest('button') || e.target.closest('a')) return;
-                window.openProductDetails(p.name);
+                if(e.target.closest('button') || e.target.closest('a')) return;
+                if(p.isDrink) { window.openProductDetails(p.name); return; }
+                const slug = p.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+                window.location.href = `strain.html?s=${encodeURIComponent(slug)}`;
             };
             const isOutOfStock = p.status === 'หมด' || p.status === 'sold out' || p.status === '0';
 
@@ -390,9 +392,6 @@ function renderProducts(filter = "") {
                             class="add-button" aria-label="${t('store.product.addAria', { name: p.name })}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
-                        ${!p.isDrink ? `<a href="strain.html?s=${encodeURIComponent(p.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))}" class="detail-link" aria-label="View details for ${p.name}">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                        </a>` : ''}
                     </div>
                 </div>
             `;

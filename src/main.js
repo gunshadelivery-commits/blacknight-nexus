@@ -111,6 +111,18 @@ function classifyItem(name, tags = []) {
     return "Hybrid";
 }
 
+function getPerfectFor(aiType, tags = []) {
+    const type = (aiType || '').toLowerCase();
+    const tagStr = tags.join(' ').toLowerCase();
+    if (type.includes('pre-roll') || type.includes('preroll')) return ['SMOOTH', 'CONVENIENT', 'SOCIAL'];
+    if (type === 'sativa') return ['ENERGY', 'CREATIVITY', 'FOCUS'];
+    if (type === 'indica') return ['RELAX', 'SLEEP', 'BODY RELIEF'];
+    if (type === 'hybrid') return ['BALANCE', 'EUPHORIA', 'SOCIAL'];
+    if (tagStr.includes('ตื่นตัว') || tagStr.includes('focus') || tagStr.includes('energetic')) return ['ENERGY', 'CREATIVITY', 'FOCUS'];
+    if (tagStr.includes('ผ่อนคลาย') || tagStr.includes('relax') || tagStr.includes('sleep')) return ['RELAX', 'CHILL', 'BODY RELIEF'];
+    return ['BALANCE', 'EUPHORIA', 'SOCIAL'];
+}
+
 function isPremiumProduct(product) {
     const hasPremiumTag = product.tags && product.tags.some(t =>
         ["premium", "พรีเมียม", "luxury", "brand", "branded"].includes(t.toLowerCase())
@@ -383,6 +395,7 @@ function renderProducts(filter = "") {
                         <p class="product-type">${p.aiType || 'FLOWER'}</p>
                         <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${p.name}</h3>
                         <p class="product-note">${p.note}</p>
+                        ${!p.isDrink ? `<p class="perfect-for-strip">Perfect For <span>${getPerfectFor(p.aiType, p.tags).join(' / ')}</span></p>` : ''}
                     </div>
 
                     <div class="variant-row">

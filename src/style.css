@@ -1232,6 +1232,20 @@ body.sol-shell .category-row .category-inactive {
     overflow: hidden;
 }
 
+.perfect-for-strip {
+    margin-top: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(231,244,235,0.38);
+    line-height: 1.4;
+}
+.perfect-for-strip span {
+    color: #4ade80;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+
 .variant-row {
     display: flex;
     flex-wrap: wrap;

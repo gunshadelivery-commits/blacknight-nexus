@@ -422,8 +422,8 @@ function parseAndRender(csvText) {
                 aiType: (row[9] && row[9].toString().trim()) || null,
                 isDrink: false,
             };
-            if (!grouped[name].aiType) {
-                grouped[name].aiType = classifyType(name, grouped[name].tags);
+            if (!grouped[groupKey].aiType) {
+                grouped[groupKey].aiType = classifyType(name, grouped[groupKey].tags);
             }
         }
         const vSize = row[1] || 'Standard';

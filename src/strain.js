@@ -394,57 +394,78 @@ const params = new URLSearchParams(window.location.search);
 const rawSlug = params.get('s') || '';
 const targetName = fromSlug(rawSlug).trim().toLowerCase();
 
+function parseAndRender(csvText) {
+    const results = Papa.parse(csvText, { skipEmptyLines: true });
+    const data = results.data || [];
+    const grouped = {};
+    data.slice(1).forEach(row => {
+        const name = row[0];
+        if (!name || !name.trim()) return;
+        if (!grouped[name]) {
+            let tags = (row[5] || '').toString().split(',').map(t => t.trim()).filter(Boolean);
+            let images = (row[4] || '').toString().split(',').map(i => i.trim()).filter(Boolean);
+            if (!images.length) images = [''];
+            grouped[name] = {
+                name,
+                note: row[3] || '',
+                image: images[0],
+                images,
+                tags,
+                status: (row[6] || '').trim().toLowerCase(),
+                variants: [],
+                totalSold: 0,
+                aiType: (row[9] && row[9].toString().trim()) || null,
+                isDrink: false,
+            };
+            if (!grouped[name].aiType) {
+                grouped[name].aiType = classifyType(name, grouped[name].tags);
+            }
+        }
+        grouped[name].variants.push({
+            size: row[1] || 'Standard',
+            price: parseFloat(row[2]) || 0,
+            stock: parseInt(row[7]) || 0,
+            originalPrice: null,
+        });
+        grouped[name].totalSold += parseInt(row[8]) || 0;
+    });
+    const allProducts = Object.values(grouped);
+    const found = allProducts.find(p => toSlug(p.name) === rawSlug || p.name.trim().toLowerCase() === targetName);
+    if (!found) {
+        document.getElementById('loading').innerHTML = `<p>Strain not found. <a href="index.html" style="color:var(--green);">Back to shop</a></p>`;
+        return;
+    }
+    render(found, allProducts);
+}
+
+const CACHE_KEY = 'sc_sheet_cache';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 if (!targetName) {
     window.location.href = 'index.html';
 } else {
-    Papa.parse(`${SHEET_CSV_URL}&t=${Date.now()}`, {
-        download: true,
-        complete: (results) => {
-            const data = results.data || [];
-            const grouped = {};
-            data.slice(1).forEach(row => {
-                const name = row[0];
-                if (!name || !name.trim()) return;
-                if (!grouped[name]) {
-                    let tags = (row[5] || '').toString().split(',').map(t => t.trim()).filter(Boolean);
-                    let images = (row[4] || '').toString().split(',').map(i => i.trim()).filter(Boolean);
-                    if (!images.length) images = [''];
-                    grouped[name] = {
-                        name,
-                        note: row[3] || '',
-                        image: images[0],
-                        images,
-                        tags,
-                        status: (row[6] || '').trim().toLowerCase(),
-                        variants: [],
-                        totalSold: 0,
-                        aiType: (row[9] && row[9].toString().trim()) || null,
-                        isDrink: false,
-                    };
-                    if (!grouped[name].aiType) {
-                        grouped[name].aiType = classifyType(name, grouped[name].tags);
-                    }
-                }
-                grouped[name].variants.push({
-                    size: row[1] || 'Standard',
-                    price: parseFloat(row[2]) || 0,
-                    stock: parseInt(row[7]) || 0,
-                    originalPrice: null,
-                });
-                grouped[name].totalSold += parseInt(row[8]) || 0;
-            });
-
-            const allProducts = Object.values(grouped);
-            const found = allProducts.find(p => toSlug(p.name) === rawSlug || p.name.trim().toLowerCase() === targetName);
-
-            if (!found) {
-                document.getElementById('loading').innerHTML = `<p>Strain not found. <a href="index.html" style="color:var(--green);">Back to shop</a></p>`;
-                return;
+    try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+            const { ts, csv } = JSON.parse(cached);
+            if (Date.now() - ts < CACHE_TTL) {
+                parseAndRender(csv);
+            } else {
+                sessionStorage.removeItem(CACHE_KEY);
+                throw new Error('stale');
             }
-            render(found, allProducts);
-        },
-        error: () => {
-            document.getElementById('loading').innerHTML = `<p>Could not load strain data. <a href="index.html" style="color:var(--green);">Back to shop</a></p>`;
+        } else {
+            throw new Error('miss');
         }
-    });
+    } catch {
+        fetch(`${SHEET_CSV_URL}&t=${Date.now()}`)
+            .then(r => r.text())
+            .then(csv => {
+                try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), csv })); } catch {}
+                parseAndRender(csv);
+            })
+            .catch(() => {
+                document.getElementById('loading').innerHTML = `<p>Could not load strain data. <a href="index.html" style="color:var(--green);">Back to shop</a></p>`;
+            });
+    }
 }

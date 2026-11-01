@@ -27,6 +27,7 @@ export default defineConfig({
         accessories: resolve(__dirname, 'accessories.html'),
         login: resolve(__dirname, 'login.html'),
         register: resolve(__dirname, 'register.html'),
+        strain: resolve(__dirname, 'strain.html'),
       },
     },
   },

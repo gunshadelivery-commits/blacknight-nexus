@@ -1353,6 +1353,26 @@ body.sol-shell .category-row .category-inactive {
     filter: grayscale(1);
 }
 
+.detail-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.04);
+    color: rgba(231,244,235,0.38);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: color 160ms, border-color 160ms, background 160ms;
+}
+.detail-link:hover {
+    color: #4ade80;
+    border-color: rgba(74,222,128,0.3);
+    background: rgba(74,222,128,0.07);
+}
+
 .empty-products {
     grid-column: 1 / -1;
     min-height: 260px;

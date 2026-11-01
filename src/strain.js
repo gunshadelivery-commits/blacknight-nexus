@@ -112,7 +112,11 @@ function t(key) {
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function toSlug(name = '') {
-    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    return name.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
 }
 
 function fromSlug(slug = '') {

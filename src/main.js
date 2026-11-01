@@ -949,7 +949,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initI18n();
     initAnalyticsTracking();
     initSolExperience();
-    loadProductsFromSheet(renderProducts);
+    loadProductsFromSheet(() => {
+        renderProducts();
+        const intent = sessionStorage.getItem('sc_add_intent');
+        if (intent) {
+            sessionStorage.removeItem('sc_add_intent');
+            try {
+                const { name, variantIdx } = JSON.parse(intent);
+                window.addToCart(name, variantIdx);
+            } catch(e) {}
+        }
+    });
 });
 
 document.addEventListener('cf:languagechange', () => {

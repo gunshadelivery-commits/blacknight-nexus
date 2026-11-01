@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Fixed
+- [Claude] fix(seo): เพิ่ม hreflang `zh` และ `ko` ใน index.html และ strain.html — ครอบคลุมผู้ใช้จีนและเกาหลีสำหรับ Google Search (index.html, strain.html)
 - [Claude] fix(seo): แก้ trailing `-` ใน canonical URL และ JSON-LD ของ strain page — `toSlug()` เพิ่ม dedup + trim dashes ทำให้ชื่อที่มีตัวอักษรพิเศษท้ายชื่อ (เช่น `super-boof-cherry`) ไม่มี `-` ตามหลัง (src/strain.js)
 
 ### Added

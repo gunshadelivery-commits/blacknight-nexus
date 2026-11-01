@@ -12,6 +12,10 @@
 
 ## [Unreleased]
 ### Added
+- [Claude] feat(seo): เพิ่ม `<link rel="icon">` tags ใน index.html และ strain.html ให้ชี้ไป favicon.ico, icon-192.png, icon-512.png, apple-touch-icon.png ที่มีอยู่แล้วใน image/ folder — แก้ปัญหา Google Search แสดงรูปโลก 🌐 แทนโลโก้ร้าน (index.html, strain.html)
+- [Claude] feat(ux): ปรับการ์ดสินค้าให้กดที่ไหนก็ได้เพื่อเด้งไปหน้า strain detail แทนการใช้ปุ่มลูกศร → ลบ detail-link button ออก (src/main.js)
+- [Claude] fix(cart): แก้บั๊กตะกร้าว่างเปล่าเมื่อ Add to Cart จากหน้า strain — เพิ่ม sessionStorage handshake ระหว่าง strain.js (เขียน sc_add_intent) และ main.js (อ่านหลัง products โหลด) (src/strain.js, src/main.js)
+- [Claude] feat(i18n): เพิ่มระบบ i18n ใน strain page รองรับ TH/EN/ZH/KO อ่านภาษาจาก localStorage key `cf_language` แปลทุก label บนหน้า (back button, breadcrumb, attribute cards, CTA, banner ล่าง) (src/strain.js, strain.html)
 - [Codex] feat(analytics): เพิ่ม GA4 ecommerce/contact events สำหรับดูสินค้า เพิ่มตะกร้า เริ่มชำระเงิน สั่งซื้อ LINE โทร และ Google Business Profile โดยไม่ส่งข้อมูลส่วนบุคคลของลูกค้า (src/analytics.js, src/main.js, index.html)
 - [Codex] feat(products): เพิ่มภาพประกอบต้นฉบับตามชื่อให้ Card ที่ไม่มีภาพ 17 รายการ บีบอัดเป็น JPEG 900x900 พร้อมป้าย “ภาพประกอบ” เพื่อแยกจากภาพสินค้าล็อตจริง (image/generated-products, Google Sheet Products)
 - [Codex] feat(products): ลิสต์สินค้าใหม่จากภาพหน้าร้าน 17 รายการเป็น Card แยกรายสายพันธุ์และอุปกรณ์ พร้อมปรับราคาขึ้น 15% โดยปัดขึ้นขั้นละ 5 บาท และตั้งสต๊อกเริ่มต้น (Google Sheet Products)

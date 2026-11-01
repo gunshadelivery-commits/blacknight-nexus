@@ -100,7 +100,7 @@ const STRAIN_I18N = {
 
 function getLang() {
     try {
-        const l = localStorage.getItem('cf-lang') || 'en';
+        const l = localStorage.getItem('cf_language') || 'en';
         return STRAIN_I18N[l] ? l : 'en';
     } catch { return 'en'; }
 }

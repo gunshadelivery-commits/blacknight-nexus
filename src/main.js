@@ -200,6 +200,14 @@ function loadProductsFromSheet(callback) {
                     if (rawImages.length === 0) rawImages = [''];
                     rawImages = rawImages.slice(0, 6);
                     
+                    const aiType = (row[9] && row[9].toString().trim()) || classifyItem(name, tags);
+                    const isDrinkFromSheet = aiType === 'เครื่องดื่ม';
+                    const n = name.toLowerCase();
+                    let drinkTheme = 'herbal';
+                    if (n.includes('โยเกิร์ต')) drinkTheme = 'yogurt';
+                    else if (n.includes('ผลไม้') || n.includes('ผลไม')) drinkTheme = 'fruit';
+                    else if (n.includes('มิกซ์') || n.includes('mix') || n.includes('เซ็ต') || n.includes('set')) drinkTheme = 'mix';
+
                     grouped[name] = {
                         name: name,
                         size: row[1],
@@ -212,7 +220,11 @@ function loadProductsFromSheet(callback) {
                         variants: [],
                         selectedVariantIdx: 0,
                         totalSold: 0,
-                        aiType: (row[9] && row[9].toString().trim()) || classifyItem(name, tags)
+                        aiType: aiType,
+                        isDrink: isDrinkFromSheet,
+                        isDrinkPromotion: isDrinkFromSheet && (n.includes('เซ็ต') || n.includes('set') || n.includes('โปรโม')),
+                        drinkTheme: drinkTheme,
+                        drinkLabel: name.replace(/ธรรมดา|พิเศษ|ออริจินัล|ธรรมชาติ/g, '').trim().split(' ').slice(-1)[0] || 'SC',
                     };
                 }
 
@@ -362,7 +374,19 @@ function renderProducts(filter = "") {
 
             card.innerHTML = `
                 <div class="product-visual">
-                    ${p.isDrink ? `
+                    ${p.isDrink && p.image ? `
+                        <img src="${p.image}"
+                             alt="${p.name}"
+                             ${priorityAttr}
+                             class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
+                             onload="this.classList.add('img-loaded')"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                        <div class="drink-art drink-art-${p.drinkTheme}" role="img" aria-label="${p.name}" style="display:none;">
+                            <span class="drink-orb drink-orb-one"></span>
+                            <span class="drink-orb drink-orb-two"></span>
+                            <div class="drink-bottle"><span class="drink-cap"></span><span class="drink-label"><small>SC</small><strong>${p.drinkLabel}</strong></span></div>
+                        </div>
+                    ` : p.isDrink ? `
                         <div class="drink-art drink-art-${p.drinkTheme}" role="img" aria-label="${p.name}">
                             <span class="drink-orb drink-orb-one"></span>
                             <span class="drink-orb drink-orb-two"></span>

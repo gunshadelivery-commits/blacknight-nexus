@@ -135,8 +135,9 @@ function loadProductsFromSheet(callback) {
             data.slice(1).forEach(row => {
                 const name = row[0];
                 if (!name || name.trim() === "") return;
-                
-                if (!grouped[name]) {
+                const groupKey = name.trim().toLowerCase();
+
+                if (!grouped[groupKey]) {
                     let tags = [];
                     const rawTags = row[5] || "";
                     if (rawTags) tags = rawTags.toString().split(',').map(t => t.trim()).filter(t => t !== '');
@@ -153,7 +154,7 @@ function loadProductsFromSheet(callback) {
                     else if (n.includes('ผลไม้') || n.includes('ผลไม')) drinkTheme = 'fruit';
                     else if (n.includes('มิกซ์') || n.includes('mix') || n.includes('เซ็ต') || n.includes('set')) drinkTheme = 'mix';
 
-                    grouped[name] = {
+                    grouped[groupKey] = {
                         name: name,
                         size: row[1],
                         price: parseFloat(row[2]) || 0,
@@ -178,8 +179,13 @@ function loadProductsFromSheet(callback) {
                 const stock = parseInt(row[7]) || 0;
                 const sold = parseInt(row[8]) || 0;
 
-                grouped[name].variants.push({ size, price, stock, sold_count: sold });
-                grouped[name].totalSold += sold;
+                const existingIdx = grouped[groupKey].variants.findIndex(v => v.size === size);
+                if (existingIdx >= 0) {
+                    grouped[groupKey].variants[existingIdx] = { size, price, stock, sold_count: sold };
+                } else {
+                    grouped[groupKey].variants.push({ size, price, stock, sold_count: sold });
+                }
+                grouped[groupKey].totalSold += sold;
             });
 
             const sheetProducts = Object.values(grouped);

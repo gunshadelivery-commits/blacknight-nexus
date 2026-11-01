@@ -405,11 +405,12 @@ function parseAndRender(csvText) {
     data.slice(1).forEach(row => {
         const name = row[0];
         if (!name || !name.trim()) return;
-        if (!grouped[name]) {
+        const groupKey = name.trim().toLowerCase();
+        if (!grouped[groupKey]) {
             let tags = (row[5] || '').toString().split(',').map(t => t.trim()).filter(Boolean);
             let images = (row[4] || '').toString().split(',').map(i => i.trim()).filter(Boolean);
             if (!images.length) images = [''];
-            grouped[name] = {
+            grouped[groupKey] = {
                 name,
                 note: row[3] || '',
                 image: images[0],
@@ -425,13 +426,16 @@ function parseAndRender(csvText) {
                 grouped[name].aiType = classifyType(name, grouped[name].tags);
             }
         }
-        grouped[name].variants.push({
-            size: row[1] || 'Standard',
-            price: parseFloat(row[2]) || 0,
-            stock: parseInt(row[7]) || 0,
-            originalPrice: null,
-        });
-        grouped[name].totalSold += parseInt(row[8]) || 0;
+        const vSize = row[1] || 'Standard';
+        const vPrice = parseFloat(row[2]) || 0;
+        const vStock = parseInt(row[7]) || 0;
+        const existingIdx = grouped[groupKey].variants.findIndex(v => v.size === vSize);
+        if (existingIdx >= 0) {
+            grouped[groupKey].variants[existingIdx] = { size: vSize, price: vPrice, stock: vStock, originalPrice: null };
+        } else {
+            grouped[groupKey].variants.push({ size: vSize, price: vPrice, stock: vStock, originalPrice: null });
+        }
+        grouped[groupKey].totalSold += parseInt(row[8]) || 0;
     });
     const allProducts = Object.values(grouped);
     const found = allProducts.find(p => toSlug(p.name) === rawSlug || p.name.trim().toLowerCase() === targetName);

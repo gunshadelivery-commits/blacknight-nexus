@@ -12,6 +12,7 @@
 
 ## [Unreleased]
 ### Fixed
+- [Claude] fix(data): แก้บั๊ก strain แสดงราคา/สต็อกผิดเมื่อชื่อสินค้าใน Sheet มี case ต่างกัน (เช่น "Alien Mint" vs "ALIEN MINT") — group ด้วย lowercase key และ dedup variants by size ทำให้ข้อมูล row ใหม่ทับ row เก่าเสมอ (src/main.js, src/strain.js)
 - [Claude] fix(seo): ลบ `servesCuisine: null` ออกจาก LocalBusiness JSON-LD — field นี้ไม่เกี่ยวกับร้านกัญชา Google อาจ flag เป็น invalid structured data (index.html)
 - [Claude] fix(seo): เพิ่ม hreflang `zh` และ `ko` ใน index.html และ strain.html — ครอบคลุมผู้ใช้จีนและเกาหลีสำหรับ Google Search (index.html, strain.html)
 - [Claude] fix(seo): แก้ trailing `-` ใน canonical URL และ JSON-LD ของ strain page — `toSlug()` เพิ่ม dedup + trim dashes ทำให้ชื่อที่มีตัวอักษรพิเศษท้ายชื่อ (เช่น `super-boof-cherry`) ไม่มี `-` ตามหลัง (src/strain.js)

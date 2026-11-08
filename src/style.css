@@ -1699,7 +1699,7 @@ body.sol-shell .category-row .category-inactive {
     height: 74%;
     object-fit: contain;
     display: block;
-    margin: auto;
+    margin: auto auto auto 0;
     pointer-events: none;
     user-select: none;
 }

@@ -18,6 +18,7 @@
 - [Claude] fix(seo): แก้ trailing `-` ใน canonical URL และ JSON-LD ของ strain page — `toSlug()` เพิ่ม dedup + trim dashes ทำให้ชื่อที่มีตัวอักษรพิเศษท้ายชื่อ (เช่น `super-boof-cherry`) ไม่มี `-` ตามหลัง (src/strain.js)
 
 ### Added
+- [Claude] feat(catalog): เพิ่ม sort สินค้าที่มี tag `new` ขึ้นก่อนในหน้า Strains — 15 สายพันธุ์ใหม่ (45 rows, F92–F136 ใน Sheet) จะแสดงก่อนสินค้าเดิมเสมอ (src/main.js)
 - [Claude] feat(seo): เพิ่ม `<link rel="icon">` tags ใน index.html และ strain.html ให้ชี้ไป favicon.ico, icon-192.png, icon-512.png, apple-touch-icon.png ที่มีอยู่แล้วใน image/ folder — แก้ปัญหา Google Search แสดงรูปโลก 🌐 แทนโลโก้ร้าน (index.html, strain.html)
 - [Claude] feat(ux): ปรับการ์ดสินค้าให้กดที่ไหนก็ได้เพื่อเด้งไปหน้า strain detail แทนการใช้ปุ่มลูกศร → ลบ detail-link button ออก (src/main.js)
 - [Claude] fix(cart): แก้บั๊กตะกร้าว่างเปล่าเมื่อ Add to Cart จากหน้า strain — เพิ่ม sessionStorage handshake ระหว่าง strain.js (เขียน sc_add_intent) และ main.js (อ่านหลัง products โหลด) (src/strain.js, src/main.js)

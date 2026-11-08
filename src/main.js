@@ -189,6 +189,11 @@ function loadProductsFromSheet(callback) {
             });
 
             const sheetProducts = Object.values(grouped);
+            sheetProducts.sort((a, b) => {
+                const aNew = (a.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
+                const bNew = (b.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
+                return aNew - bNew;
+            });
             const sheetNames = new Set(sheetProducts.map(product => product.name.trim().toLowerCase()));
             const localDrinks = DRINK_PRODUCTS.filter(product => !sheetNames.has(product.name.trim().toLowerCase()));
             products = [...sheetProducts, ...localDrinks];

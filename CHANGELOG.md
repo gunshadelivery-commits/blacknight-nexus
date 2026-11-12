@@ -17,6 +17,7 @@
 - [Claude] fix(seo): แก้ duplicate URL /index.html ใน GSC — เปลี่ยน breadcrumb + links ใน strain.js จาก `index.html` → `/` เพื่อรวม PageRank ไปที่ canonical `/`
 
 ### Fixed
+- [Claude] fix(analytics): แก้ GA4 Measurement ID ทุกหน้าให้ใช้ G-70NV9ZCP1L (ยืนยันจาก GA4 Admin → Data Streams → blacknight69.com stream) — index.html ใช้ G-GXVPQ9RHSP ผิด + revert commit ที่เปลี่ยน strain/accessories/register/login ผิดทิศ ทุกหน้าส่ง event ไปที่ property เดียวกันแล้ว (index.html, strain.html, accessories.html, register.html, login.html)
 - [Claude] fix(analytics): แก้ GA4 Measurement ID ใน index.html จาก G-70NV9ZCP1L → G-GXVPQ9RHSP ให้ตรงกับ stream จริง + แก้ stream URL ใน GA4 จาก gunshadelivery.github.io → blacknight69.com
 - [Claude] fix(data): แก้บั๊ก strain แสดงราคา/สต็อกผิดเมื่อชื่อสินค้าใน Sheet มี case ต่างกัน (เช่น "Alien Mint" vs "ALIEN MINT") — group ด้วย lowercase key และ dedup variants by size ทำให้ข้อมูล row ใหม่ทับ row เก่าเสมอ (src/main.js, src/strain.js)
 - [Claude] fix(seo): ลบ `servesCuisine: null` ออกจาก LocalBusiness JSON-LD — field นี้ไม่เกี่ยวกับร้านกัญชา Google อาจ flag เป็น invalid structured data (index.html)

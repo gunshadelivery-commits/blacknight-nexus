@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import { SHEET_CSV_URL, getLineOaUrl } from './config.js';
-import { initAnalyticsTracking } from './analytics.js';
+import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
 import { groupProducts, findBySlug, optimizedImage, parseImageKeys } from './catalog.js';
 import {
     STRAIN_I18N, makeT, strainMeta, buildSchema, renderStrainHtml, variantPriceHtml,
@@ -31,6 +31,19 @@ try {
     if (seed) currentProduct = JSON.parse(seed.textContent);
 } catch { /* รอข้อมูลจาก CSV */ }
 
+// นับการดูสินค้าครั้งเดียวต่อการเปิดหน้า (หน้า prerender นับได้ทันทีจากข้อมูลที่ฝังมา ไม่ต้องรอ CSV)
+let viewTracked = false;
+function trackView(p) {
+    if (viewTracked || !p || !p.variants || !p.variants.length) return;
+    viewTracked = true;
+    const variant = p.variants[0];
+    trackEvent('view_item', {
+        currency: 'THB',
+        value: Number(variant.price) || 0,
+        items: [buildAnalyticsItem(p, variant)],
+    });
+}
+
 function setMeta(name, content) {
     let el = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
     if (!el) {
@@ -44,6 +57,7 @@ function setMeta(name, content) {
 function render(p, allProducts) {
     currentProduct = p;
     currentVariantIdx = 0;
+    trackView(p);
     const t = makeT(getLang());
     const meta = strainMeta(p);
 
@@ -129,6 +143,7 @@ function fetchCsv() {
 }
 
 initAnalyticsTracking();
+trackView(currentProduct);
 
 if (!rawSlug) {
     window.location.replace('/');

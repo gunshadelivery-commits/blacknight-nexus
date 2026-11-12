@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
 import { getLanguage } from './i18n.js';
 import { esc, jsArg } from './catalog.js';
+import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
 
 let products = []; // Keyed by Name
 let cart = [];
@@ -174,7 +175,8 @@ function addToCart(pName, vIdx) {
     const variant = product.variants[vIdx];
     const existing = cart.find(item => item.name === product.name && item.size === variant.size);
     if (existing) existing.qty++;
-    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: product.image });
+    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: product.image, category: product.aiType || '' });
+    trackEvent('add_to_cart', { currency: 'THB', value: Number(variant.price) || 0, items: [buildAnalyticsItem(product, variant)] });
     updateCartUI();
     toggleCart(true);
 }
@@ -233,8 +235,10 @@ function updateQty(idx, change) {
     updateCartUI();
 }
 
-function goToCheckout() { 
-    document.getElementById('checkoutModal').classList.remove('hidden'); 
+function goToCheckout() {
+    if (cart.length === 0) return showToast("รถเข็นว่างเปล่า", "error");
+    trackEvent('begin_checkout', { currency: 'THB', value: cart.reduce((sum, i) => sum + i.price * i.qty, 0), items: buildCartItems(cart) });
+    document.getElementById('checkoutModal').classList.remove('hidden');
     loadAndDisplayPaymentMethods();
 }
 function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
@@ -369,10 +373,23 @@ ${itemsDetail}
 🖼️ สลิป: ${slipUrl}`;
         
         currentLineUrl = buildLineUrl(lineMsg);
+        // ส่งเฉพาะยอดและรายการสินค้า — ห้ามใส่ชื่อ เบอร์ อีเมล ที่อยู่ลูกค้า
+        trackEvent('purchase', {
+            transaction_id: window.crypto?.randomUUID?.() || `order-${Date.now()}`,
+            currency: 'THB',
+            value: finalTotal,
+            shipping: selectedPaymentMethod === 'cod' ? COD_FEE : 0,
+            payment_type: selectedPaymentMethod,
+            items: buildCartItems(cart),
+        });
         document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
         document.getElementById('successModal').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        setTimeout(() => { if(currentLineUrl) window.location.href = currentLineUrl; }, 3000);
+        setTimeout(() => {
+            if (!currentLineUrl) return;
+            trackEvent('contact_line', { placement: 'accessories_order_success_auto' });
+            window.location.href = currentLineUrl;
+        }, 3000);
     } catch(e) { 
         showToast("เกิดข้อผิดพลาด", "error"); 
         btn.disabled = false; 
@@ -391,6 +408,13 @@ window.closeCheckout = closeCheckout;
 window.previewSlip = previewSlip;
 window.updatePaymentMethod = updatePaymentMethod;
 window.submitOrder = submitOrder;
-window.redirectToLine = () => { if(currentLineUrl) window.location.href = currentLineUrl; };
+window.redirectToLine = () => {
+    if (!currentLineUrl) return;
+    trackEvent('contact_line', { placement: 'accessories_order_success_button' });
+    window.location.href = currentLineUrl;
+};
 
-document.addEventListener('DOMContentLoaded', () => { loadProductsFromSheet(renderProducts); });
+document.addEventListener('DOMContentLoaded', () => {
+    initAnalyticsTracking();
+    loadProductsFromSheet(renderProducts);
+});

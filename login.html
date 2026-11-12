@@ -21,13 +21,20 @@
     <link rel="canonical" href="https://blacknight69.com/login.html">
     <!-- ฟอนต์แบบเว็บ Apple: เครื่อง Apple ใช้ SF Pro / Sukhumvit Set ของเครื่อง (ฝัง SF Pro ในเว็บไม่ได้ตามลิขสิทธิ์) เครื่องอื่นใช้ Inter + Noto Sans Thai ที่หน้าตาใกล้เคียง -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet">
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-70NV9ZCP1L"></script>
+    <!-- Google Analytics 4 — โหลดเฉพาะบนโดเมนจริง: เปิดจาก localhost / preview / โดเมนอื่นจะไม่ส่งข้อมูลเข้า GA4 (gtag() ยังเรียกได้ แค่ไม่ถูกส่ง) -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-70NV9ZCP1L');
+      (function () {
+        var host = location.hostname;
+        if (host !== 'blacknight69.com' && host !== 'www.blacknight69.com') return;
+        gtag('js', new Date());
+        gtag('config', 'G-70NV9ZCP1L');
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-70NV9ZCP1L';
+        document.head.appendChild(s);
+      })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>

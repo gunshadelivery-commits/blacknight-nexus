@@ -1,9 +1,9 @@
 import './style.css';
 import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
-import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
+import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
 import { getLanguage, initI18n, t } from './i18n.js';
-import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
+import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
 import {
     groupProducts, sortForStorefront, strainPath, esc, jsArg, getCardPerfectFor as getPerfectFor, isPremiumProduct,
     IMAGE_SIZES, optimizedImage, parseImageKeys,
@@ -18,6 +18,7 @@ const fullImage = src => optimizedImage(src, IMAGE_SIZES.full, builtImages);
 let currentCategory = "All";
 let currentLineUrl = "";
 let selectedPaymentMethod = "transfer";
+let lastTrackedPayment = null; // วิธีจ่ายล่าสุดที่หน้า checkout แสดง (ใช้ตัดสินว่าลูกค้ากดเปลี่ยนเองหรือไม่)
 const COD_FEE = 50;
 
 const DRINK_PRODUCTS = [
@@ -235,6 +236,7 @@ function renderProducts(filter = "") {
 
         let q = "";
         if (typeof filter === "string") q = filter.toLowerCase();
+        trackSearch(q);
 
         if (products.length === 0) {
             if (resultMeta) resultMeta.textContent = t('store.catalog.updating');
@@ -285,6 +287,7 @@ function renderProducts(filter = "") {
                 if(p.isDrink) { window.openProductDetails(p.name); return; }
                 if (!p.slug) { window.openProductDetails(p.name); return; }
                 card.style.transitionDelay = '0ms';
+                trackEvent('select_item', { item_list_name: currentCategory, items: [buildAnalyticsItem(p, p.variants[p.selectedVariantIdx])] });
                 window.location.href = strainPath(p.slug);
             };
             const isOutOfStock = p.status === 'หมด' || p.status === 'sold out' || p.status === '0';
@@ -382,8 +385,17 @@ function renderProducts(filter = "") {
     }
 }
 
+let searchTrackTimer;
+function trackSearch(term) {
+    clearTimeout(searchTrackTimer);
+    const q = String(term || '').trim();
+    if (q.length < 2) return;
+    searchTrackTimer = setTimeout(() => trackEvent('search', { search_term: q.slice(0, 60) }), 1500);
+}
+
 function switchCategory(cat) {
     currentCategory = cat;
+    trackEvent('select_content', { content_type: 'category', content_id: cat });
     document.querySelectorAll('#categoryTabs button').forEach(btn => {
         btn.classList.remove('category-active', 'tab-premium-active');
         btn.classList.add('category-inactive');
@@ -531,7 +543,7 @@ function addToCart(pName, vIdx) {
 
     const existing = cart.find(item => item.name === product.name && item.size === variant.size);
     if (existing) existing.qty++;
-    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: cardImage(product.image), icon: product.isDrink ? '🥤' : '📦' });
+    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: cardImage(product.image), icon: product.isDrink ? '🥤' : '📦', category: product.aiType || '' });
 
     trackEvent('add_to_cart', {
         currency: 'THB',
@@ -595,6 +607,15 @@ function updateCartUI() {
     container.innerHTML = cartHTML;
     subtotalEl.textContent = subtotal.toLocaleString() + " ฿";
     checkoutBtn.disabled = cart.length === 0;
+
+    // ปุ่ม LINE ในตะกร้า: มีของในตะกร้า → เปิดแชตร้านพร้อมรายการที่เลือก (ไม่ต้องกรอกฟอร์ม) · ตะกร้าว่าง → เปิดแชตเฉยๆ
+    const cartLineLink = document.getElementById('cartLineLink');
+    if (cartLineLink) {
+        const lines = cart.map(i => `- ${i.name} [${i.size}] x${i.qty} = ${(i.price * i.qty).toLocaleString()} ฿`).join('\n');
+        cartLineLink.href = cart.length
+            ? buildLineUrl(`สนใจสั่งซื้อ:\n${lines}\nรวม ${subtotal.toLocaleString()} ฿`)
+            : getLineOaUrl();
+    }
 }
 
 function updateQty(idx, change) {
@@ -678,17 +699,7 @@ function previewPaymentQR(qrUrl) {
 
 function goToCheckout() {
     const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-    trackEvent('begin_checkout', {
-        currency: 'THB',
-        value: total,
-        items: cart.map(item => ({
-            item_id: item.name,
-            item_name: item.name,
-            item_variant: item.size,
-            price: item.price,
-            quantity: item.qty,
-        })),
-    });
+    trackEvent('begin_checkout', { currency: 'THB', value: total, items: buildCartItems(cart) });
 
     loadAndDisplayPaymentMethods();
     updatePaymentMethod('cod'); // COD เป็น default — ลด friction (ไม่ต้องโอนก่อน)
@@ -698,6 +709,11 @@ function closeCheckout() { document.getElementById('checkoutModal').classList.ad
 
 function updatePaymentMethod(method) {
     selectedPaymentMethod = method;
+    if (lastTrackedPayment !== null && lastTrackedPayment !== method) {
+        // ลูกค้าเปลี่ยนวิธีจ่ายเอง (ไม่นับค่าเริ่มต้นตอนเปิดหน้า checkout)
+        trackEvent('add_payment_info', { currency: 'THB', payment_type: method, value: cart.reduce((sum, i) => sum + i.price * i.qty, 0) });
+    }
+    lastTrackedPayment = method;
     const paymentDetails = document.getElementById('paymentDetailsSection');
     const slipSection = document.getElementById('slipInput').parentElement.parentElement;
     const confirmBtn = document.getElementById('confirmBtn');
@@ -816,18 +832,14 @@ ${itemsDetail}
 
         currentLineUrl = buildLineUrl(lineMsg);
 
+        // ส่งเฉพาะยอดและรายการสินค้า — ห้ามใส่ชื่อ เบอร์ อีเมล ที่อยู่ลูกค้า
         trackEvent('purchase', {
             transaction_id: window.crypto?.randomUUID?.() || `order-${Date.now()}`,
             currency: 'THB',
             value: finalTotal,
             shipping: selectedPaymentMethod === 'cod' ? COD_FEE : 0,
-            items: cart.map(item => ({
-                item_id: item.name,
-                item_name: item.name,
-                item_variant: item.size,
-                price: item.price,
-                quantity: item.qty,
-            })),
+            payment_type: selectedPaymentMethod,
+            items: buildCartItems(cart),
         });
 
         confetti({
@@ -838,7 +850,9 @@ ${itemsDetail}
         });
 
         setTimeout(() => {
-            if (currentLineUrl) window.location.href = currentLineUrl;
+            if (!currentLineUrl) return;
+            trackEvent('contact_line', { placement: 'order_success_auto' });
+            window.location.href = currentLineUrl;
         }, 3000);
     } catch (e) {
         showToast(t('store.checkout.error'), "error");
@@ -857,6 +871,7 @@ function selectModalVariant(pName, vIdx) {
 
 function switchCategoryPremium() {
     currentCategory = "พรีเมียม";
+    trackEvent('select_content', { content_type: 'category', content_id: 'premium' });
     document.querySelectorAll('#categoryTabs button').forEach(btn => {
         btn.classList.remove('category-active', 'tab-premium-active');
         btn.classList.add('category-inactive');
@@ -923,8 +938,10 @@ window.changeProductImage = changeProductImage;
 window.selectModalVariant = selectModalVariant;
 window.switchCategoryPremium = switchCategoryPremium;
 window.redirectToLine = () => {
-    if (currentLineUrl) window.location.href = currentLineUrl;
-    else window.location.reload();
+    if (currentLineUrl) {
+        trackEvent('contact_line', { placement: 'order_success_button' });
+        window.location.href = currentLineUrl;
+    } else window.location.reload();
 };
 
 document.addEventListener('DOMContentLoaded', () => {

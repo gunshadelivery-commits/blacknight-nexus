@@ -64,7 +64,7 @@ function strainHead(p, built) {
     <meta property="og:image" content="${esc(meta.image)}">
     <meta property="og:locale" content="en_US">
     <script type="application/ld+json" id="strain-schema">${jsonForScript(buildSchema(p))}</script>
-    <script type="application/json" id="strain-data">${jsonForScript({ name: p.name, variants: p.variants })}</script>`;
+    <script type="application/json" id="strain-data">${jsonForScript({ name: p.name, aiType: p.aiType, variants: p.variants })}</script>`;
 }
 
 function strainBody(p, products, lineUrl, built) {

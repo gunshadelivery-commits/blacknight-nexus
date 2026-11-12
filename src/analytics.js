@@ -15,6 +15,18 @@ export function buildAnalyticsItem(product, variant, quantity = 1) {
     };
 }
 
+// รายการในตะกร้า (name/size/price/qty) → items ของ GA4 — ไม่มีข้อมูลลูกค้า
+export function buildCartItems(cart = []) {
+    return cart.map(item => ({
+        item_id: cleanText(item.name),
+        item_name: cleanText(item.name),
+        item_category: cleanText(item.category || 'Other'),
+        item_variant: cleanText(item.size),
+        price: Number(item.price) || 0,
+        quantity: Number(item.qty) || 1,
+    }));
+}
+
 export function trackEvent(eventName, params = {}) {
     if (!eventName || typeof window.gtag !== 'function') return;
 

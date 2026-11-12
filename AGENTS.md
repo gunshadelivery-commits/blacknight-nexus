@@ -57,6 +57,7 @@
 | `src/catalog.js` | ตรรกะสินค้าที่ใช้ร่วมกันทั้งหน้าร้าน หน้าสายพันธุ์ และตอน build: จัดกลุ่มแถว CSV เป็นสินค้า, slug, จัดประเภท, `esc()`/`jsArg()` (ต้องรันใน Node ได้ ห้ามแตะ DOM/`import.meta.env`) |
 | `src/strainView.js` | ของเฉพาะหน้าสายพันธุ์: ข้อความ 4 ภาษา, SEO meta/JSON-LD, HTML ของหน้า (ใช้ทั้งเบราว์เซอร์และตอน build · ข้อจำกัดเดียวกับ catalog.js) |
 | `scripts/prerender.mjs` | Vite plugin: หลัง build ดึงชีตมาสร้าง `dist/strain/<slug>/index.html`, การ์ดสินค้าใน `dist/index.html`, `dist/sitemap.xml`, `dist/404.html` (**sitemap สร้างอัตโนมัติ ไม่ต้องแก้มือ** · สินค้าใหม่ในชีตจะได้หน้า static + เข้า sitemap เมื่อ deploy ครั้งถัดไป) |
+| `scripts/images.mjs` | ย่อรูปสินค้าจากชีตเป็น WebP ตอน build → `dist/img/<key>-480.webp` / `-960.webp` (key = hash ของ URL รูป ดู `imageKey()` ใน catalog.js) · เปลี่ยนรูปในชีตแล้วรูปย่อจะตามเมื่อ deploy ครั้งถัดไป ระหว่างนั้นเว็บใช้ URL เดิม |
 | `src/config.js` | ชื่อร้าน + อ่านค่า `VITE_*` + helper LINE/ImgBB |
 | `src/agegate.js` | หน้ายืนยันอายุ 20+ |
 | `GoogleAppsScript.js` | โค้ดหลังบ้าน (วางใน Google Apps Script) |

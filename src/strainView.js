@@ -1,7 +1,7 @@
 // หน้าสายพันธุ์: ข้อความ 4 ภาษา, SEO meta/JSON-LD และ HTML ของหน้า — ใช้ทั้งในเบราว์เซอร์ (strain.js) และตอน build (scripts/prerender.mjs)
 // ต้องรันใน Node ได้เหมือน catalog.js: ห้ามแตะ DOM และห้าม import config.js
 import {
-    SITE_URL, esc, strainPath, strainUrl, isAccessory, getPerfectFor, isSoldOut,
+    SITE_URL, IMAGE_SIZES, esc, strainPath, strainUrl, isAccessory, getPerfectFor, isSoldOut,
 } from './catalog.js';
 
 export const STRAIN_I18N = {
@@ -210,7 +210,8 @@ export function pickRelated(p, allProducts) {
         .slice(0, 4);
 }
 
-export function renderStrainHtml(p, allProducts, { t, lineUrl }) {
+// img(src, size) คืน URL รูปที่จะใช้จริง (ผู้เรียกส่งตัวที่รู้ว่ารูปไหนย่อไว้ตอน build มาให้)
+export function renderStrainHtml(p, allProducts, { t, lineUrl, img = src => src }) {
     const type = p.aiType || 'Hybrid';
     const accessory = isAccessory(type);
     const perfectFor = getPerfectFor(type);
@@ -228,7 +229,7 @@ export function renderStrainHtml(p, allProducts, { t, lineUrl }) {
         <div class="hero-grid">
             <div class="strain-image-wrap">
                 ${p.image
-                    ? `<img id="main-img" src="${esc(p.image)}" alt="${name} cannabis Bangkok — Siam Cannabis On Nut" width="900" height="900" fetchpriority="high">`
+                    ? `<img id="main-img" src="${esc(img(p.image, IMAGE_SIZES.full))}" alt="${name} cannabis Bangkok — Siam Cannabis On Nut" width="960" height="960" fetchpriority="high" decoding="async">`
                     : `<div class="strain-image-placeholder">🌿</div>`}
             </div>
 
@@ -279,10 +280,10 @@ export function renderStrainHtml(p, allProducts, { t, lineUrl }) {
         <section style="margin-top:40px;">
             <p class="section-title">${t('gallery')}</p>
             <div class="gallery-grid">
-                ${gallery.map(img => `
-                    <div class="gallery-thumb" onclick="document.getElementById('main-img').src=this.firstElementChild.src">
-                        <img src="${esc(img)}" alt="${name} cannabis photo" loading="lazy">
-                    </div>`).join('')}
+                ${gallery.map(g => `
+                    <button type="button" class="gallery-thumb" data-full="${esc(img(g, IMAGE_SIZES.full))}" onclick="document.getElementById('main-img').src=this.dataset.full">
+                        <img src="${esc(img(g, IMAGE_SIZES.card))}" alt="${name} cannabis photo" width="160" height="160" loading="lazy" decoding="async">
+                    </button>`).join('')}
             </div>
         </section>` : ''}
 

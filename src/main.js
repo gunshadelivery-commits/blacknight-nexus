@@ -4,10 +4,17 @@ import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
 import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
-import { groupProducts, sortForStorefront, strainPath, esc, jsArg, getCardPerfectFor as getPerfectFor, isPremiumProduct } from './catalog.js';
+import {
+    groupProducts, sortForStorefront, strainPath, esc, jsArg, getCardPerfectFor as getPerfectFor, isPremiumProduct,
+    IMAGE_SIZES, optimizedImage, parseImageKeys,
+} from './catalog.js';
 
 let products = [];
 let cart = [];
+// รูปสินค้าที่ build ล่าสุดย่อเป็น WebP ไว้ (dist/img) — รูปที่ไม่อยู่ในนี้ใช้ URL เดิมจากชีต
+const builtImages = parseImageKeys(window.__imgKeys);
+const cardImage = src => optimizedImage(src, IMAGE_SIZES.card, builtImages);
+const fullImage = src => optimizedImage(src, IMAGE_SIZES.full, builtImages);
 let currentCategory = "All";
 let currentLineUrl = "";
 let selectedPaymentMethod = "transfer";
@@ -285,12 +292,13 @@ function renderProducts(filter = "") {
             const variant = p.variants[p.selectedVariantIdx];
             const isVariantOutOfStock = variant.stock <= 0;
 
-            const priorityAttr = products.indexOf(p) < 4 ? 'fetchpriority="high"' : 'loading="lazy"';
+            // width/height = สัดส่วนของกรอบรูป กันหน้าเลื่อนกระตุกตอนรูปมา (ขนาดจริงคุมด้วย CSS)
+            const priorityAttr = `width="480" height="480" decoding="async" ${products.indexOf(p) < 4 ? 'fetchpriority="high"' : 'loading="lazy"'}`;
 
             card.innerHTML = `
                 <div class="product-visual">
                     ${p.isDrink && p.image ? `
-                        <img src="${esc(p.image)}"
+                        <img src="${esc(cardImage(p.image))}"
                              alt="${nameHtml}"
                              ${priorityAttr}
                              class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
@@ -316,7 +324,7 @@ function renderProducts(filter = "") {
                                 </div>` : ''}
                         </div>
                     ` : (p.image ? `
-                        <img src="${esc(p.image)}"
+                        <img src="${esc(cardImage(p.image))}"
                              alt="${nameHtml}"
                              ${priorityAttr}
                              class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
@@ -417,7 +425,8 @@ function openProductDetails(pName) {
     const modalMainImage = document.getElementById('modalMainImage');
     const modalProductArt = document.getElementById('modalProductArt');
     if (product.image) {
-        modalMainImage.src = product.image;
+        modalMainImage.src = fullImage(product.image);
+        modalMainImage.alt = product.name;
         modalMainImage.classList.remove('hidden');
         modalProductArt.classList.add('hidden');
         modalProductArt.innerHTML = '';
@@ -434,9 +443,13 @@ function openProductDetails(pName) {
         product.images.forEach((imgSrc) => {
             if (!imgSrc) return;
             const thumb = document.createElement('img');
-            thumb.src = imgSrc;
+            thumb.src = cardImage(imgSrc);
+            thumb.alt = '';
+            thumb.width = 64;
+            thumb.height = 64;
+            thumb.loading = 'lazy';
             thumb.className = "w-16 h-16 object-cover rounded-xl cursor-pointer hover:opacity-80 transition border-2 border-transparent hover:border-white/50";
-            thumb.onclick = () => window.changeProductImage(imgSrc);
+            thumb.onclick = () => window.changeProductImage(fullImage(imgSrc));
             galleryContainer.appendChild(thumb);
         });
     }
@@ -518,7 +531,7 @@ function addToCart(pName, vIdx) {
 
     const existing = cart.find(item => item.name === product.name && item.size === variant.size);
     if (existing) existing.qty++;
-    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: product.image, icon: product.isDrink ? '🥤' : '📦' });
+    else cart.push({ name: product.name, size: variant.size, price: variant.price, qty: 1, image: cardImage(product.image), icon: product.isDrink ? '🥤' : '📦' });
 
     trackEvent('add_to_cart', {
         currency: 'THB',

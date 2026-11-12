@@ -8,8 +8,10 @@ import { resolve } from 'node:path';
 import Papa from 'papaparse';
 import { loadEnv } from 'vite';
 import {
-    SITE_URL, esc, groupProducts, sortForStorefront, strainUrl, isSoldOut, isPremiumProduct, getCardPerfectFor,
+    SITE_URL, IMAGE_SIZES, esc, groupProducts, sortForStorefront, strainUrl, isSoldOut, isPremiumProduct, getCardPerfectFor,
+    imageKey, optimizedImage,
 } from '../src/catalog.js';
+import { buildProductImages } from './images.mjs';
 import { makeT, strainMeta, buildSchema, renderStrainHtml } from '../src/strainView.js';
 
 async function fetchCsv(url, attempts = 3) {
@@ -39,9 +41,18 @@ function replaceBetween(html, startMarker, endMarker, content) {
 
 const jsonForScript = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 
-function strainHead(p) {
+// บอกหน้าเว็บว่ารูปไหนย่อไว้แล้ว (src/catalog.js → parseImageKeys/optimizedImage)
+function imageKeysScript(sources, built) {
+    const keys = [...new Set(sources.filter(Boolean).map(imageKey).filter(k => built.has(k)))];
+    return `<script>window.__imgKeys=${JSON.stringify(keys.join(','))}</script>`;
+}
+
+function strainHead(p, built) {
     const meta = strainMeta(p);
-    return `<title>${esc(meta.title)}</title>
+    const hero = optimizedImage(p.image, IMAGE_SIZES.full, built);
+    return `${imageKeysScript(p.images || [], built)}
+    ${hero ? `<link rel="preload" as="image" href="${esc(hero)}" fetchpriority="high">` : ''}
+    <title>${esc(meta.title)}</title>
     <meta name="description" content="${esc(meta.description)}">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="${meta.canonical}">
@@ -56,26 +67,31 @@ function strainHead(p) {
     <script type="application/json" id="strain-data">${jsonForScript({ name: p.name, variants: p.variants })}</script>`;
 }
 
-function strainBody(p, products, lineUrl) {
-    const html = renderStrainHtml(p, products, { t: makeT('en'), lineUrl });
+function strainBody(p, products, lineUrl, built) {
+    const html = renderStrainHtml(p, products, {
+        t: makeT('en'),
+        lineUrl,
+        img: (src, size) => optimizedImage(src, size, built),
+    });
     return `<div class="loading-state" id="loading" style="display:none;"></div>
         <div id="strain-content" data-prerendered="1">${html}</div>`;
 }
 
 // การ์ดแบบเดียวกับที่ src/main.js วาด (ฉบับอ่านอย่างเดียว) — main.js จะแทนที่ด้วยการ์ดจริงเมื่อข้อมูลล่าสุดมาถึง
-function staticCard(p, index) {
+function staticCard(p, index, built) {
     const premium = isPremiumProduct(p);
     const soldOut = isSoldOut(p) || (p.variants[0]?.stock ?? 0) <= 0;
     const name = esc(p.name);
     const href = p.slug && !p.isDrink ? `/strain/${encodeURIComponent(p.slug)}/` : '';
-    const loading = index < 4 ? 'fetchpriority="high"' : 'loading="lazy"';
+    const loading = `width="480" height="480" decoding="async" ${index < 4 ? 'fetchpriority="high"' : 'loading="lazy"'}`;
+    const image = optimizedImage(p.image, IMAGE_SIZES.card, built);
     const first = p.variants[0] || { price: 0 };
     const badge = premium
         ? '<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>'
         : (p.tags.length ? `<span class="product-pill">${esc(p.tags[0])}</span>` : '');
     return `<div class="product-card ${p.isDrink ? 'drink-card' : 'cursor-pointer'} ${premium ? 'premium-card' : ''}">
                 <div class="product-visual">
-                    ${p.image ? `<img src="${esc(p.image)}" alt="${name}" ${loading} decoding="async" class="${soldOut ? 'grayscale opacity-30' : ''}">` : ''}
+                    ${image ? `<img src="${esc(image)}" alt="${name}" ${loading} class="${soldOut ? 'grayscale opacity-30' : ''}">` : ''}
                     <div class="product-badges">${badge}${p.totalSold > 0 ? `<span class="product-pill sold">${p.totalSold}+ sold</span>` : ''}</div>
                 </div>
                 <div class="product-content">
@@ -162,10 +178,12 @@ export function prerenderCatalog() {
             const lineId = env.VITE_LINE_OA_ID;
             const lineUrl = lineId ? `https://line.me/R/ti/p/${encodeURIComponent(lineId)}` : 'https://line.me';
             const strains = products.filter(p => p.slug && !p.isDrink);
+            const allImages = products.flatMap(p => p.images || []);
+            const built = await buildProductImages(allImages, dist);
 
             for (const p of strains) {
-                let html = replaceBetween(shell, 'ssr:head-start', 'ssr:head-end', strainHead(p));
-                html = replaceBetween(html, 'ssr:body-start', 'ssr:body-end', strainBody(p, products, lineUrl));
+                let html = replaceBetween(shell, 'ssr:head-start', 'ssr:head-end', strainHead(p, built));
+                html = replaceBetween(html, 'ssr:body-start', 'ssr:body-end', strainBody(p, products, lineUrl, built));
                 const dir = resolve(dist, 'strain', p.slug);
                 await mkdir(dir, { recursive: true });
                 await writeFile(resolve(dir, 'index.html'), html);
@@ -175,9 +193,12 @@ export function prerenderCatalog() {
             const indexHtml = await readFile(indexPath, 'utf8');
             const gridTag = '<div id="productList" class="product-grid"></div>';
             if (!indexHtml.includes(gridTag)) throw new Error('[prerender] ไม่พบ #productList ใน index.html');
-            const cards = sortForStorefront(products).map(staticCard).join('\n            ');
-            await writeFile(indexPath, indexHtml.replace(gridTag,
-                () => `<div id="productList" class="product-grid" data-ssr="1">\n            ${cards}\n            </div>`));
+            const cards = sortForStorefront(products).map((p, i) => staticCard(p, i, built)).join('\n            ');
+            const headEnd = '</head>';
+            if (!indexHtml.includes(headEnd)) throw new Error('[prerender] ไม่พบ </head> ใน index.html');
+            await writeFile(indexPath, indexHtml
+                .replace(headEnd, () => `${imageKeysScript(allImages, built)}\n${headEnd}`)
+                .replace(gridTag, () => `<div id="productList" class="product-grid" data-ssr="1">\n            ${cards}\n            </div>`));
 
             await writeFile(resolve(dist, 'sitemap.xml'), buildSitemap(basePages, strains, today));
             console.log(`[prerender] ${strains.length} หน้าสายพันธุ์ + การ์ด ${products.length} ใบในหน้าแรก + sitemap.xml`);

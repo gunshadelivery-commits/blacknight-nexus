@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 import { SHEET_CSV_URL, getLineOaUrl } from './config.js';
 import { initAnalyticsTracking } from './analytics.js';
-import { groupProducts, findBySlug } from './catalog.js';
+import { groupProducts, findBySlug, optimizedImage, parseImageKeys } from './catalog.js';
 import {
     STRAIN_I18N, makeT, strainMeta, buildSchema, renderStrainHtml, variantPriceHtml,
 } from './strainView.js';
@@ -21,6 +21,7 @@ function readSlug() {
 }
 
 const rawSlug = readSlug();
+const builtImages = parseImageKeys(window.__imgKeys); // รูปที่ build ย่อไว้ให้หน้านี้ (ดู scripts/prerender.mjs)
 let currentVariantIdx = 0;
 let currentProduct = null;
 
@@ -61,7 +62,11 @@ function render(p, allProducts) {
     const schemaEl = document.getElementById('strain-schema');
     if (schemaEl) schemaEl.textContent = JSON.stringify(buildSchema(p));
 
-    document.getElementById('strain-content').innerHTML = renderStrainHtml(p, allProducts, { t, lineUrl: getLineOaUrl() });
+    document.getElementById('strain-content').innerHTML = renderStrainHtml(p, allProducts, {
+        t,
+        lineUrl: getLineOaUrl(),
+        img: (src, size) => optimizedImage(src, size, builtImages),
+    });
     document.getElementById('loading').style.display = 'none';
     document.getElementById('strain-content').style.display = 'block';
 

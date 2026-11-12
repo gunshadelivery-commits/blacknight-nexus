@@ -16,6 +16,31 @@ export function jsArg(value = '') {
     return esc(JSON.stringify(String(value)));
 }
 
+// ─── รูปสินค้าที่ย่อตอน build (scripts/images.mjs) ───────────────────────────────
+
+export const IMAGE_SIZES = { card: 480, full: 960 };
+
+// ชื่อไฟล์ของรูปที่ย่อแล้ว: hash (FNV-1a 32 บิต) ของ URL ต้นฉบับ — คำนวณได้ทั้งตอน build และในเบราว์เซอร์
+export function imageKey(src = '') {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < src.length; i++) {
+        h ^= src.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+    }
+    return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+// built = Set ของ key ที่ build ล่าสุดย่อไว้ · รูปที่ไม่อยู่ในนั้น (สินค้าใหม่หลัง build) ใช้ URL เดิม
+export function optimizedImage(src, size, built) {
+    if (!src || !built || !built.has(imageKey(src))) return src;
+    return `/img/${imageKey(src)}-${size}.webp`;
+}
+
+// หน้าเว็บที่ prerender แล้วมี <script>window.__imgKeys="k1,k2"</script> บอกว่ารูปไหนย่อไว้
+export function parseImageKeys(value) {
+    return new Set(String(value || '').split(',').filter(Boolean));
+}
+
 // ─── slug ────────────────────────────────────────────────────────────────────
 
 // เก็บตัวอักษรทุกภาษา (รวมไทย) เพื่อให้สินค้าชื่อไทยมี URL ของตัวเอง

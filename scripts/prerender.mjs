@@ -14,7 +14,7 @@ import {
 } from '../src/catalog.js';
 import { buildProductImages } from './images.mjs';
 import { injectI18nBoot } from './i18nBoot.mjs';
-import { makeT, strainMeta, buildSchema, renderStrainHtml } from '../src/strainView.js';
+import { makeT, strainMeta, buildSchema, renderStrainHtml, pickRelated } from '../src/strainView.js';
 
 async function fetchCsv(url, attempts = 3) {
     let lastError;
@@ -49,10 +49,12 @@ function imageKeysScript(sources, built) {
     return `<script>window.__imgKeys=${JSON.stringify(keys.join(','))}</script>`;
 }
 
-function strainHead(p, built) {
+function strainHead(p, products, built) {
     const meta = strainMeta(p);
     const hero = optimizedImage(p.image, IMAGE_SIZES.full, built);
-    return `${imageKeysScript(p.images || [], built)}
+    // รูปของหน้านี้ + รูปของสินค้าแนะนำท้ายหน้า (ไม่งั้นพอ strain.js วาดหน้าใหม่จาก CSV รูปแนะนำจะกลับไปโหลดไฟล์ต้นฉบับ)
+    const pageImages = [...(p.images || []), ...pickRelated(p, products).map(r => r.image)];
+    return `${imageKeysScript(pageImages, built)}
     ${hero ? `<link rel="preload" as="image" href="${esc(hero)}" fetchpriority="high">` : ''}
     <title>${esc(meta.title)}</title>
     <meta name="description" content="${esc(meta.description)}">
@@ -196,7 +198,7 @@ export function prerenderCatalog() {
             const built = await buildProductImages(allImages, dist);
 
             for (const p of strains) {
-                let html = replaceBetween(shell, 'ssr:head-start', 'ssr:head-end', strainHead(p, built));
+                let html = replaceBetween(shell, 'ssr:head-start', 'ssr:head-end', strainHead(p, products, built));
                 html = replaceBetween(html, 'ssr:body-start', 'ssr:body-end', strainBody(p, products, lineUrlFor, built));
                 const dir = resolve(dist, 'strain', p.slug);
                 await mkdir(dir, { recursive: true });

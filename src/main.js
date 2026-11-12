@@ -30,6 +30,22 @@ function saveCart() {
 }
 
 let cart = loadCart();
+
+// ตะกร้าที่จำไว้จากครั้งก่อน: ปรับราคาตามชีตล่าสุด และตัดรายการที่ไม่มีขาย/หมดแล้วออก
+function reconcileCart() {
+    if (!cart.length || !products.length) return;
+    const isOut = p => ['หมด', 'sold out', '0'].includes(p.status);
+    const next = [];
+    cart.forEach(item => {
+        const product = products.find(p => p.name === item.name);
+        const variant = product && product.variants.find(v => v.size === item.size);
+        if (!product || !variant || isOut(product) || variant.stock <= 0) return;
+        next.push({ ...item, price: variant.price });
+    });
+    const changed = next.length !== cart.length || next.some((item, i) => item.price !== cart[i].price);
+    cart = next;
+    if (changed) updateCartUI();
+}
 // รูปสินค้าที่ build ล่าสุดย่อเป็น WebP ไว้ (dist/img) — รูปที่ไม่อยู่ในนี้ใช้ URL เดิมจากชีต
 const builtImages = parseImageKeys(window.__imgKeys);
 const cardImage = src => optimizedImage(src, IMAGE_SIZES.card, builtImages);
@@ -902,6 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProductsFromSheet(() => {
         const searchInput = document.getElementById('searchInput');
         renderProducts(searchInput ? searchInput.value : "");
+        reconcileCart();
         const intent = sessionStorage.getItem('sc_add_intent');
         if (intent) {
             sessionStorage.removeItem('sc_add_intent');

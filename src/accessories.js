@@ -1,6 +1,6 @@
 import './style.css';
 import { GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl } from './config.js';
-import { getLanguage } from './i18n.js';
+import { getLanguage, t } from './i18n.js';
 import { esc, jsArg } from './catalog.js';
 import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
 
@@ -46,7 +46,7 @@ function loadProductsFromSheet() {
         .then(res => res.json())
         .then(data => {
             if (!data || data.error || data.length < 2) {
-                showToast("ไม่พบข้อมูลสินค้า", "error");
+                showToast(t('store.product.noData'), "error");
                 return;
             }
             
@@ -87,7 +87,7 @@ function loadProductsFromSheet() {
         })
         .catch(err => {
             console.error("Fetch Accessories Error:", err);
-            showToast("โหลดข้อมูลสินค้าล้มเหลว", "error");
+            showToast(t('store.product.loadError'), "error");
         });
 }
 
@@ -105,7 +105,7 @@ function renderProducts(filter = "") {
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-2 text-center text-slate-400 py-10">ไม่พบสินค้าในหมวดหมู่นี้</div>`;
+        grid.innerHTML = `<div class="col-span-2 text-center text-slate-600 py-10">${t('store.catalog.emptyTitle')}</div>`;
         return;
     }
 
@@ -120,7 +120,7 @@ function renderProducts(filter = "") {
         card.innerHTML = `
             <div class="aspect-square bg-slate-50 rounded-2xl mb-3 relative overflow-hidden">
                 <img src="${esc(p.image)}" alt="${esc(p.name)}" width="300" height="300" loading="lazy" decoding="async" class="w-full h-full object-cover ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-50' : ''}" onerror="this.outerHTML='<span class=\\'text-3xl flex items-center justify-center h-full\\'>📦</span>';" />
-                ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">หมด</span></div>` : ''}
+                ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">${t('store.product.outOfStock')}</span></div>` : ''}
             </div>
             <div class="flex-1 flex flex-col">
                 <h3 class="font-bold text-slate-800 text-sm line-clamp-1">${esc(p.name)}</h3>
@@ -204,7 +204,7 @@ function updateCartUI() {
     let cartHTML = '';
 
     if (cart.length === 0) {
-        cartHTML = `<div class="text-center py-20 text-slate-400">รถเข็นว่างเปล่า</div>`;
+        cartHTML = `<div class="text-center py-20 text-slate-600">${t('store.cart.empty')}</div>`;
     } else {
         cartHTML = cart.map((item, idx) => {
             total += item.price * item.qty;
@@ -235,7 +235,7 @@ function updateQty(idx, change) {
 }
 
 function goToCheckout() {
-    if (cart.length === 0) return showToast("รถเข็นว่างเปล่า", "error");
+    if (cart.length === 0) return showToast(t('store.cart.empty'), "error");
     trackEvent('begin_checkout', { currency: 'THB', value: cart.reduce((sum, i) => sum + i.price * i.qty, 0), items: buildCartItems(cart) });
     document.getElementById('checkoutModal').classList.remove('hidden');
     updateCheckoutSummary();
@@ -250,7 +250,7 @@ function updateCheckoutSummary() {
     document.getElementById('checkoutFee').textContent = `${SERVICE_FEE} ฿`;
     document.getElementById('checkoutTotal').textContent = `${total.toLocaleString()} ฿`;
     const btn = document.getElementById('submitOrderBtn');
-    if (btn && !btn.disabled) btn.textContent = `ยืนยันสั่งซื้อ (ประมาณ ${total.toLocaleString()} ฿)`;
+    if (btn && !btn.disabled) btn.textContent = t('store.checkout.confirmCodTotal', { total: total.toLocaleString() });
 }
 
 async function submitOrder() {
@@ -260,11 +260,12 @@ async function submitOrder() {
     const email = (document.getElementById('custEmail')?.value || '').trim();
     const address = document.getElementById('custAddress').value.trim();
 
-    if (cart.length === 0) return showToast("รถเข็นว่างเปล่า", "error");
-    if (!name || !phone || !address) return showToast("กรุณากรอกชื่อ เบอร์โทร และที่อยู่จัดส่ง", "error");
+    if (cart.length === 0) return showToast(t('store.cart.empty'), "error");
+    if (!name || !phone || !address) return showToast(t('store.checkout.required'), "error");
+    if (phone.replace(/\D/g, '').length < 8) return showToast(t('store.checkout.phoneInvalid'), "error");
 
     btn.disabled = true;
-    btn.textContent = "กำลังบันทึกออเดอร์...";
+    btn.textContent = t('store.checkout.saving');
 
     try {
         const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
@@ -322,9 +323,9 @@ ${itemsDetail}
             window.location.href = currentLineUrl;
         }, 3000);
     } catch (e) {
-        showToast("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", "error");
+        showToast(t('store.checkout.error'), "error");
         btn.disabled = false;
-        btn.textContent = "สั่งซื้ออีกครั้ง";
+        updateCheckoutSummary();
     }
 }
 
@@ -346,4 +347,11 @@ window.redirectToLine = () => {
 document.addEventListener('DOMContentLoaded', () => {
     initAnalyticsTracking();
     loadProductsFromSheet(renderProducts);
+});
+
+// สลับภาษา: วาดส่วนที่ JS สร้างใหม่ด้วยภาษาที่เลือก
+document.addEventListener('cf:languagechange', () => {
+    renderProducts();
+    updateCartUI();
+    updateCheckoutSummary();
 });

@@ -186,7 +186,7 @@ function buildSchema(p) {
                 "@type": "BreadcrumbList",
                 "itemListElement": [
                     { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://blacknight69.com/" },
-                    { "@type": "ListItem", "position": 2, "name": "Strains", "item": "https://blacknight69.com/index.html#products" },
+                    { "@type": "ListItem", "position": 2, "name": "Strains", "item": "https://blacknight69.com/#products" },
                     { "@type": "ListItem", "position": 3, "name": p.name, "item": `https://blacknight69.com/strain.html?s=${encodeURIComponent(toSlug(p.name))}` }
                 ]
             }
@@ -212,7 +212,7 @@ function render(p, allProducts) {
 
     // ── SEO meta ──
     document.title = `${p.name} ${type} | Siam Cannabis Bangkok · On Nut Dispensary`;
-    setMeta('description', `${p.name} — Premium ${type} cannabis at Siam Cannabis On Nut Bangkok. ${perfectFor.join(' / ')}. Starting ฿${p.variants[0]?.price?.toLocaleString()}. Express delivery Sukhumvit. Tourists welcome.`);
+    setMeta('description', `${p.name} ${type} — กัญชาส่งด่วน อ่อนนุช สุขุมวิท Bangkok. ${perfectFor.join(' / ')}. ราคาเริ่ม ฿${p.variants[0]?.price?.toLocaleString()}. Express delivery 1hr. Tourists welcome.`);
     setMeta('og:title', `${p.name} | Siam Cannabis Bangkok`);
     setMeta('og:description', enDesc);
     setMeta('og:url', canonicalUrl);
@@ -239,7 +239,7 @@ function render(p, allProducts) {
 
     document.getElementById('strain-content').innerHTML = `
         <nav class="breadcrumb" aria-label="Breadcrumb">
-            <a href="index.html">${t('home')}</a> › <a href="index.html#products">${t('strains')}</a> › ${p.name}
+            <a href="/">${t('home')}</a> › <a href="/#products">${t('strains')}</a> › ${p.name}
         </nav>
 
         <div class="hero-grid">
@@ -354,7 +354,7 @@ function render(p, allProducts) {
             <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;color:var(--green);margin-bottom:8px;">SIAM CANNABIS · ON NUT</p>
             <h2 style="font-size:20px;font-weight:800;margin-bottom:8px;">${t('shopTitle')}</h2>
             <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">${t('shopSub')}</p>
-            <a href="index.html" style="display:inline-block;background:var(--green);color:#031a07;font-weight:800;font-size:14px;padding:12px 28px;border-radius:12px;text-decoration:none;">${t('browseAll')}</a>
+            <a href="/" style="display:inline-block;background:var(--green);color:#031a07;font-weight:800;font-size:14px;padding:12px 28px;border-radius:12px;text-decoration:none;">${t('browseAll')}</a>
         </section>
     `;
 

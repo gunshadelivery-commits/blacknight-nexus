@@ -1724,6 +1724,46 @@ body.sol-shell .category-row .category-inactive {
 }
 
 /* แถบ pull-to-refresh: ซ่อนไว้ แสดงเฉพาะตอนกำลังดึงข้อมูลใหม่ (เดิมไม่มี CSS จึงค้างโชว์ "กำลังอัปเดตข้อมูล..." บนสุดของหน้าตลอด) */
+/* ── วิธีสั่งซื้อ + พื้นที่จัดส่ง ── */
+.how-section { padding-top: 56px; padding-bottom: 8px; }
+.how-steps {
+    list-style: none; margin: 22px 0 0; padding: 0;
+    display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.how-steps li {
+    border: 1px solid rgba(143, 255, 183, 0.16); border-radius: 22px;
+    background: rgba(255, 255, 255, 0.04); padding: 20px;
+}
+.how-number {
+    display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 12px;
+    background: #8fffb7; color: #062414; font-weight: 900; font-size: 15px; margin-bottom: 12px;
+}
+.how-steps h3 { color: #fff; font-size: 17px; font-weight: 800; margin: 0 0 6px; }
+.how-steps p { color: rgba(255, 255, 255, 0.74); font-size: 14px; line-height: 1.65; margin: 0; }
+.how-areas {
+    margin: 18px 0 0; padding: 14px 18px; border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.22);
+    color: rgba(255, 255, 255, 0.78); font-size: 14px; line-height: 1.7;
+}
+
+/* ── footer ── */
+.site-footer {
+    margin-top: 64px; padding: 36px 0 110px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1); background: rgba(2, 10, 6, 0.72);
+}
+.site-footer-grid { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.site-footer-brand { color: #fff; font-size: 18px; font-weight: 800; margin: 0 0 6px; }
+.site-footer-brand span { color: #8fffb7; }
+.site-footer-note { color: rgba(255, 255, 255, 0.68); font-size: 13px; line-height: 1.6; margin: 0; max-width: 34ch; }
+.site-footer nav, .site-footer-contact { display: flex; flex-direction: column; gap: 4px; }
+.site-footer a {
+    color: rgba(255, 255, 255, 0.82); font-size: 14px; font-weight: 600;
+    text-decoration: underline; text-decoration-color: rgba(143, 255, 183, 0.45); text-underline-offset: 4px;
+    padding: 7px 0; width: fit-content;
+}
+.site-footer a:hover { color: #8fffb7; }
+.site-footer-legal { margin: 26px 0 0; color: rgba(255, 255, 255, 0.62); font-size: 12px; line-height: 1.6; }
+
 /* ตะกร้า/หน้าสั่งซื้อ/รายละเอียดสินค้าเปิดอยู่: ซ่อนปุ่มลอย LINE ไม่ให้ทับปุ่มยืนยัน (main.js → syncOverlayState) */
 body.overlay-open #floatingLineBtn { display: none; }
 

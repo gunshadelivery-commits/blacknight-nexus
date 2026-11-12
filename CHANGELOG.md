@@ -11,6 +11,9 @@
 ==================================================== -->
 
 ## [Unreleased]
+### Fixed
+- [Claude] fix(checkout): ออเดอร์จากหน้าแรกไม่ถูกบันทึกลงชีต Orders และไม่มีอีเมลแจ้งร้าน/ลูกค้า ตั้งแต่ 1 พ.ย. 2026 — ตอน merge `db94147` บรรทัด import `getLanguage` หายไป แต่โค้ดส่งออเดอร์ยังเรียกใช้ จึงเกิด ReferenceError ก่อนยิงไป Apps Script และถูก `catch` กลืนเงียบ (ลูกค้ายังถูกพาไป LINE ตามปกติ ร้านจึงได้ออเดอร์ทาง LINE แต่หลังบ้านว่าง) · ใส่ import กลับ (บั๊กจาก merge ของ [Human:Ped]/[Claude]) (src/main.js)
+
 ### Added
 - [Claude] feat(seo): สร้างหน้าสายพันธุ์แบบ static ตอน build ที่ `/strain/<slug>/` (62 หน้า) — แต่ละหน้ามี title/description/canonical/JSON-LD/เนื้อหาครบใน HTML ตั้งแต่แรก Google เก็บ index ได้โดยไม่ต้องรัน JS (เดิม GSC index ไว้แค่ 1 หน้า เพราะทุกหน้าเป็น `strain.html?s=` ที่ว่างจนกว่า JS จะดึงชีต) · ลิงก์เดิม `strain.html?s=` ยังใช้ได้และชี้ canonical มาที่ URL ใหม่ · สินค้าที่เพิ่มหลัง deploy ล่าสุดใช้ `404.html` แสดงแบบ dynamic ไปก่อน (scripts/prerender.mjs, src/catalog.js, src/strain.js, strain.html, vite.config.js)
 - [Claude] feat(seo): sitemap.xml สร้างอัตโนมัติจากสินค้าจริงในชีตทุกครั้งที่ build — ของเดิมเขียนมือ: 15 จาก 38 ลิงก์ชี้ไปสายพันธุ์ที่ไม่มีแล้ว และสินค้าจริง 40 ตัว (รวมดอกใหม่ทั้งหมด) ไม่อยู่ใน sitemap · ลบ sitemap.xml ที่ root และเลิก copy ใน workflow (scripts/prerender.mjs, .github/workflows/deploy.yml)

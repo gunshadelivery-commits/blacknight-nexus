@@ -3,7 +3,7 @@ import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
 import { isLoggedIn } from './auth.js';
-import { initI18n, t } from './i18n.js';
+import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
 import { assignSlugs, strainPath, esc, getCardPerfectFor as getPerfectFor, isPremiumProduct } from './catalog.js';
 

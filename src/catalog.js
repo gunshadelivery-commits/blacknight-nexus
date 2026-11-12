@@ -121,6 +121,20 @@ export function classifyType(name = '', tags = []) {
     return 'Hybrid';
 }
 
+// ดอก/ใบทริมที่ชีตใส่หมวดเป็น flower / trim: หาสาย (Sativa/Indica/Hybrid) จากชื่อ+แท็ก ให้ขึ้นในแท็บสายพันธุ์ของหน้าร้านได้
+// (เดิมสินค้ากลุ่มนี้เห็นได้เฉพาะแท็บ "ทั้งหมด")
+export function strainFamily(aiType = '', name = '', tags = []) {
+    const t = String(aiType).trim().toLowerCase();
+    if (t === 'sativa') return 'Sativa';
+    if (t === 'indica') return 'Indica';
+    if (t === 'hybrid') return 'Hybrid';
+    if (t === 'flower' || t === 'trim') {
+        const guess = classifyType(name, tags);
+        return ['Sativa', 'Indica', 'Hybrid'].includes(guess) ? guess : '';
+    }
+    return '';
+}
+
 export function isAccessory(type = '') {
     const t = type.toLowerCase();
     return t.includes('อุปกรณ์') || t.includes('accessor') || t === 'อื่นๆ';
@@ -186,6 +200,7 @@ export function groupProducts(rows) {
                 variants: [],
                 totalSold: 0,
                 aiType,
+                family: strainFamily(aiType, name, tags),
                 isDrink: isDrinkType(aiType),
             };
         }
@@ -199,6 +214,12 @@ export function groupProducts(rows) {
         grouped[key].totalSold += sold;
     });
     return assignSlugs(Object.values(grouped));
+}
+
+// ขนาดที่เลือกไว้ให้ตอนเปิด: ขนาดแรกที่ยังมีของ (ถ้าหมดทุกขนาดใช้ขนาดแรก)
+export function firstAvailableIndex(p) {
+    const idx = (p.variants || []).findIndex(v => v.stock > 0);
+    return idx >= 0 ? idx : 0;
 }
 
 export function isSoldOut(p) {

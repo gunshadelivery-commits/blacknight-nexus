@@ -1,10 +1,26 @@
 import { initI18n } from './i18n.js';
 
 const STORAGE_KEY = 'bn_age_verified';
+const REMEMBER_DAYS = 30; // ยืนยันแล้วจำไว้บนเครื่องนี้กี่วัน (เดิมจำแค่จนปิดแท็บ ลูกค้าประจำต้องกดทุกครั้งที่เข้า)
+
+function isVerified() {
+    try {
+        if (sessionStorage.getItem(STORAGE_KEY)) return true;
+        const at = Number(localStorage.getItem(STORAGE_KEY));
+        return at > 0 && Date.now() - at < REMEMBER_DAYS * 24 * 60 * 60 * 1000;
+    } catch {
+        return false;
+    }
+}
+
+function rememberVerified() {
+    try { sessionStorage.setItem(STORAGE_KEY, '1'); } catch { /* ปิด storage ไว้ */ }
+    try { localStorage.setItem(STORAGE_KEY, String(Date.now())); } catch { /* ปิด storage ไว้ */ }
+}
 
 function createAgeGateHTML() {
     return `
-<div id="age-gate" style="
+<div id="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title" style="
     position: fixed;
     inset: 0;
     z-index: 99999;
@@ -33,11 +49,11 @@ function createAgeGateHTML() {
             <button type="button" data-language-option="ko" data-i18n-title="language.korean" lang="ko">한국</button>
         </div>
         <div style="font-size: 56px; margin-bottom: 16px;">🌿</div>
-        <h2 data-i18n="age.title" style="color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 8px;">ยืนยันอายุ</h2>
+        <h2 id="age-gate-title" data-i18n="age.title" style="color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 8px;">ยืนยันอายุ</h2>
         <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6; margin: 0 0 12px;">
             <strong data-i18n-html="age.product" style="color: rgba(255,255,255,0.85);">ผลิตภัณฑ์กัญชา<br>ดอกแท้คัดเกรด พรีโรล และอุปกรณ์</strong>
         </p>
-        <p data-i18n-html="age.requirement" style="color: rgba(255,255,255,0.5); font-size: 13px; margin: 0 0 32px;">
+        <p data-i18n-html="age.requirement" style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0 0 32px;">
             จำหน่ายสำหรับผู้ที่มีอายุ <strong style="color: #4ade80;">20 ปีขึ้นไปเท่านั้น</strong><br>
             งดจำหน่ายแก่สตรีมีครรภ์และสตรีให้นมบุตร
         </p>
@@ -56,7 +72,7 @@ function createAgeGateHTML() {
             " data-i18n="age.confirm">ฉันอายุ 20 ปีขึ้นไป — เข้าสู่เว็บไซต์</button>
             <button id="age-gate-exit" style="
                 background: rgba(255,255,255,0.08);
-                color: rgba(255,255,255,0.5);
+                color: rgba(255,255,255,0.75);
                 border: 1px solid rgba(255,255,255,0.1);
                 border-radius: 16px;
                 padding: 12px 24px;
@@ -66,7 +82,7 @@ function createAgeGateHTML() {
                 font-family: inherit;
             " data-i18n="age.exit">ฉันอายุต่ำกว่า 20 ปี — ออก</button>
         </div>
-        <p data-i18n-html="age.notice" style="color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 24px; line-height: 1.5;">
+        <p data-i18n-html="age.notice" style="color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 24px; line-height: 1.5;">
             การเข้าสู่เว็บไซต์นี้ถือว่าคุณยืนยันว่ามีอายุครบ 20 ปีบริบูรณ์<br>โปรดใช้ผลิตภัณฑ์อย่างมีความรับผิดชอบ
         </p>
     </div>
@@ -75,14 +91,27 @@ function createAgeGateHTML() {
 
 export function initAgeGate() {
     initI18n();
-    if (sessionStorage.getItem(STORAGE_KEY)) return;
+    if (isVerified()) return;
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = createAgeGateHTML();
     document.body.appendChild(wrapper.firstElementChild);
+    initI18n(); // แปลข้อความในหน้าต่างที่เพิ่งใส่เข้าไป
 
-    document.getElementById('age-gate-confirm').addEventListener('click', () => {
-        sessionStorage.setItem(STORAGE_KEY, '1');
+    const confirmBtn = document.getElementById('age-gate-confirm');
+    confirmBtn.focus({ preventScroll: true });
+    // กัน Tab หลุดไปหลังหน้าต่าง: วนอยู่ในปุ่มของหน้าต่างนี้
+    document.getElementById('age-gate').addEventListener('keydown', (event) => {
+        if (event.key !== 'Tab') return;
+        const focusable = [...document.querySelectorAll('#age-gate button')];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+
+    confirmBtn.addEventListener('click', () => {
+        rememberVerified();
         const gate = document.getElementById('age-gate');
         gate.style.opacity = '0';
         gate.style.transition = 'opacity 0.4s ease';

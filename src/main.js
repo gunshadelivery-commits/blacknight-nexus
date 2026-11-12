@@ -4,7 +4,7 @@ import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbb
 import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
 import {
-    groupProducts, sortForStorefront, strainPath, esc, jsArg, getCardPerfectFor as getPerfectFor, isPremiumProduct,
+    groupProducts, sortForStorefront, strainPath, esc, jsArg, getCardPerfectFor as getPerfectFor, isPremiumProduct, firstAvailableIndex,
     IMAGE_SIZES, optimizedImage, parseImageKeys,
 } from './catalog.js';
 
@@ -143,7 +143,7 @@ function decorateForStorefront(product) {
     else if (n.includes('มิกซ์') || n.includes('mix') || n.includes('เซ็ต') || n.includes('set')) drinkTheme = 'mix';
     return {
         ...product,
-        selectedVariantIdx: 0,
+        selectedVariantIdx: firstAvailableIndex(product),
         isDrinkPromotion: product.isDrink && (n.includes('เซ็ต') || n.includes('set') || n.includes('โปรโม')),
         drinkTheme,
         drinkLabel: product.name.replace(/ธรรมดา|พิเศษ|ออริจินัล|ธรรมชาติ/g, '').trim().split(' ').slice(-1)[0] || 'SC',
@@ -247,7 +247,8 @@ function renderProducts(filter = "") {
             const matchesSearch = p.name.toLowerCase().includes(q) || (p.note && p.note.toLowerCase().includes(q));
             const matchesCategory = currentCategory === "All"
                 || (currentCategory === "พรีเมียม" && isPremiumProduct(p))
-                || p.aiType === currentCategory;
+                || p.aiType === currentCategory
+                || p.family === currentCategory;
             return matchesSearch && matchesCategory;
         });
 
@@ -344,7 +345,7 @@ function renderProducts(filter = "") {
                         <p class="product-type">${esc(p.aiType || 'FLOWER')}</p>
                         <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${!p.isDrink && p.slug ? `<a href="${strainPath(p.slug)}">${nameHtml}</a>` : nameHtml}</h3>
                         <p class="product-note">${esc(p.note)}</p>
-                        ${!p.isDrink ? `<p class="perfect-for-strip">Perfect For <span>${getPerfectFor(p.aiType, p.tags).join(' / ')}</span></p>` : ''}
+                        ${!p.isDrink ? `<p class="perfect-for-strip">Perfect For <span>${getPerfectFor(p.family || p.aiType, p.tags).join(' / ')}</span></p>` : ''}
                     </div>
 
                     <div class="variant-row">

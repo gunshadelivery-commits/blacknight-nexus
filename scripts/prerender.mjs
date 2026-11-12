@@ -9,6 +9,7 @@ import Papa from 'papaparse';
 import { loadEnv } from 'vite';
 import {
     SITE_URL, IMAGE_SIZES, esc, groupProducts, sortForStorefront, strainUrl, isSoldOut, isPremiumProduct, getCardPerfectFor,
+    firstAvailableIndex,
     imageKey, optimizedImage,
 } from '../src/catalog.js';
 import { buildProductImages } from './images.mjs';
@@ -65,13 +66,13 @@ function strainHead(p, built) {
     <meta property="og:image" content="${esc(meta.image)}">
     <meta property="og:locale" content="en_US">
     <script type="application/ld+json" id="strain-schema">${jsonForScript(buildSchema(p))}</script>
-    <script type="application/json" id="strain-data">${jsonForScript({ name: p.name, aiType: p.aiType, variants: p.variants })}</script>`;
+    <script type="application/json" id="strain-data">${jsonForScript({ name: p.name, aiType: p.aiType, status: p.status, variants: p.variants })}</script>`;
 }
 
-function strainBody(p, products, lineUrl, built) {
+function strainBody(p, products, lineUrlFor, built) {
     const html = renderStrainHtml(p, products, {
         t: makeT('en'),
-        lineUrl,
+        lineUrlFor,
         img: (src, size) => optimizedImage(src, size, built),
     });
     return `<div class="loading-state" id="loading" style="display:none;"></div>
@@ -81,12 +82,13 @@ function strainBody(p, products, lineUrl, built) {
 // การ์ดแบบเดียวกับที่ src/main.js วาด (ฉบับอ่านอย่างเดียว) — main.js จะแทนที่ด้วยการ์ดจริงเมื่อข้อมูลล่าสุดมาถึง
 function staticCard(p, index, built) {
     const premium = isPremiumProduct(p);
-    const soldOut = isSoldOut(p) || (p.variants[0]?.stock ?? 0) <= 0;
+    const soldOut = isSoldOut(p);
+    const activeIdx = firstAvailableIndex(p);
     const name = esc(p.name);
     const href = p.slug && !p.isDrink ? `/strain/${encodeURIComponent(p.slug)}/` : '';
     const loading = `width="480" height="480" decoding="async" ${index < 4 ? 'fetchpriority="high"' : 'loading="lazy"'}`;
     const image = optimizedImage(p.image, IMAGE_SIZES.card, built);
-    const first = p.variants[0] || { price: 0 };
+    const first = p.variants[activeIdx] || { price: 0 };
     const badge = premium
         ? '<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>'
         : (p.tags.length ? `<span class="product-pill">${esc(p.tags[0])}</span>` : '');
@@ -100,10 +102,10 @@ function staticCard(p, index, built) {
                         <p class="product-type">${esc(p.aiType || 'FLOWER')}</p>
                         <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${href ? `<a href="${href}">${name}</a>` : name}</h3>
                         <p class="product-note">${esc(p.note)}</p>
-                        ${p.isDrink ? '' : `<p class="perfect-for-strip">Perfect For <span>${getCardPerfectFor(p.aiType, p.tags).join(' / ')}</span></p>`}
+                        ${p.isDrink ? '' : `<p class="perfect-for-strip">Perfect For <span>${getCardPerfectFor(p.family || p.aiType, p.tags).join(' / ')}</span></p>`}
                     </div>
                     <div class="variant-row">
-                        ${p.variants.map((v, i) => `<span class="variant-chip ${i === 0 ? 'is-active' : ''} ${v.stock <= 0 ? 'is-empty' : ''}">${esc(v.size)}</span>`).join('')}
+                        ${p.variants.map((v, i) => `<span class="variant-chip ${i === activeIdx ? 'is-active' : ''} ${v.stock <= 0 ? 'is-empty' : ''}">${esc(v.size)}</span>`).join('')}
                     </div>
                     <div class="product-bottom">
                         <div>
@@ -184,15 +186,18 @@ export function prerenderCatalog() {
             const products = groupProducts(Papa.parse(csv, { skipEmptyLines: true }).data || []);
             if (!products.length) throw new Error('[prerender] ชีต Products ไม่มีสินค้า — หยุด build เพื่อไม่ให้เว็บจริงว่าง');
 
+            // รูปแบบลิงก์เดียวกับ buildLineUrl() ใน src/config.js (ไฟล์นั้นใช้ import.meta.env จึง import ใน Node ไม่ได้)
             const lineId = env.VITE_LINE_OA_ID;
-            const lineUrl = lineId ? `https://line.me/R/ti/p/${encodeURIComponent(lineId)}` : 'https://line.me';
+            const lineUrlFor = message => (lineId
+                ? `https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(message)}`
+                : `https://line.me/R/msg/text/?${encodeURIComponent(message)}`);
             const strains = products.filter(p => p.slug && !p.isDrink);
             const allImages = products.flatMap(p => p.images || []);
             const built = await buildProductImages(allImages, dist);
 
             for (const p of strains) {
                 let html = replaceBetween(shell, 'ssr:head-start', 'ssr:head-end', strainHead(p, built));
-                html = replaceBetween(html, 'ssr:body-start', 'ssr:body-end', strainBody(p, products, lineUrl, built));
+                html = replaceBetween(html, 'ssr:body-start', 'ssr:body-end', strainBody(p, products, lineUrlFor, built));
                 const dir = resolve(dist, 'strain', p.slug);
                 await mkdir(dir, { recursive: true });
                 await writeFile(resolve(dir, 'index.html'), html);

@@ -8,9 +8,9 @@ import { resolve } from 'node:path';
 import Papa from 'papaparse';
 import { loadEnv } from 'vite';
 import {
-    SITE_URL, esc, makeT, groupProducts, sortForStorefront, strainMeta, buildSchema,
-    renderStrainHtml, strainUrl, isSoldOut, isPremiumProduct, getCardPerfectFor,
+    SITE_URL, esc, groupProducts, sortForStorefront, strainUrl, isSoldOut, isPremiumProduct, getCardPerfectFor,
 } from '../src/catalog.js';
+import { makeT, strainMeta, buildSchema, renderStrainHtml } from '../src/strainView.js';
 
 async function fetchCsv(url, attempts = 3) {
     let lastError;

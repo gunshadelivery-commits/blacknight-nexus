@@ -1,11 +1,10 @@
 import './style.css';
 import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
-import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
-import { isLoggedIn } from './auth.js';
+import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
 import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
-import { assignSlugs, strainPath, esc, getCardPerfectFor as getPerfectFor, isPremiumProduct } from './catalog.js';
+import { groupProducts, sortForStorefront, strainPath, esc, jsArg, getCardPerfectFor as getPerfectFor, isPremiumProduct } from './catalog.js';
 
 let products = [];
 let cart = [];
@@ -35,34 +34,16 @@ const DRINK_PRODUCTS = [
     },
 ];
 
-function classifyItem(name, tags = []) {
-    // รวมชื่อสินค้า + แท็ก (คอลัมน์ tags ในชีตมักระบุสายพันธุ์ เช่น "ไฮบริด (Hybrid) 50/50")
-    const n = (name + ' ' + (Array.isArray(tags) ? tags.join(' ') : tags)).toLowerCase();
-    // เครื่องดื่ม
-    if (["น้ำท่อม", "ท่อมมี่", "โยเกิร์ต", "น้ำผลไม้", "เครื่องดื่ม", "drink", "juice"].some(s => n.includes(s))) return "เครื่องดื่ม";
-    // อุปกรณ์ (บอง / กระดาษ / เครื่องบด) - เช็คก่อนสายพันธุ์
-    if (["บอง", "บ้อง", "bong", "กระดาษ", "paper", "rolling", "เครื่องบด", "grinder", "ที่บด", "ไฟแช็ก", "lighter", "อุปกรณ์", "pipe", "ที่สูบ", "ถาด", "tray"].some(s => n.includes(s))) return "อุปกรณ์";
-    // Pre-roll / พรีโรล / มวนสำเร็จ
-    if (["pre-roll", "preroll", "pre roll", "พรีโรล", "มวนสำเร็จ", "joint"].some(s => n.includes(s))) return "Pre-roll";
-    const hasSativa = ["sativa", "ซาติวา", "ซาทิวา", "ซาไทวา"].some(s => n.includes(s));
-    const hasIndica = ["indica", "อินดิก้า", "อินดิกา", "อินดิ"].some(s => n.includes(s));
-    // Hybrid: ระบุ hybrid ตรงๆ หรือมีทั้ง sativa และ indica ในสายพันธุ์เดียว (เช่น "Indica 70% Sativa 30")
-    if (["hybrid", "ไฮบริด", "ไฮบริค", "ผสม"].some(s => n.includes(s)) || (hasSativa && hasIndica)) return "Hybrid";
-    if (hasSativa) return "Sativa";
-    if (hasIndica) return "Indica";
-    // fallback จากเอฟเฟกต์ใน tags สำหรับแถวที่ยังไม่ได้ใส่ category ในชีต
-    if (["ตื่นตัว", "สดชื่น", "โฟกัส", "focus", "energetic", "energy"].some(s => n.includes(s))) return "Sativa";
-    if (["ง่วง", "ลงตา", "หนักตา", "พักผ่อน", "ผ่อนคลาย", "relax", "sleep"].some(s => n.includes(s))) return "Indica";
-    // สินค้าที่ไม่ใช่อุปกรณ์/พรีโรลในร้านนี้เป็นดอก จึงใช้ Hybrid เป็นค่ากลาง
-    return "Hybrid";
-}
-
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     const icon = type === 'success' ? '✨' : '❌';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    const iconEl = document.createElement('span');
+    iconEl.textContent = icon;
+    const textEl = document.createElement('span');
+    textEl.textContent = message; // ข้อความมีชื่อสินค้าจากชีตปน: ใส่เป็น text ไม่ใช่ HTML
+    toast.append(iconEl, ' ', textEl);
     container.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('hide');
@@ -146,77 +127,32 @@ function loadProductsFromSheet(callback, { useCache = false } = {}) {
     });
 }
 
+// ข้อมูลเฉพาะหน้าร้านที่เติมให้สินค้าจาก groupProducts(): ขนาดที่เลือกอยู่ + ภาพประกอบเครื่องดื่ม
+function decorateForStorefront(product) {
+    const n = product.name.toLowerCase();
+    let drinkTheme = 'herbal';
+    if (n.includes('โยเกิร์ต')) drinkTheme = 'yogurt';
+    else if (n.includes('ผลไม้') || n.includes('ผลไม')) drinkTheme = 'fruit';
+    else if (n.includes('มิกซ์') || n.includes('mix') || n.includes('เซ็ต') || n.includes('set')) drinkTheme = 'mix';
+    return {
+        ...product,
+        selectedVariantIdx: 0,
+        isDrinkPromotion: product.isDrink && (n.includes('เซ็ต') || n.includes('set') || n.includes('โปรโม')),
+        drinkTheme,
+        drinkLabel: product.name.replace(/ธรรมดา|พิเศษ|ออริจินัล|ธรรมชาติ/g, '').trim().split(' ').slice(-1)[0] || 'SC',
+    };
+}
+
 function applyCatalogCsv(csvText) {
-    // คอลัมน์: name, size, price, note, image, tags, status, stock, sold_count, category
+    // จัดกลุ่มแถว CSV เป็นสินค้าด้วยตัวเดียวกับหน้าสายพันธุ์และ prerender (src/catalog.js)
     const data = Papa.parse(csvText, { skipEmptyLines: true }).data || [];
     if (data.length < 2) {
         showToast(t('store.product.noData'), "error");
         return false;
     }
 
-    const grouped = {};
-    data.slice(1).forEach(row => {
-        const name = row[0];
-        if (!name || name.trim() === "") return;
-        const groupKey = name.trim().toLowerCase();
-
-        if (!grouped[groupKey]) {
-            let tags = [];
-            const rawTags = row[5] || "";
-            if (rawTags) tags = rawTags.toString().split(',').map(t => t.trim()).filter(t => t !== '');
-            
-            let rawImages = (row[4] || '').toString().split(',').map(img => img.trim()).filter(img => img !== '');
-            if (rawImages.length === 0) rawImages = [''];
-            rawImages = rawImages.slice(0, 6);
-            
-            const aiType = (row[9] && row[9].toString().trim()) || classifyItem(name, tags);
-            const isDrinkFromSheet = aiType === 'เครื่องดื่ม';
-            const n = name.toLowerCase();
-            let drinkTheme = 'herbal';
-            if (n.includes('โยเกิร์ต')) drinkTheme = 'yogurt';
-            else if (n.includes('ผลไม้') || n.includes('ผลไม')) drinkTheme = 'fruit';
-            else if (n.includes('มิกซ์') || n.includes('mix') || n.includes('เซ็ต') || n.includes('set')) drinkTheme = 'mix';
-
-            grouped[groupKey] = {
-                name: name,
-                size: row[1],
-                price: parseFloat(row[2]) || 0,
-                note: row[3] || '',
-                image: rawImages[0],
-                images: rawImages,
-                tags: tags,
-                status: (row[6] || '').toString().trim().toLowerCase(),
-                variants: [],
-                selectedVariantIdx: 0,
-                totalSold: 0,
-                aiType: aiType,
-                isDrink: isDrinkFromSheet,
-                isDrinkPromotion: isDrinkFromSheet && (n.includes('เซ็ต') || n.includes('set') || n.includes('โปรโม')),
-                drinkTheme: drinkTheme,
-                drinkLabel: name.replace(/ธรรมดา|พิเศษ|ออริจินัล|ธรรมชาติ/g, '').trim().split(' ').slice(-1)[0] || 'SC',
-            };
-        }
-
-        const size = row[1] || 'Standard';
-        const price = parseFloat(row[2]) || 0;
-        const stock = parseInt(row[7]) || 0;
-        const sold = parseInt(row[8]) || 0;
-
-        const existingIdx = grouped[groupKey].variants.findIndex(v => v.size === size);
-        if (existingIdx >= 0) {
-            grouped[groupKey].variants[existingIdx] = { size, price, stock, sold_count: sold };
-        } else {
-            grouped[groupKey].variants.push({ size, price, stock, sold_count: sold });
-        }
-        grouped[groupKey].totalSold += sold;
-    });
-
-    const sheetProducts = assignSlugs(Object.values(grouped));
-    sheetProducts.sort((a, b) => {
-        const aNew = (a.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
-        const bNew = (b.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
-        return aNew - bNew;
-    });
+    // สินค้าที่มีแท็ก new ขึ้นก่อน
+    const sheetProducts = sortForStorefront(groupProducts(data)).map(decorateForStorefront);
     const sheetNames = new Set(sheetProducts.map(product => product.name.trim().toLowerCase()));
     const localDrinks = DRINK_PRODUCTS.filter(product => !sheetNames.has(product.name.trim().toLowerCase()));
     products = [...sheetProducts, ...localDrinks];
@@ -243,16 +179,6 @@ function initRevealObserver() {
     });
 }
 
-function escapeProductArtText(value = '') {
-    return String(value).replace(/[&<>"']/g, character => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    }[character]));
-}
-
 function getProductArtTheme(product) {
     const type = `${product.aiType || ''} ${(product.tags || []).join(' ')}`.toLowerCase();
     if (type.includes('sativa')) return 'sativa';
@@ -273,9 +199,9 @@ function getProductMonogram(name = '') {
 
 function renderProductArt(product, modal = false) {
     const theme = getProductArtTheme(product);
-    const name = escapeProductArtText(product.name);
-    const type = escapeProductArtText(product.aiType || 'FLOWER');
-    const monogram = escapeProductArtText(getProductMonogram(product.name));
+    const name = esc(product.name);
+    const type = esc(product.aiType || 'FLOWER');
+    const monogram = esc(getProductMonogram(product.name));
 
     return `
         <div class="strain-art strain-art-${theme} ${modal ? 'strain-art-modal' : ''}" role="img" aria-label="${name}">
@@ -342,7 +268,8 @@ function renderProducts(filter = "") {
 
         filtered.forEach((p, idx) => {
             const card = document.createElement("div");
-            const pNameEscaped = p.name.replace(/'/g, "\\'");
+            const nameArg = jsArg(p.name);
+            const nameHtml = esc(p.name);
             const premium = isPremiumProduct(p);
             card.className = `product-card ${hydrating ? '' : 'reveal'} ${p.isDrink ? 'drink-card' : 'cursor-pointer'} ${p.isDrinkPromotion ? 'drink-promotion-card' : ''} ${premium ? 'premium-card' : ''}`;
             card.style.transitionDelay = `${(idx % 4) * 50}ms`;
@@ -363,24 +290,24 @@ function renderProducts(filter = "") {
             card.innerHTML = `
                 <div class="product-visual">
                     ${p.isDrink && p.image ? `
-                        <img src="${p.image}"
-                             alt="${p.name}"
+                        <img src="${esc(p.image)}"
+                             alt="${nameHtml}"
                              ${priorityAttr}
                              class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
                              onload="this.classList.add('img-loaded')"
                              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-                        <div class="drink-art drink-art-${p.drinkTheme}" role="img" aria-label="${p.name}" style="display:none;">
+                        <div class="drink-art drink-art-${p.drinkTheme}" role="img" aria-label="${nameHtml}" style="display:none;">
                             <span class="drink-orb drink-orb-one"></span>
                             <span class="drink-orb drink-orb-two"></span>
-                            <div class="drink-bottle"><span class="drink-cap"></span><span class="drink-label"><small>SC</small><strong>${p.drinkLabel}</strong></span></div>
+                            <div class="drink-bottle"><span class="drink-cap"></span><span class="drink-label"><small>SC</small><strong>${esc(p.drinkLabel)}</strong></span></div>
                         </div>
                     ` : p.isDrink ? `
-                        <div class="drink-art drink-art-${p.drinkTheme}" role="img" aria-label="${p.name}">
+                        <div class="drink-art drink-art-${p.drinkTheme}" role="img" aria-label="${nameHtml}">
                             <span class="drink-orb drink-orb-one"></span>
                             <span class="drink-orb drink-orb-two"></span>
                             <div class="drink-bottle ${p.isDrinkPromotion ? 'drink-bottle-left' : ''}">
                                 <span class="drink-cap"></span>
-                                <span class="drink-label"><small>SC</small><strong>${p.drinkLabel}</strong></span>
+                                <span class="drink-label"><small>SC</small><strong>${esc(p.drinkLabel)}</strong></span>
                             </div>
                             ${p.isDrinkPromotion ? `
                                 <div class="drink-bottle drink-bottle-right">
@@ -389,32 +316,32 @@ function renderProducts(filter = "") {
                                 </div>` : ''}
                         </div>
                     ` : (p.image ? `
-                        <img src="${p.image}"
-                             alt="${p.name}"
+                        <img src="${esc(p.image)}"
+                             alt="${nameHtml}"
                              ${priorityAttr}
                              class="img-fade-in ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-30' : ''}"
                              onload="this.classList.add('img-loaded')"
                              onerror="this.outerHTML='<span class=\\'text-3xl\\'>📦</span>';" />
                     ` : renderProductArt(p))}
                     <div class="product-badges">
-                        ${p.isDrinkPromotion ? `<span class="drink-promo-badge">✦ PROMO SET</span>` : (premium ? `<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>` : (p.tags.length ? `<span class="product-pill">${p.tags[0]}</span>` : ''))}
+                        ${p.isDrinkPromotion ? `<span class="drink-promo-badge">✦ PROMO SET</span>` : (premium ? `<span class="premium-badge text-[8px] px-2 py-1 rounded-full">✦ SELECT</span>` : (p.tags.length ? `<span class="product-pill">${esc(p.tags[0])}</span>` : ''))}
                         ${p.totalSold > 0 ? `<span class="product-pill sold">${t('store.product.sold', { count: p.totalSold })}</span>` : ''}
                     </div>
                     ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 bg-black/60 flex items-center justify-center transition-all opacity-100"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">OUT OF STOCK</span></div>` : ''}
                 </div>
                 <div class="product-content">
                     <div>
-                        <p class="product-type">${p.aiType || 'FLOWER'}</p>
-                        <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${!p.isDrink && p.slug ? `<a href="${strainPath(p.slug)}">${esc(p.name)}</a>` : p.name}</h3>
-                        <p class="product-note">${p.note}</p>
+                        <p class="product-type">${esc(p.aiType || 'FLOWER')}</p>
+                        <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${!p.isDrink && p.slug ? `<a href="${strainPath(p.slug)}">${nameHtml}</a>` : nameHtml}</h3>
+                        <p class="product-note">${esc(p.note)}</p>
                         ${!p.isDrink ? `<p class="perfect-for-strip">Perfect For <span>${getPerfectFor(p.aiType, p.tags).join(' / ')}</span></p>` : ''}
                     </div>
 
                     <div class="variant-row">
                         ${p.variants.map((v, vIdx) => `
-                            <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})"
+                            <button onclick="window.selectVariant(${nameArg}, ${vIdx})"
                                 class="variant-chip ${p.selectedVariantIdx === vIdx ? 'is-active' : ''} ${v.stock <= 0 ? 'is-empty' : ''}">
-                                ${v.size}
+                                ${esc(v.size)}
                             </button>
                         `).join('')}
                     </div>
@@ -428,9 +355,9 @@ function renderProducts(filter = "") {
                                 ${variant.originalPrice ? `<span class="original-price">${variant.originalPrice.toLocaleString()} ฿</span>` : ''}
                             </div>
                         </div>
-                        <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})"
+                        <button onclick="window.addToCart(${nameArg}, ${p.selectedVariantIdx})"
                             ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''}
-                            class="add-button" aria-label="${t('store.product.addAria', { name: p.name })}">
+                            class="add-button" aria-label="${esc(t('store.product.addAria', { name: p.name }))}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>
@@ -531,7 +458,7 @@ function openProductDetails(pName) {
     const priceEl = document.getElementById('modalProductPrice');
     const actionEl = document.getElementById('modalActionContainer');
     const variantsEl = document.getElementById('modalVariants');
-    const pNameEsc = product.name.replace(/'/g, "\\'");
+    const nameArg = jsArg(product.name);
 
     priceEl.textContent = `${variant.price.toLocaleString()} ฿`;
     priceEl.className = premium ? 'text-2xl font-black text-amber-300' : 'text-2xl font-black text-white';
@@ -539,13 +466,13 @@ function openProductDetails(pName) {
     // Render variant buttons
     if (variantsEl) {
         variantsEl.innerHTML = product.variants.map((v, vIdx) => `
-            <button onclick="window.selectModalVariant('${pNameEsc}', ${vIdx})"
+            <button onclick="window.selectModalVariant(${nameArg}, ${vIdx})"
                 class="px-4 py-2 text-sm border rounded-xl font-bold min-h-[40px] transition-all
                     ${product.selectedVariantIdx === vIdx
                         ? (premium ? 'bg-amber-400/30 border-amber-400/60 text-amber-200' : 'bg-white/20 border-white/40 text-white')
                         : 'bg-black/20 text-white/40 border-white/10'}
                     ${v.stock <= 0 ? 'opacity-30' : ''}">
-                ${v.size} — ${v.price.toLocaleString()} ฿
+                ${esc(v.size)} — ${v.price.toLocaleString()} ฿
             </button>
         `).join('');
     }
@@ -553,13 +480,13 @@ function openProductDetails(pName) {
     const lineMsg = `สนใจสินค้า: ${product.name} (${variant.size}) ราคา ${variant.price.toLocaleString()} ฿`;
     actionEl.innerHTML = `
         <div class="flex flex-col gap-3 pb-2">
-            <button onclick="window.addToCart('${pNameEsc}', ${product.selectedVariantIdx}); window.closeProductDetails();"
+            <button onclick="window.addToCart(${nameArg}, ${product.selectedVariantIdx}); window.closeProductDetails();"
                     ${isOutOfStock ? 'disabled' : ''}
                     class="w-full ${premium ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black' : 'bg-white text-black'} py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl disabled:opacity-40 disabled:cursor-not-allowed text-sm">
                 ${isOutOfStock ? `❌ ${t('store.product.outOfStock')}` : (premium ? `👑 ${t('store.product.add')}` : `🛒 ${t('store.product.add')}`)}
             </button>
             ${!isOutOfStock ? `
-            <a href="${buildLineUrl(lineMsg)}" target="_blank"
+            <a href="${esc(buildLineUrl(lineMsg))}" target="_blank" rel="noopener"
                data-analytics-event="contact_line" data-analytics-placement="product_detail"
                class="w-full bg-[#06C755] text-white py-4 rounded-2xl font-bold hover:bg-[#05b34c] transition shadow-xl shadow-green-900/30 text-sm text-center flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.84 1.38 5.38 3.56 7.12L4.5 22l3.78-1.98C9.37 20.63 10.66 21 12 21c5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg>
@@ -634,11 +561,11 @@ function updateCartUI() {
             return `
                 <div class="flex gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                     ${item.image
-                        ? `<img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='<div class=\\'cart-item-icon\\'>${item.icon || '📦'}</div>';">`
+                        ? `<img src="${esc(item.image)}" alt="${esc(item.name)}" width="64" height="64" class="w-16 h-16 object-cover rounded-xl bg-white shadow-sm" onerror="this.outerHTML='<div class=\\'cart-item-icon\\'>${item.icon || '📦'}</div>';">`
                         : `<div class="cart-item-icon">${item.icon || '📦'}</div>`}
                     <div class="flex-1">
-                        <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${item.size}</p>
+                        <h4 class="font-bold text-slate-800 text-sm">${esc(item.name)}</h4>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${esc(item.size)}</p>
                         <div class="flex justify-between items-center mt-2">
                             <p class="text-indigo-600 font-bold text-sm">${(item.price * item.qty).toLocaleString()} ฿</p>
                             <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
@@ -691,22 +618,22 @@ async function loadAndDisplayPaymentMethods() {
                 <div class="flex gap-4">
                     ${pp.qrImage ? `
                         <div class="flex-shrink-0">
-                            <img src="${pp.qrImage}" alt="QR Code โอนเงิน ${pp.name} ${pp.bank}" class="w-20 h-20 object-cover rounded-xl border border-white/10 shadow-lg">
+                            <img src="${esc(pp.qrImage)}" alt="QR Code โอนเงิน ${esc(pp.name)} ${esc(pp.bank)}" width="80" height="80" class="w-20 h-20 object-cover rounded-xl border border-white/10 shadow-lg">
                         </div>
                     ` : ''}
                     <div class="flex-1">
-                        <h5 class="font-bold text-white text-sm mb-1">${pp.name}</h5>
+                        <h5 class="font-bold text-white text-sm mb-1">${esc(pp.name)}</h5>
                         <p class="text-[11px] text-white/60 mb-1">
-                            <span class="font-semibold text-white/80">${pp.bank}</span>
+                            <span class="font-semibold text-white/80">${esc(pp.bank)}</span>
                         </p>
                         <p class="text-[11px] text-white font-mono bg-white/10 px-2 py-1 rounded inline-block">
-                            ${pp.number}
+                            ${esc(pp.number)}
                         </p>
                         <p class="text-[10px] text-white/40 mt-2">${t('store.checkout.transferHint')}</p>
                     </div>
                     ${pp.qrImage ? `
                         <div class="flex-shrink-0">
-                            <button onclick="previewPaymentQR('${pp.qrImage}')" class="px-3 py-1 text-[10px] font-bold bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
+                            <button onclick="previewPaymentQR(${jsArg(pp.qrImage)})" class="px-3 py-1 text-[10px] font-bold bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
                                 ${t('store.checkout.viewQr')}
                             </button>
                         </div>
@@ -728,7 +655,7 @@ function previewPaymentQR(qrUrl) {
             <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <img src="${qrUrl}" class="w-64 h-64 mx-auto rounded-xl shadow-md mb-4 object-cover">
+            <img src="${esc(qrUrl)}" alt="QR Code" width="256" height="256" class="w-64 h-64 mx-auto rounded-xl shadow-md mb-4 object-cover">
             <p class="text-sm text-slate-600 font-medium">${t('store.checkout.scanQr')}</p>
         </div>
     `;

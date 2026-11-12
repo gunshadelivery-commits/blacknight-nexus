@@ -922,6 +922,7 @@
     <script type="module">
         import { getAuthSession, clearAuthSession } from './src/auth.js';
         import { applyTranslations } from './src/i18n.js';
+        import { esc } from './src/catalog.js';
 
         document.addEventListener('DOMContentLoaded', () => {
             const authArea = document.getElementById('authArea');
@@ -929,7 +930,7 @@
 
             if (user) {
                 authArea.innerHTML = `
-                    <span class="text-white/60 hidden sm:inline"><span data-i18n="store.nav.greeting">สวัสดี,</span> <span class="text-white">${user.name}</span></span>
+                    <span class="text-white/60 hidden sm:inline"><span data-i18n="store.nav.greeting">สวัสดี,</span> <span class="text-white">${esc(user.name)}</span></span>
                     <button id="logoutBtn" class="login-link" data-i18n="store.nav.logout">ออกจากระบบ</button>
                 `;
                 applyTranslations(authArea);

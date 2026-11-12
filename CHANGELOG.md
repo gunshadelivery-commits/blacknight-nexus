@@ -11,8 +11,13 @@
 ==================================================== -->
 
 ## [Unreleased]
+<!-- รอบ site-upgrade 12 พ.ย. 2026 -->
 ### Fixed
 - [Claude] fix(checkout): ออเดอร์จากหน้าแรกไม่ถูกบันทึกลงชีต Orders และไม่มีอีเมลแจ้งร้าน/ลูกค้า ตั้งแต่ 1 พ.ย. 2026 — ตอน merge `db94147` บรรทัด import `getLanguage` หายไป แต่โค้ดส่งออเดอร์ยังเรียกใช้ จึงเกิด ReferenceError ก่อนยิงไป Apps Script และถูก `catch` กลืนเงียบ (ลูกค้ายังถูกพาไป LINE ตามปกติ ร้านจึงได้ออเดอร์ทาง LINE แต่หลังบ้านว่าง) · ใส่ import กลับ (บั๊กจาก merge ของ [Human:Ped]/[Claude]) (src/main.js)
+- [Claude] fix(security): หน้าร้านและหน้าอุปกรณ์ใส่ข้อความจากชีต (ชื่อสินค้า คำอธิบาย แท็ก ขนาด บัญชีรับโอน) ลง `innerHTML`/`onclick` โดยไม่ escape — ชื่อที่มี `'` `"` `<` ทำปุ่มพังหรือฝังโค้ดได้ · ผ่าน `esc()`/`jsArg()` ทุกจุด และ toast ใส่ข้อความเป็น text (src/main.js, src/accessories.js, src/catalog.js, index.html)
+
+### Changed
+- [Claude] refactor(catalog): หน้าแรกใช้ตัวจัดกลุ่มสินค้า + ตัวจัดประเภทชุดเดียวกับหน้าสายพันธุ์และ prerender (`groupProducts`/`classifyType` ใน src/catalog.js) แทนชุดของตัวเองใน main.js — เทียบกับข้อมูลจริงในชีต 135 แถว ได้สินค้า 64 รายการตรงกันทุกช่อง · แยกข้อความ/SEO/HTML ของหน้าสายพันธุ์ไปไว้ที่ src/strainView.js หน้าแรกจึงโหลด chunk catalog เหลือ 4.8KB (เดิม 15.8KB) (src/catalog.js, src/strainView.js, src/main.js, src/strain.js, scripts/prerender.mjs, AGENTS.md)
 
 ### Added
 - [Claude] feat(seo): สร้างหน้าสายพันธุ์แบบ static ตอน build ที่ `/strain/<slug>/` (62 หน้า) — แต่ละหน้ามี title/description/canonical/JSON-LD/เนื้อหาครบใน HTML ตั้งแต่แรก Google เก็บ index ได้โดยไม่ต้องรัน JS (เดิม GSC index ไว้แค่ 1 หน้า เพราะทุกหน้าเป็น `strain.html?s=` ที่ว่างจนกว่า JS จะดึงชีต) · ลิงก์เดิม `strain.html?s=` ยังใช้ได้และชี้ canonical มาที่ URL ใหม่ · สินค้าที่เพิ่มหลัง deploy ล่าสุดใช้ `404.html` แสดงแบบ dynamic ไปก่อน (scripts/prerender.mjs, src/catalog.js, src/strain.js, strain.html, vite.config.js)

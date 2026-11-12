@@ -3,6 +3,7 @@ import Papa from 'papaparse';
 import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
 import { getLanguage } from './i18n.js';
+import { esc, jsArg } from './catalog.js';
 
 let products = []; // Keyed by Name
 let cart = [];
@@ -11,15 +12,6 @@ let currentLineUrl = "";
 let selectedPaymentMethod = "transfer"; // "transfer" or "cod"
 const COD_FEE = 50;
 
-// --- GENERIC CATEGORY CLASSIFIER ---
-function classifyItem(name) {
-    const n = name.toLowerCase();
-    if (["phone", "laptop", "watch", "tech", "gadget"].some(s => n.includes(s))) return "Electronics";
-    if (["shirt", "pants", "dress", "bag", "shoe"].some(i => n.includes(i))) return "Fashion";
-    if (["chair", "table", "lamp", "sofa", "bed"].some(h => n.includes(h))) return "Home";
-    return "Other";
-}
-
 // --- CUSTOM UI: TOAST ---
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -27,7 +19,11 @@ function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     const icon = type === 'success' ? '✨' : '❌';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    const iconEl = document.createElement('span');
+    iconEl.textContent = icon;
+    const textEl = document.createElement('span');
+    textEl.textContent = message;
+    toast.append(iconEl, ' ', textEl);
     container.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('hide');
@@ -119,28 +115,28 @@ function renderProducts(filter = "") {
         const isOutOfStock = p.status === 'หมด' || p.status === 'sold out' || p.status === '0';
         const variant = p.variants[p.selectedVariantIdx];
         const isVariantOutOfStock = variant.stock <= 0;
-        const pNameEscaped = p.name.replace(/'/g, "\\'");
+        const nameArg = jsArg(p.name);
 
         card.innerHTML = `
             <div class="aspect-square bg-slate-50 rounded-2xl mb-3 relative overflow-hidden">
-                <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-50' : ''}" onerror="this.outerHTML='<span class=\\'text-3xl flex items-center justify-center h-full\\'>📦</span>';" />
+                <img src="${esc(p.image)}" alt="${esc(p.name)}" width="300" height="300" loading="lazy" decoding="async" class="w-full h-full object-cover ${isOutOfStock || isVariantOutOfStock ? 'grayscale opacity-50' : ''}" onerror="this.outerHTML='<span class=\\'text-3xl flex items-center justify-center h-full\\'>📦</span>';" />
                 ${(isOutOfStock || isVariantOutOfStock) ? `<div class="absolute inset-0 flex items-center justify-center"><span class="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">หมด</span></div>` : ''}
             </div>
             <div class="flex-1 flex flex-col">
-                <h3 class="font-bold text-slate-800 text-sm line-clamp-1">${p.name}</h3>
-                <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">${p.note}</p>
+                <h3 class="font-bold text-slate-800 text-sm line-clamp-1">${esc(p.name)}</h3>
+                <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">${esc(p.note)}</p>
                 
                 <div class="mt-2 flex flex-wrap gap-1">
                     ${p.variants.length > 1 ? p.variants.map((v, vIdx) => `
-                        <button onclick="window.selectVariant('${pNameEscaped}', ${vIdx})" class="px-2 py-0.5 text-[9px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white text-slate-400 border-slate-100'}">
-                            ${v.size}
+                        <button onclick="window.selectVariant(${nameArg}, ${vIdx})" class="px-2 py-0.5 text-[9px] border rounded-lg transition-all font-bold ${p.selectedVariantIdx === vIdx ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white text-slate-400 border-slate-100'}">
+                            ${esc(v.size)}
                         </button>
                     `).join('') : ''}
                 </div>
 
                 <div class="mt-auto pt-3 flex items-center justify-between">
                     <p class="font-black text-indigo-600 text-sm">${variant.price.toLocaleString()} ฿</p>
-                    <button onclick="window.addToCart('${pNameEscaped}', ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} class="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 transition active:scale-90 disabled:opacity-20 shadow-md">
+                    <button onclick="window.addToCart(${nameArg}, ${p.selectedVariantIdx})" ${isOutOfStock || isVariantOutOfStock ? 'disabled' : ''} aria-label="${esc(p.name)} +" class="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 transition active:scale-90 disabled:opacity-20 shadow-md">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     </button>
                 </div>
@@ -213,9 +209,9 @@ function updateCartUI() {
             total += item.price * item.qty;
             return `
                 <div class="flex gap-4 items-center">
-                    <img src="${item.image}" class="w-16 h-16 object-cover rounded-2xl bg-slate-50" onerror="this.outerHTML='📦';">
+                    <img src="${esc(item.image)}" alt="" width="64" height="64" class="w-16 h-16 object-cover rounded-2xl bg-slate-50" onerror="this.outerHTML='📦';">
                     <div class="flex-1">
-                        <h4 class="font-bold text-slate-800 text-sm">${item.name}</h4>
+                        <h4 class="font-bold text-slate-800 text-sm">${esc(item.name)}</h4>
                         <p class="text-xs text-indigo-600 font-black mt-1">${item.price.toLocaleString()} ฿</p>
                     </div>
                     <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
@@ -286,10 +282,10 @@ async function loadAndDisplayPaymentMethods() {
         container.innerHTML = activePromptpay.map(pp => `
             <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition group">
                 <div class="flex gap-4">
-                    ${pp.qrImage ? `<img src="${pp.qrImage}" class="w-16 h-16 object-cover rounded-xl border border-slate-100 shadow-sm">` : ''}
+                    ${pp.qrImage ? `<img src="${esc(pp.qrImage)}" alt="QR Code" width="64" height="64" class="w-16 h-16 object-cover rounded-xl border border-slate-100 shadow-sm">` : ''}
                     <div class="flex-1">
-                        <h5 class="font-bold text-slate-800 text-xs mb-1">${pp.name}</h5>
-                        <p class="text-[10px] text-slate-500 font-mono bg-slate-50 px-2 py-1 rounded inline-block">${pp.number}</p>
+                        <h5 class="font-bold text-slate-800 text-xs mb-1">${esc(pp.name)}</h5>
+                        <p class="text-[10px] text-slate-500 font-mono bg-slate-50 px-2 py-1 rounded inline-block">${esc(pp.number)}</p>
                     </div>
                 </div>
             </div>

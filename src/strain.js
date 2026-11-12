@@ -1,10 +1,10 @@
 import Papa from 'papaparse';
 import { SHEET_CSV_URL, getLineOaUrl } from './config.js';
 import { initAnalyticsTracking } from './analytics.js';
+import { groupProducts, findBySlug } from './catalog.js';
 import {
-    STRAIN_I18N, makeT, groupProducts, findBySlug, strainMeta, buildSchema,
-    renderStrainHtml, variantPriceHtml,
-} from './catalog.js';
+    STRAIN_I18N, makeT, strainMeta, buildSchema, renderStrainHtml, variantPriceHtml,
+} from './strainView.js';
 
 function getLang() {
     try {

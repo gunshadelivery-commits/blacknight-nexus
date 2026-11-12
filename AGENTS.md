@@ -54,7 +54,8 @@
 | `index.html` / `src/main.js` | หน้าร้านลูกค้า (storefront) |
 | `admin.html` / `src/adminApp.js` | หลังบ้าน (ยอดขาย, จัดการสินค้า, ปรับราคา/สต๊อก, promptpay) |
 | `strain.html` / `src/strain.js` | หน้าสายพันธุ์ (โครงเดียวใช้ทั้งหน้า static `/strain/<slug>/` และลิงก์เดิม `strain.html?s=`) |
-| `src/catalog.js` | ตรรกะสินค้าที่ใช้ร่วมกันทั้งเบราว์เซอร์และตอน build: slug, จัดประเภท, SEO meta/JSON-LD, HTML หน้าสายพันธุ์ (ต้องรันใน Node ได้ ห้ามแตะ DOM/`import.meta.env`) |
+| `src/catalog.js` | ตรรกะสินค้าที่ใช้ร่วมกันทั้งหน้าร้าน หน้าสายพันธุ์ และตอน build: จัดกลุ่มแถว CSV เป็นสินค้า, slug, จัดประเภท, `esc()`/`jsArg()` (ต้องรันใน Node ได้ ห้ามแตะ DOM/`import.meta.env`) |
+| `src/strainView.js` | ของเฉพาะหน้าสายพันธุ์: ข้อความ 4 ภาษา, SEO meta/JSON-LD, HTML ของหน้า (ใช้ทั้งเบราว์เซอร์และตอน build · ข้อจำกัดเดียวกับ catalog.js) |
 | `scripts/prerender.mjs` | Vite plugin: หลัง build ดึงชีตมาสร้าง `dist/strain/<slug>/index.html`, การ์ดสินค้าใน `dist/index.html`, `dist/sitemap.xml`, `dist/404.html` (**sitemap สร้างอัตโนมัติ ไม่ต้องแก้มือ** · สินค้าใหม่ในชีตจะได้หน้า static + เข้า sitemap เมื่อ deploy ครั้งถัดไป) |
 | `src/config.js` | ชื่อร้าน + อ่านค่า `VITE_*` + helper LINE/ImgBB |
 | `src/agegate.js` | หน้ายืนยันอายุ 20+ |

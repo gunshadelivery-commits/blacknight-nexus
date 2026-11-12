@@ -1,6 +1,5 @@
 import './style.css';
 import Papa from 'papaparse';
-import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
 import { getLanguage } from './i18n.js';
 import { esc, jsArg } from './catalog.js';
@@ -384,7 +383,7 @@ ${itemsDetail}
         });
         document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
         document.getElementById('successModal').classList.remove('hidden');
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        import('canvas-confetti').then(({ default: confetti }) => confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })).catch(() => {});
         setTimeout(() => {
             if (!currentLineUrl) return;
             trackEvent('contact_line', { placement: 'accessories_order_success_auto' });

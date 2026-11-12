@@ -43,7 +43,10 @@
       })();
     </script>
     <!-- ฟอนต์แบบเว็บ Apple: เครื่อง Apple ใช้ SF Pro / Sukhumvit Set ของเครื่อง (ฝัง SF Pro ในเว็บไม่ได้ตามลิขสิทธิ์) เครื่องอื่นใช้ Inter + Noto Sans Thai ที่หน้าตาใกล้เคียง -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet">
+    <!-- โหลดแบบไม่บล็อกการแสดงผล: หน้าเว็บขึ้นด้วยฟอนต์ของเครื่องก่อน แล้วสลับเมื่อฟอนต์มาถึง -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet"></noscript>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Sukhumvit Set", "Helvetica Neue", "Inter", "Noto Sans Thai", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; background-color: #f8fafc; }
         .no-scrollbar::-webkit-scrollbar { display: none; }

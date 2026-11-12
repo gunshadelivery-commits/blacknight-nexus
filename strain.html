@@ -6,7 +6,7 @@
 
     <!-- เริ่มดึงข้อมูลสินค้าทันที ไม่ต้องรอ JS โหลดเสร็จ (strain.js รับช่วงต่อจาก window.__catalogCsv) -->
     <link rel="preconnect" href="https://docs.google.com">
-    <link rel="preconnect" href="https://i.ibb.co">
+    <link rel="dns-prefetch" href="https://i.ibb.co">
     <script>
         (function () {
             var url = '%VITE_SHEET_CSV_URL%';
@@ -37,7 +37,10 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet">
+    <!-- โหลดแบบไม่บล็อกการแสดงผล: หน้าเว็บขึ้นด้วยฟอนต์ของเครื่องก่อน แล้วสลับเมื่อฟอนต์มาถึง -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet"></noscript>
 
     <!-- Google Analytics 4 — โหลดเฉพาะบนโดเมนจริง: เปิดจาก localhost / preview / โดเมนอื่นจะไม่ส่งข้อมูลเข้า GA4 (gtag() ยังเรียกได้ แค่ไม่ถูกส่ง) -->
     <script>

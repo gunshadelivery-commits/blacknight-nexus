@@ -1,0 +1,6 @@
+/* Tailwind ของหน้า login.html / register.html — compile ตอน build แทน cdn.tailwindcss.com
+   (สคริปต์ CDN บล็อกการแสดงผลและ compile CSS ในเบราว์เซอร์ลูกค้า) */
+@config "../tailwind.auth.config.js";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

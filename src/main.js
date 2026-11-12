@@ -1,6 +1,5 @@
 import './style.css';
 import Papa from 'papaparse';
-import confetti from 'canvas-confetti';
 import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
 import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
@@ -842,12 +841,13 @@ ${itemsDetail}
             items: buildCartItems(cart),
         });
 
-        confetti({
+        // โหลด confetti เฉพาะตอนสั่งซื้อสำเร็จ (ไม่ต้องให้ทุกคนที่เปิดหน้าแรกโหลด 15KB นี้)
+        import('canvas-confetti').then(({ default: confetti }) => confetti({
             particleCount: 150,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#6366f1', '#ffffff', '#fbbf24', '#ef4444']
-        });
+            colors: ['#34d399', '#ffffff', '#fbbf24', '#06C755']
+        })).catch(() => {});
 
         setTimeout(() => {
             if (!currentLineUrl) return;

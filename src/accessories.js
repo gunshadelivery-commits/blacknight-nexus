@@ -1,6 +1,5 @@
 import './style.css';
-import Papa from 'papaparse';
-import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl } from './config.js';
+import { GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl } from './config.js';
 import { getLanguage } from './i18n.js';
 import { esc, jsArg } from './catalog.js';
 import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
@@ -9,8 +8,9 @@ let products = []; // Keyed by Name
 let cart = [];
 let currentCategory = "All";
 let currentLineUrl = "";
-let selectedPaymentMethod = "transfer"; // "transfer" or "cod"
-const COD_FEE = 50;
+// จ่ายเงินตอนรับสินค้าเท่านั้น · ค่าบริการจัดส่งจริง 50–80 บาทตามระยะทาง (ไม่เกิน 100) เว็บบวกค่าเริ่มต้นไว้ ร้านยืนยันยอดสุดท้ายทาง LINE
+const SERVICE_FEE = 50;
+const PAYMENT_LABEL = 'เก็บเงินปลายทาง';
 
 // --- CUSTOM UI: TOAST ---
 function showToast(message, type = 'success') {
@@ -238,83 +238,19 @@ function goToCheckout() {
     if (cart.length === 0) return showToast("รถเข็นว่างเปล่า", "error");
     trackEvent('begin_checkout', { currency: 'THB', value: cart.reduce((sum, i) => sum + i.price * i.qty, 0), items: buildCartItems(cart) });
     document.getElementById('checkoutModal').classList.remove('hidden');
-    loadAndDisplayPaymentMethods();
+    updateCheckoutSummary();
 }
 function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
 
 
-function updateConfirmButtonText() {
-    const btn = document.getElementById('submitOrderOrderBtn') || document.getElementById('submitOrderBtn');
-    if (!btn) return;
-    let subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
-    
-    if (selectedPaymentMethod === 'cod') {
-        btn.innerHTML = `ยืนยันสั่งซื้อ (ยอดรวม ${finalTotal.toLocaleString()} ฿) 🛸`;
-    } else {
-        btn.innerHTML = `ยืนยันและส่งข้อมูล (${finalTotal.toLocaleString()} ฿) 🛸`;
-    }
-}
-
-function previewSlip(input) {
-    if (input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            document.getElementById('slipPreview').src = e.target.result;
-            document.getElementById('slipPreview').classList.remove('hidden');
-            document.getElementById('slipPlaceholder').classList.add('hidden');
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-async function loadAndDisplayPaymentMethods() {
-    const container = document.getElementById('paymentMethodsContainer');
-    container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs animate-pulse">กำลังโหลดข้อมูลชำระเงิน...</div>`;
-    try {
-        const res = await fetch(`${GAS_URL}?action=getBank`);
-        const data = await res.json();
-        const promptpayList = data.length > 0 ? data.slice(1).map(row => ({
-            name: row[0], bank: row[1], number: row[2], qrImage: row[3], status: row[4] || 'active'
-        })) : [];
-        const activePromptpay = promptpayList.filter(pp => pp.status === 'active');
-        if (activePromptpay.length === 0) {
-            container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs">ยังไม่มีข้อมูลการชำระเงิน</div>`;
-            return;
-        }
-        container.innerHTML = activePromptpay.map(pp => `
-            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition group">
-                <div class="flex gap-4">
-                    ${pp.qrImage ? `<img src="${esc(pp.qrImage)}" alt="QR Code" width="64" height="64" class="w-16 h-16 object-cover rounded-xl border border-slate-100 shadow-sm">` : ''}
-                    <div class="flex-1">
-                        <h5 class="font-bold text-slate-800 text-xs mb-1">${esc(pp.name)}</h5>
-                        <p class="text-[10px] text-slate-500 font-mono bg-slate-50 px-2 py-1 rounded inline-block">${esc(pp.number)}</p>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    } catch (err) { container.innerHTML = `<div class="text-center py-4 text-red-400 text-xs">โหลดข้อมูลล้มเหลว</div>`; }
-}
-
-function updatePaymentMethod(method) {
-    selectedPaymentMethod = method;
-    const btnTransfer = document.getElementById('payTransfer');
-    const btnCOD = document.getElementById('payCOD');
-    const details = document.getElementById('paymentDetailsSection');
-    const slipSection = document.getElementById('slipUploadSection');
-
-    if (method === 'transfer') {
-        btnTransfer.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-900 bg-white transition shadow-sm";
-        btnCOD.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-slate-400 transition";
-        details.classList.remove('hidden');
-        slipSection.classList.remove('hidden');
-    } else {
-        btnTransfer.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-slate-400 transition";
-        btnCOD.className = "flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-900 bg-white transition shadow-sm text-slate-900";
-        details.classList.add('hidden');
-        slipSection.classList.add('hidden');
-    }
-    updateConfirmButtonText();
+function updateCheckoutSummary() {
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const total = subtotal + SERVICE_FEE;
+    document.getElementById('checkoutSubtotal').textContent = `${subtotal.toLocaleString()} ฿`;
+    document.getElementById('checkoutFee').textContent = `${SERVICE_FEE} ฿`;
+    document.getElementById('checkoutTotal').textContent = `${total.toLocaleString()} ฿`;
+    const btn = document.getElementById('submitOrderBtn');
+    if (btn && !btn.disabled) btn.textContent = `ยืนยันสั่งซื้อ (ประมาณ ${total.toLocaleString()} ฿)`;
 }
 
 async function submitOrder() {
@@ -323,62 +259,58 @@ async function submitOrder() {
     const phone = document.getElementById('custPhone').value.trim();
     const email = (document.getElementById('custEmail')?.value || '').trim();
     const address = document.getElementById('custAddress').value.trim();
-    const slip = document.getElementById('slipInput').files[0];
 
-    if(!name || !phone || !address) return showToast("กรุณากรอกข้อมูลให้ครบ", "error");
-    if(selectedPaymentMethod === 'transfer' && !slip) return showToast("กรุณาแนบสลิป", "error");
-    
+    if (cart.length === 0) return showToast("รถเข็นว่างเปล่า", "error");
+    if (!name || !phone || !address) return showToast("กรุณากรอกชื่อ เบอร์โทร และที่อยู่จัดส่ง", "error");
+
     btn.disabled = true;
-    btn.textContent = "กำลังดำเนินการ...";
+    btn.textContent = "กำลังบันทึกออเดอร์...";
 
     try {
-        let slipUrl = "-";
-        if (selectedPaymentMethod === 'transfer') {
-            const formData = new FormData(); formData.append('image', slip);
-            const imgRes = await fetch(getImgbbUploadUrl(), { method: 'POST', body: formData });
-            const imgData = await imgRes.json();
-            if(!imgData.success) throw new Error("Upload Fail");
-            slipUrl = imgData.data.url;
-        }
-
         const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-        const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
+        const finalTotal = subtotal + SERVICE_FEE;
         const orderItems = cart.map(i => `${i.name} [${i.size}] x${i.qty}`).join(', ');
         const itemsArray = cart.map(i => ({ name: i.name, size: i.size, qty: i.qty }));
 
-        await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-                action: "log", name, phone, email, address, mapUrl: "-",
-                items: orderItems, itemsArray: itemsArray, total: finalTotal, slipUrl: slipUrl, 
-                paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน',
-                lang: getLanguage(),
-                status: "รอดำเนินการ"
-            })
-        });
+        // บันทึกลงชีต Orders (ถ้าพลาด ลูกค้ายังไป LINE พร้อมรายการครบ)
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: "log", name, phone, email, address, mapUrl: "-",
+                    items: orderItems, itemsArray: itemsArray, total: finalTotal, slipUrl: "COD (ไม่แนบสลิป)",
+                    paymentMethod: PAYMENT_LABEL,
+                    lang: getLanguage(),
+                    status: "รอดำเนินการ"
+                })
+            });
+        } catch (e) {
+            console.warn("บันทึกออเดอร์ลงชีตไม่สำเร็จ (ลูกค้ายังส่งออเดอร์ทาง LINE ได้):", e);
+        }
 
-        const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} x${i.qty}`).join('\n');
+        const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} [${i.size}] x${i.qty}`).join('\n');
         const lineMsg = `✨ ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
-💰 วิธีชำระ: ${selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'}
+💰 วิธีชำระ: ${PAYMENT_LABEL} (จ่ายตอนรับของ)
 👤 ผู้รับ: ${name}
 📞 เบอร์: ${phone}
 🏠 ที่อยู่: ${address}
 
 🛒 รายการ:
 ${itemsDetail}
-💰 ยอดรวม: ${finalTotal.toLocaleString()} บาท
+ค่าสินค้า: ${subtotal.toLocaleString()} บาท
+ค่าบริการจัดส่ง (เริ่มต้น): ${SERVICE_FEE} บาท
+💰 ยอดรวมประมาณ: ${finalTotal.toLocaleString()} บาท
+(รอร้านยืนยันยอดสุดท้ายและเวลาจัดส่ง)`;
 
-🖼️ สลิป: ${slipUrl}`;
-        
         currentLineUrl = buildLineUrl(lineMsg);
         // ส่งเฉพาะยอดและรายการสินค้า — ห้ามใส่ชื่อ เบอร์ อีเมล ที่อยู่ลูกค้า
         trackEvent('purchase', {
             transaction_id: window.crypto?.randomUUID?.() || `order-${Date.now()}`,
             currency: 'THB',
             value: finalTotal,
-            shipping: selectedPaymentMethod === 'cod' ? COD_FEE : 0,
-            payment_type: selectedPaymentMethod,
+            shipping: SERVICE_FEE,
+            payment_type: 'cod',
             items: buildCartItems(cart),
         });
         document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
@@ -389,10 +321,10 @@ ${itemsDetail}
             trackEvent('contact_line', { placement: 'accessories_order_success_auto' });
             window.location.href = currentLineUrl;
         }, 3000);
-    } catch(e) { 
-        showToast("เกิดข้อผิดพลาด", "error"); 
-        btn.disabled = false; 
-        btn.textContent = "สั่งซื้ออีกครั้ง"; 
+    } catch (e) {
+        showToast("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", "error");
+        btn.disabled = false;
+        btn.textContent = "สั่งซื้ออีกครั้ง";
     }
 }
 
@@ -404,8 +336,6 @@ window.addToCart = addToCart;
 window.updateQty = updateQty;
 window.goToCheckout = goToCheckout;
 window.closeCheckout = closeCheckout;
-window.previewSlip = previewSlip;
-window.updatePaymentMethod = updatePaymentMethod;
 window.submitOrder = submitOrder;
 window.redirectToLine = () => {
     if (!currentLineUrl) return;

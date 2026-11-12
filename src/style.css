@@ -1724,6 +1724,9 @@ body.sol-shell .category-row .category-inactive {
 }
 
 /* แถบ pull-to-refresh: ซ่อนไว้ แสดงเฉพาะตอนกำลังดึงข้อมูลใหม่ (เดิมไม่มี CSS จึงค้างโชว์ "กำลังอัปเดตข้อมูล..." บนสุดของหน้าตลอด) */
+/* ตะกร้า/หน้าสั่งซื้อ/รายละเอียดสินค้าเปิดอยู่: ซ่อนปุ่มลอย LINE ไม่ให้ทับปุ่มยืนยัน (main.js → syncOverlayState) */
+body.overlay-open #floatingLineBtn { display: none; }
+
 #ptr-marker { display: none; padding: 6px 0; }
 body.ptr-loading #ptr-marker { display: flex; }
 

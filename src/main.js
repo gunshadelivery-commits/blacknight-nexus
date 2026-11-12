@@ -1,6 +1,6 @@
 import './style.css';
 import Papa from 'papaparse';
-import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbbUploadUrl, getLineOaUrl } from './config.js';
+import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getLineOaUrl } from './config.js';
 import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
 import {
@@ -9,16 +9,37 @@ import {
 } from './catalog.js';
 
 let products = [];
-let cart = [];
+const CART_KEY = 'sc_cart_v1';
+const CART_TTL = 3 * 24 * 60 * 60 * 1000; // เก็บตะกร้าไว้ 3 วัน
+
+function loadCart() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(CART_KEY) || 'null');
+        if (!saved || Date.now() - saved.ts > CART_TTL || !Array.isArray(saved.items)) return [];
+        return saved.items.filter(i => i && i.name && i.size && Number(i.price) >= 0 && Number(i.qty) > 0);
+    } catch {
+        return [];
+    }
+}
+
+function saveCart() {
+    try {
+        if (cart.length) localStorage.setItem(CART_KEY, JSON.stringify({ ts: Date.now(), items: cart }));
+        else localStorage.removeItem(CART_KEY);
+    } catch { /* เต็ม/ปิดไว้ */ }
+}
+
+let cart = loadCart();
 // รูปสินค้าที่ build ล่าสุดย่อเป็น WebP ไว้ (dist/img) — รูปที่ไม่อยู่ในนี้ใช้ URL เดิมจากชีต
 const builtImages = parseImageKeys(window.__imgKeys);
 const cardImage = src => optimizedImage(src, IMAGE_SIZES.card, builtImages);
 const fullImage = src => optimizedImage(src, IMAGE_SIZES.full, builtImages);
 let currentCategory = "All";
 let currentLineUrl = "";
-let selectedPaymentMethod = "transfer";
-let lastTrackedPayment = null; // วิธีจ่ายล่าสุดที่หน้า checkout แสดง (ใช้ตัดสินว่าลูกค้ากดเปลี่ยนเองหรือไม่)
-const COD_FEE = 50;
+// จ่ายเงินตอนรับสินค้าเท่านั้น (ไม่มีโอนล่วงหน้า/แนบสลิปแล้ว) · ค่าบริการจัดส่งจริง 50–80 บาทตามระยะทาง ไม่เกิน 100
+// เว็บบวกค่าเริ่มต้นไว้ก่อน ร้านแจ้งยอดสุดท้ายตอนยืนยันออเดอร์ทาง LINE
+const SERVICE_FEE = 50;
+const PAYMENT_LABEL = 'เก็บเงินปลายทาง'; // ค่าที่บันทึกลงชีต Orders (หลังบ้านรู้จักคำนี้อยู่แล้ว)
 
 const DRINK_PRODUCTS = [
     {
@@ -522,6 +543,7 @@ function openProductDetails(pName) {
 
     modal.classList.remove('cart-closed');
     modal.classList.add('cart-open');
+    syncOverlayState();
 }
 
 function closeProductDetails() {
@@ -530,6 +552,7 @@ function closeProductDetails() {
         modal.classList.add('cart-closed');
         modal.classList.remove('cart-open');
     }
+    syncOverlayState();
 }
 
 function changeProductImage(src) {
@@ -556,12 +579,22 @@ function addToCart(pName, vIdx) {
     showToast(t('store.product.added', { name: product.name }));
 }
 
+// มีตะกร้า/หน้าสั่งซื้อ/รายละเอียดสินค้าเปิดอยู่ไหม — ใช้ซ่อนปุ่มลอย LINE ไม่ให้ทับปุ่มยืนยัน
+function syncOverlayState() {
+    const cartOpen = !document.getElementById("cartSidebar").classList.contains("translate-x-full");
+    const checkoutOpen = !document.getElementById('checkoutModal').classList.contains('hidden');
+    const successOpen = !document.getElementById('successModal').classList.contains('hidden');
+    const productOpen = document.getElementById('productModal')?.classList.contains('cart-open');
+    document.body.classList.toggle('overlay-open', cartOpen || checkoutOpen || successOpen || !!productOpen);
+}
+
 function toggleCart(force = null) {
     const sidebar = document.getElementById("cartSidebar");
     const overlay = document.getElementById("cartOverlay");
     const isOpen = force !== null ? force : sidebar.classList.contains("translate-x-full");
     sidebar.classList.toggle("translate-x-full", !isOpen);
     overlay.classList.toggle("hidden", !isOpen);
+    syncOverlayState();
 }
 
 function updateCartUI() {
@@ -607,6 +640,7 @@ function updateCartUI() {
     container.innerHTML = cartHTML;
     subtotalEl.textContent = subtotal.toLocaleString() + " ฿";
     checkoutBtn.disabled = cart.length === 0;
+    saveCart();
 
     // ปุ่ม LINE ในตะกร้า: มีของในตะกร้า → เปิดแชตร้านพร้อมรายการที่เลือก (ไม่ต้องกรอกฟอร์ม) · ตะกร้าว่าง → เปิดแชตเฉยๆ
     const cartLineLink = document.getElementById('cartLineLink');
@@ -624,172 +658,78 @@ function updateQty(idx, change) {
     updateCartUI();
 }
 
-async function loadAndDisplayPaymentMethods() {
-    const container = document.getElementById('paymentMethodsContainer');
-    container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm animate-pulse">${t('store.checkout.loadingPayment')}</div>`;
-    
-    try {
-        const res = await fetch(`${GAS_URL}?action=getBank`);
-        const data = await res.json();
-        
-        const promptpayList = data.length > 0 ? data.slice(1).map(row => ({
-            name: row[0],
-            bank: row[1],
-            number: row[2],
-            qrImage: row[3],
-            status: row[4] || 'active'
-        })) : [];
+const cartSubtotal = () => cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-        const activePromptpay = promptpayList.filter(pp => pp.status === 'active');
-
-        if (activePromptpay.length === 0) {
-            container.innerHTML = `<div class="text-center py-4 text-white/40 text-sm">${t('store.checkout.noPayment')}</div>`;
-            return;
-        }
-
-        container.innerHTML = activePromptpay.map((pp) => `
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-sm hover:bg-white/10 transition group">
-                <div class="flex gap-4">
-                    ${pp.qrImage ? `
-                        <div class="flex-shrink-0">
-                            <img src="${esc(pp.qrImage)}" alt="QR Code โอนเงิน ${esc(pp.name)} ${esc(pp.bank)}" width="80" height="80" class="w-20 h-20 object-cover rounded-xl border border-white/10 shadow-lg">
-                        </div>
-                    ` : ''}
-                    <div class="flex-1">
-                        <h5 class="font-bold text-white text-sm mb-1">${esc(pp.name)}</h5>
-                        <p class="text-[11px] text-white/60 mb-1">
-                            <span class="font-semibold text-white/80">${esc(pp.bank)}</span>
-                        </p>
-                        <p class="text-[11px] text-white font-mono bg-white/10 px-2 py-1 rounded inline-block">
-                            ${esc(pp.number)}
-                        </p>
-                        <p class="text-[10px] text-white/40 mt-2">${t('store.checkout.transferHint')}</p>
-                    </div>
-                    ${pp.qrImage ? `
-                        <div class="flex-shrink-0">
-                            <button onclick="previewPaymentQR(${jsArg(pp.qrImage)})" class="px-3 py-1 text-[10px] font-bold bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
-                                ${t('store.checkout.viewQr')}
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error("Load Settings Error:", err);
-        container.innerHTML = `<div class="text-center py-4 text-red-400 text-sm">${t('store.checkout.paymentLoadError')}</div>`;
-    }
+function updateCheckoutSummary() {
+    const subtotal = cartSubtotal();
+    const total = subtotal + SERVICE_FEE;
+    const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    set('checkoutSubtotal', `${subtotal.toLocaleString()} ฿`);
+    set('checkoutFee', `${SERVICE_FEE.toLocaleString()} ฿`);
+    set('checkoutTotal', `${total.toLocaleString()} ฿`);
+    const btn = document.getElementById('confirmBtn');
+    if (btn && !btn.disabled) btn.textContent = t('store.checkout.confirmCodTotal', { total: total.toLocaleString() });
 }
 
-function previewPaymentQR(qrUrl) {
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in';
-    modal.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center animate-in zoom-in duration-300" onclick="event.stopPropagation()">
-            <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <img src="${esc(qrUrl)}" alt="QR Code" width="256" height="256" class="w-64 h-64 mx-auto rounded-xl shadow-md mb-4 object-cover">
-            <p class="text-sm text-slate-600 font-medium">${t('store.checkout.scanQr')}</p>
-        </div>
-    `;
-    modal.onclick = () => modal.remove();
-    document.body.appendChild(modal);
+function showCheckoutError(message, field) {
+    const box = document.getElementById('checkoutError');
+    if (box) {
+        box.textContent = message;
+        box.classList.toggle('hidden', !message);
+    }
+    ['custName', 'custPhone', 'custAddress'].forEach(id => document.getElementById(id)?.removeAttribute('aria-invalid'));
+    if (field) {
+        field.setAttribute('aria-invalid', 'true');
+        field.focus();
+    }
 }
 
 function goToCheckout() {
-    const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-    trackEvent('begin_checkout', { currency: 'THB', value: total, items: buildCartItems(cart) });
-
-    loadAndDisplayPaymentMethods();
-    updatePaymentMethod('cod'); // COD เป็น default — ลด friction (ไม่ต้องโอนก่อน)
+    if (cart.length === 0) return;
+    trackEvent('begin_checkout', { currency: 'THB', value: cartSubtotal(), items: buildCartItems(cart) });
+    showCheckoutError('');
+    updateCheckoutSummary();
     document.getElementById('checkoutModal').classList.remove('hidden');
-}
-function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
-
-function updatePaymentMethod(method) {
-    selectedPaymentMethod = method;
-    if (lastTrackedPayment !== null && lastTrackedPayment !== method) {
-        // ลูกค้าเปลี่ยนวิธีจ่ายเอง (ไม่นับค่าเริ่มต้นตอนเปิดหน้า checkout)
-        trackEvent('add_payment_info', { currency: 'THB', payment_type: method, value: cart.reduce((sum, i) => sum + i.price * i.qty, 0) });
-    }
-    lastTrackedPayment = method;
-    const paymentDetails = document.getElementById('paymentDetailsSection');
-    const slipSection = document.getElementById('slipInput').parentElement.parentElement;
-    const confirmBtn = document.getElementById('confirmBtn');
-
-    if (method === 'cod') {
-        paymentDetails.classList.add('hidden');
-        slipSection.classList.add('hidden');
-        confirmBtn.innerHTML = t('store.checkout.confirmCod');
-    } else {
-        paymentDetails.classList.remove('hidden');
-        slipSection.classList.remove('hidden');
-        confirmBtn.innerHTML = t('store.checkout.confirmTransfer');
-    }
-    updateConfirmButtonText();
+    document.body.classList.add('overlay-open');
+    document.getElementById('custName')?.focus({ preventScroll: true });
 }
 
-function updateConfirmButtonText() {
-    const btn = document.getElementById('confirmBtn');
-    let subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
-    
-    if (selectedPaymentMethod === 'cod') {
-        btn.innerHTML = t('store.checkout.confirmCodTotal', { total: finalTotal.toLocaleString() });
-    } else {
-        btn.innerHTML = t('store.checkout.confirmTransferTotal', { total: finalTotal.toLocaleString() });
-    }
-}
-
-function previewSlip(input) {
-    if (input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            document.getElementById('slipPreview').innerHTML = `<img src="${e.target.result}" class="h-32 w-auto mx-auto rounded-xl shadow-md"><p class="mt-2 text-xs text-indigo-600 font-bold">${t('store.checkout.slipSelected')}</p>`;
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
+function closeCheckout() {
+    document.getElementById('checkoutModal').classList.add('hidden');
+    syncOverlayState();
 }
 
 async function submitOrder() {
     const btn = document.getElementById('confirmBtn');
-    const imgbbUrl = getImgbbUploadUrl();
-
-    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-    const finalTotal = selectedPaymentMethod === 'cod' ? subtotal + COD_FEE : subtotal;
-
+    if (btn.disabled || cart.length === 0) return;
+    const fields = {
+        name: document.getElementById('custName'),
+        phone: document.getElementById('custPhone'),
+        address: document.getElementById('custAddress'),
+    };
     const data = {
-        name: document.getElementById('custName').value.trim(),
-        phone: document.getElementById('custPhone').value.trim(),
+        name: fields.name.value.trim(),
+        phone: fields.phone.value.trim(),
         email: (document.getElementById('custEmail')?.value || '').trim(),
-        address: document.getElementById('custAddress').value.trim(),
-        slip: document.getElementById('slipInput').files[0],
-        paymentMethod: selectedPaymentMethod === 'cod' ? 'เก็บเงินปลายทาง' : 'โอนเงิน'
+        address: fields.address.value.trim(),
     };
 
-    if (!data.name || !data.phone || !data.address) return showToast(t('store.checkout.required'), "error");
-    if (selectedPaymentMethod === 'transfer' && !data.slip) return showToast(t('store.checkout.slipRequired'), "error");
+    // บอกช่องที่ยังขาดและพาไปที่ช่องนั้น (เดิมขึ้นแค่ "กรอกให้ครบทุกช่อง")
+    const missing = ['name', 'phone', 'address'].find(key => !data[key]);
+    if (missing) return showCheckoutError(t('store.checkout.required'), fields[missing]);
+    if (data.phone.replace(/\D/g, '').length < 8) return showCheckoutError(t('store.checkout.phoneInvalid'), fields.phone);
+    showCheckoutError('');
 
+    const subtotal = cartSubtotal();
+    const finalTotal = subtotal + SERVICE_FEE;
     btn.disabled = true;
-    btn.innerHTML = t('store.checkout.saving');
+    btn.textContent = t('store.checkout.saving');
 
     try {
-        let slipUrl = "COD (ไม่แนบสลิป)";
-        
-        if (selectedPaymentMethod === 'transfer') {
-            const formData = new FormData(); 
-            formData.append('image', data.slip);
-            const imgRes = await fetch(imgbbUrl, { method: 'POST', body: formData });
-            const imgData = await imgRes.json();
-            if (!imgData.success) throw new Error("Upload Fail");
-            slipUrl = imgData.data.url;
-        }
+        const orderItems = cart.map(i => `${i.name} [${i.size}] x${i.qty}`).join(', ');
+        const itemsArray = cart.map(i => ({ name: i.name, size: i.size, qty: i.qty }));
 
-        let orderItems = cart.map(i => `${i.name} [${i.size}] x${i.qty}`).join(', ');
-        let itemsArray = cart.map(i => ({ name: i.name, size: i.size, qty: i.qty }));
-        let subtotalVal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-
+        // บันทึกลงชีต Orders + อีเมลแจ้งร้าน/ยืนยันลูกค้า (GAS) — ถ้าพลาด ลูกค้ายังไป LINE พร้อมรายการครบ ร้านจึงยังได้ออเดอร์
         try {
             await fetch(GAS_URL, {
                 method: 'POST',
@@ -804,31 +744,33 @@ async function submitOrder() {
                     items: orderItems,
                     itemsArray: itemsArray,
                     total: finalTotal,
-                    slipUrl: slipUrl,
-                    paymentMethod: data.paymentMethod,
+                    slipUrl: "COD (ไม่แนบสลิป)",
+                    paymentMethod: PAYMENT_LABEL,
                     lang: getLanguage(), // ภาษาที่ลูกค้าใช้ตอนสั่ง → อีเมลยืนยันส่งเป็นภาษานี้
                     status: "รอดำเนินการ"
                 })
             });
-        } catch(e) {
-            console.warn("GAS CORS error ignored:", e);
+        } catch (e) {
+            console.warn("บันทึกออเดอร์ลงชีตไม่สำเร็จ (ลูกค้ายังส่งออเดอร์ทาง LINE ได้):", e);
         }
 
         const itemsDetail = cart.map(i => `- ${i.name.toUpperCase()} [${i.size}] x${i.qty}`).join('\n');
         const lineMsg = `✨ ออเดอร์ใหม่! [${SHOP_NAME} v${SHOP_VERSION}]
-💰 วิธีชำระ: ${data.paymentMethod}
+💰 วิธีชำระ: ${PAYMENT_LABEL} (จ่ายตอนรับของ)
 👤 ผู้รับ: ${data.name}
 📞 เบอร์: ${data.phone}
 🏠 ที่อยู่: ${data.address}
 
 🛒 รายการ:
 ${itemsDetail}
-💰 ยอดรวม: ${finalTotal.toLocaleString()} บาท
-
-🖼️ หลักฐาน: ${slipUrl}`;
+ค่าสินค้า: ${subtotal.toLocaleString()} บาท
+ค่าบริการจัดส่ง (เริ่มต้น): ${SERVICE_FEE} บาท
+💰 ยอดรวมประมาณ: ${finalTotal.toLocaleString()} บาท
+(รอร้านยืนยันยอดสุดท้ายและเวลาจัดส่ง)`;
 
         document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
         document.getElementById('successModal').classList.remove('hidden');
+        document.body.classList.add('overlay-open');
 
         currentLineUrl = buildLineUrl(lineMsg);
 
@@ -837,10 +779,15 @@ ${itemsDetail}
             transaction_id: window.crypto?.randomUUID?.() || `order-${Date.now()}`,
             currency: 'THB',
             value: finalTotal,
-            shipping: selectedPaymentMethod === 'cod' ? COD_FEE : 0,
-            payment_type: selectedPaymentMethod,
+            shipping: SERVICE_FEE,
+            payment_type: 'cod',
             items: buildCartItems(cart),
         });
+
+        // ออเดอร์ส่งแล้ว: ล้างตะกร้า กันสั่งซ้ำเมื่อกลับมาจาก LINE
+        cart = [];
+        saveCart();
+        updateCartUI();
 
         // โหลด confetti เฉพาะตอนสั่งซื้อสำเร็จ (ไม่ต้องให้ทุกคนที่เปิดหน้าแรกโหลด 15KB นี้)
         import('canvas-confetti').then(({ default: confetti }) => confetti({
@@ -856,9 +803,10 @@ ${itemsDetail}
             window.location.href = currentLineUrl;
         }, 3000);
     } catch (e) {
-        showToast(t('store.checkout.error'), "error");
+        console.error('Submit order error:', e);
+        showCheckoutError(t('store.checkout.error'));
         btn.disabled = false;
-        btn.innerHTML = t('store.checkout.confirmTransfer');
+        updateCheckoutSummary();
     }
 }
 
@@ -913,8 +861,12 @@ function initSolExperience() {
             searchInput.focus();
             searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        if (event.key === 'Escape' && document.activeElement === searchInput) {
-            searchInput.blur();
+        if (event.key === 'Escape') {
+            if (document.activeElement === searchInput) searchInput.blur();
+            // ปิดหน้าต่างบนสุดที่เปิดอยู่ (หน้าสั่งซื้อสำเร็จไม่ปิดด้วย Esc)
+            if (!document.getElementById('checkoutModal').classList.contains('hidden')) closeCheckout();
+            else if (document.getElementById('productModal')?.classList.contains('cart-open')) closeProductDetails();
+            else if (!document.getElementById('cartSidebar').classList.contains('translate-x-full')) toggleCart(false);
         }
     });
 }
@@ -929,9 +881,6 @@ window.addToCart = addToCart;
 window.updateQty = updateQty;
 window.goToCheckout = goToCheckout;
 window.closeCheckout = closeCheckout;
-window.previewSlip = previewSlip;
-window.previewPaymentQR = previewPaymentQR;
-window.updatePaymentMethod = updatePaymentMethod;
 window.submitOrder = submitOrder;
 window.openProductDetails = openProductDetails;
 window.closeProductDetails = closeProductDetails;
@@ -949,6 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initI18n();
     initAnalyticsTracking();
     initSolExperience();
+    updateCartUI();
     loadProductsFromSheet(() => {
         const searchInput = document.getElementById('searchInput');
         renderProducts(searchInput ? searchInput.value : "");
@@ -967,5 +917,5 @@ document.addEventListener('cf:languagechange', () => {
     const searchInput = document.getElementById('searchInput');
     renderProducts(searchInput ? searchInput.value : "");
     updateCartUI();
-    updateConfirmButtonText();
+    updateCheckoutSummary();
 });

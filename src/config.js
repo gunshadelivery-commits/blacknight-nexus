@@ -7,7 +7,7 @@
 // --- ข้อมูลร้าน (Shop Branding) ---
 export const SHOP_NAME = "Siam Cannabis อ่อนนุช";
 export const SHOP_VERSION = "1.0.0";
-export const SHOP_TAGLINE = "ดอกแท้คัดเกรด · ส่งด่วน ส่งฟรี ย่านอ่อนนุช สุขุมวิท 🌿";
+export const SHOP_TAGLINE = "ดอกแท้คัดเกรด · ส่งด่วนย่านอ่อนนุช สุขุมวิท · จ่ายเงินตอนรับของ 🌿";
 
 // --- Google Sheets CSV URL (Product List) - from environment ---
 export const SHEET_CSV_URL = import.meta.env.VITE_SHEET_CSV_URL || "";

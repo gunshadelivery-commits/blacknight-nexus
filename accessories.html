@@ -15,7 +15,7 @@
         })();
     </script>
     <style>html.i18n-pending body { visibility: hidden; }</style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cannabis Accessories Bangkok | Bongs, Pre-rolls, Drinks · Siam Cannabis On Nut</title>
     <meta name="description" content="Shop cannabis accessories in Bangkok — bongs, grinders, rolling papers, pre-rolls, kief & cannabis drinks. Siam Cannabis On Nut (BTS On Nut, Sukhumvit). Express delivery to On Nut, Phra Khanong & Udom Suk. Age 20+ only.">
     <meta name="keywords" content="cannabis accessories Bangkok, bong Bangkok, pre-roll Bangkok, rolling papers Bangkok, cannabis grinder Bangkok, cannabis drinks Bangkok, weed accessories Bangkok, cannabis shop On Nut, Siam Cannabis, buy bong Bangkok, cannabis delivery Sukhumvit, อุปกรณ์กัญชา, บ้อง, กระดาษโรล, เครื่องบด, พรีโรล, น้ำท่อม, เครื่องดื่มกัญชา">
@@ -134,7 +134,7 @@
                     <span class="text-[10px] opacity-60 font-bold uppercase tracking-wider text-emerald-600">ON NUT · BANGKOK</span>
                 </div>
             </div>
-            <button onclick="toggleCart()" class="relative p-2 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+            <button onclick="toggleCart()" class="relative p-2 bg-slate-50 rounded-xl hover:bg-slate-100 transition" aria-label="เปิดตะกร้าสินค้า">
                 <span class="text-xl">🛒</span>
                 <span id="cartCount" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white hidden">0</span>
             </button>
@@ -204,64 +204,45 @@
         <div class="absolute inset-x-0 bottom-0 top-10 bg-white rounded-t-[40px] flex flex-col max-w-md mx-auto">
             <div class="p-6 border-b border-slate-50 flex justify-between items-center">
                 <h3 class="text-xl font-bold">ข้อมูลการจัดส่ง</h3>
-                <button onclick="closeCheckout()" class="text-slate-400">ปิด</button>
+                <button type="button" onclick="closeCheckout()" class="text-slate-600 font-bold px-2 py-1">ปิด</button>
             </div>
             <div class="flex-1 overflow-y-auto p-6 space-y-6">
                     <div class="space-y-4">
                         <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">ชื่อ-นามสกุล ผู้รับ *</label>
+                            <label for="custName" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1 ml-1">ชื่อ-นามสกุล ผู้รับ *</label>
                             <input type="text" id="custName" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-lg font-medium" placeholder="ระบุชื่อผู้รับสินค้า">
                         </div>
 
                         <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">เบอร์โทรติดต่อ *</label>
+                            <label for="custPhone" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1 ml-1">เบอร์โทรติดต่อ *</label>
                             <input type="tel" id="custPhone" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-lg font-medium" placeholder="08x-xxx-xxxx">
                         </div>
 
                         <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">อีเมล (สำหรับรับใบยืนยันออเดอร์)</label>
+                            <label for="custEmail" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1 ml-1">อีเมล (ไม่บังคับ · รับอีเมลยืนยันออเดอร์)</label>
                             <input type="email" id="custEmail" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-lg font-medium" placeholder="you@example.com (ไม่บังคับ)">
                         </div>
 
                         <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">ที่อยู่จัดส่งโดยละเอียด *</label>
+                            <label for="custAddress" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1 ml-1">ที่อยู่จัดส่งโดยละเอียด *</label>
                             <textarea id="custAddress" rows="3" class="w-full bg-slate-50 border-2 border-transparent focus:border-slate-900 focus:bg-white rounded-2xl px-5 py-4 transition outline-none text-base" placeholder="บ้านเลขที่, ซอย, ถนน, ตำบล, อำเภอ, จังหวัด, รหัสไปรษณีย์"></textarea>
                         </div>
 
-                        <!-- PAYMENT SELECTION -->
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="updatePaymentMethod('transfer')" id="payTransfer" class="flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-900 bg-white transition shadow-sm">
-                                <span class="text-2xl">💳</span>
-                                <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">โอนเงิน</span>
-                            </button>
-                            <button onclick="updatePaymentMethod('cod')" id="payCOD" class="flex flex-col items-center gap-2 p-4 rounded-3xl border-2 border-slate-50 bg-slate-50 text-slate-400 transition">
-                                <span class="text-2xl">🚚</span>
-                                <span class="text-xs font-bold uppercase tracking-wider">เก็บเงินปลายทาง</span>
-                            </button>
-                        </div>
-
-                        <div id="paymentDetailsSection" class="p-6 bg-blue-50 rounded-3xl border border-blue-100 space-y-3">
-                            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest">ช่องทางชำระเงิน</label>
-                            <div id="paymentMethodsContainer" class="space-y-3">
-                                <!-- Payment methods will be loaded here -->
-                            </div>
-                        </div>
-
-                        <div id="slipUploadSection" class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">หลักฐานการโอนเงิน (สลิป) *</label>
-                            <input type="file" id="slipInput" accept="image/*" onchange="previewSlip(this)" class="hidden">
-                            <label for="slipInput" class="cursor-pointer block w-full aspect-video bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-slate-400 transition overflow-hidden">
-                                <img id="slipPreview" class="hidden w-full h-full object-cover">
-                                <div id="slipPlaceholder" class="flex flex-col items-center">
-                                    <span class="text-3xl mb-1">📸</span>
-                                    <span class="text-xs font-bold">อัปโหลดสลิปที่นี่</span>
-                                </div>
-                            </label>
+                        <!-- จ่ายเงินตอนรับสินค้าเท่านั้น (เอาโอนเงินล่วงหน้า/แนบสลิปออก 13 พ.ย. 2026) -->
+                        <div class="p-5 bg-emerald-50 rounded-3xl border border-emerald-100 space-y-2">
+                            <p class="text-sm font-bold text-emerald-900">🤝 จ่ายเงินตอนรับสินค้า ไม่ต้องโอนก่อน</p>
+                            <p class="text-xs text-emerald-800">ร้านจะยืนยันออเดอร์กับคุณทาง LINE ก่อนจัดส่งทุกครั้ง</p>
+                            <dl class="text-sm text-slate-700 space-y-1 pt-1">
+                                <div class="flex justify-between gap-3"><dt>ค่าสินค้า</dt><dd id="checkoutSubtotal" class="font-semibold">0 ฿</dd></div>
+                                <div class="flex justify-between gap-3"><dt>ค่าบริการจัดส่ง (เริ่มต้น)</dt><dd id="checkoutFee" class="font-semibold">50 ฿</dd></div>
+                                <div class="flex justify-between gap-3 border-t border-emerald-200 pt-2 font-black text-slate-900"><dt>ยอดจ่ายตอนรับของ (ประมาณ)</dt><dd id="checkoutTotal">0 ฿</dd></div>
+                            </dl>
+                            <p class="text-[11px] text-slate-600">ค่าบริการจัดส่ง 50–80 บาทตามระยะทาง (ไม่เกิน 100 บาท) ร้านแจ้งยอดสุดท้ายตอนยืนยันออเดอร์</p>
                         </div>
                     </div>
                 </div>
                 <div class="p-8 border-t border-slate-50">
-                    <button onclick="submitOrder()" id="submitOrderBtn" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 disabled:opacity-50">สั่งซื้อและส่งข้อมูล 🛸</button>
+                    <button onclick="submitOrder()" id="submitOrderBtn" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 disabled:opacity-50">ยืนยันสั่งซื้อ</button>
                 </div>
             </div>
         </div>
@@ -273,15 +254,15 @@
             <div class="w-24 h-24 bg-emerald-100 text-5xl flex items-center justify-center rounded-full mx-auto animate-bounce">✅</div>
             <div>
                 <h3 class="text-2xl font-bold text-slate-800 mb-2">สั่งซื้อสำเร็จ!</h3>
-                <p class="text-slate-500 text-sm">ออเดอร์ของคุณกำลังเดินทางไปหาคุณ</p>
+                <p class="text-slate-600 text-sm">กำลังพาคุณไป LINE เพื่อยืนยันออเดอร์กับร้าน...</p>
                 <div class="mt-4 p-4 bg-slate-50 rounded-2xl">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest mb-1">ยอดชำระทั้งสิ้น</p>
+                    <p class="text-[11px] text-slate-600 uppercase font-bold tracking-widest mb-1">ยอดจ่ายตอนรับของ (ประมาณ)</p>
                     <p id="finalOrderTotal" class="text-2xl font-black text-slate-800">0 ฿</p>
                 </div>
             </div>
             <div class="flex flex-col gap-3">
                 <button onclick="redirectToLine()" class="w-full bg-[#06C755] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 hover:opacity-90 transition">
-                    <span>💬</span> แจ้งแอดมินทาง LINE
+                    <span>💬</span> ยืนยันออเดอร์ทาง LINE
                 </button>
                 <button onclick="location.reload()" class="w-full bg-slate-100 text-slate-600 py-3 rounded-2xl font-bold text-sm hover:bg-slate-200 transition">กลับไปหน้าแรก</button>
             </div>
@@ -290,7 +271,7 @@
 
     <!-- BOTTOM NAVIGATION -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around items-center py-2 z-50 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.05)]">
-        <a href="index.html" class="flex flex-col items-center gap-1 group">
+        <a href="/" class="flex flex-col items-center gap-1 group">
             <span class="text-xl opacity-40 group-[.active]:opacity-100 transition-opacity">🏠</span>
             <span class="text-[10px] font-bold text-slate-400 group-[.active]:text-emerald-600 transition-colors" data-i18n="nav.home">หน้าแรก</span>
         </a>

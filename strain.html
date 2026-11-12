@@ -4,26 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- SEO meta tags set dynamically by strain.js after data loads -->
+    <!-- เริ่มดึงข้อมูลสินค้าทันที ไม่ต้องรอ JS โหลดเสร็จ (strain.js รับช่วงต่อจาก window.__catalogCsv) -->
+    <link rel="preconnect" href="https://docs.google.com">
+    <link rel="preconnect" href="https://i.ibb.co">
+    <script>
+        (function () {
+            var url = '%VITE_SHEET_CSV_URL%';
+            if (url.indexOf('http') !== 0) return;
+            try { if (sessionStorage.getItem('sc_sheet_cache')) return; } catch (e) {}
+            window.__catalogCsv = fetch(url + '&t=' + Date.now()).then(function (r) {
+                if (!r.ok) throw new Error('csv ' + r.status);
+                return r.text();
+            });
+            window.__catalogCsv.catch(function () {});
+        })();
+    </script>
+
+    <!-- ssr:head-start — ตอน build scripts/prerender.mjs แทนที่ช่วงนี้ด้วย meta ของแต่ละสายพันธุ์ · หน้า dynamic ให้ strain.js ตั้งค่าหลังโหลดข้อมูล -->
     <title>Cannabis Strain Bangkok | Siam Cannabis On Nut · กัญชาส่งด่วน สุขุมวิท</title>
     <meta name="description" content="กัญชาส่งด่วน Bangkok — Premium Sativa, Indica & Hybrid strains at Siam Cannabis On Nut. Express delivery Sukhumvit, Phra Khanong, Udom Suk. Tourists & expats welcome. Age 20+.">
     <meta name="robots" content="index, follow">
-
-    <!-- Open Graph -->
     <meta property="og:type" content="product">
     <meta property="og:site_name" content="Siam Cannabis Bangkok">
     <meta property="og:image" content="https://blacknight69.com/og-image.jpg">
     <meta property="og:locale" content="en_US">
-
-    <!-- hreflang -->
-    <link rel="alternate" hreflang="en" href="https://blacknight69.com/strain.html">
-    <link rel="alternate" hreflang="th" href="https://blacknight69.com/strain.html">
-    <link rel="alternate" hreflang="zh" href="https://blacknight69.com/strain.html">
-    <link rel="alternate" hreflang="ko" href="https://blacknight69.com/strain.html">
-    <link rel="alternate" hreflang="x-default" href="https://blacknight69.com/strain.html">
-
-    <!-- JSON-LD placeholder — replaced by strain.js -->
     <script type="application/ld+json" id="strain-schema">{"@context":"https://schema.org","@type":"Product","name":"Cannabis Strain","brand":{"@type":"Brand","name":"Siam Cannabis"}}</script>
+    <!-- ssr:head-end -->
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -249,21 +255,21 @@
 <body>
 
     <nav class="nav">
-        <a href="index.html" class="nav-logo">Siam <span>Cannabis</span></a>
-        <a href="index.html" class="nav-back" id="back-btn">
+        <a href="/" class="nav-logo">Siam <span>Cannabis</span></a>
+        <a href="/" class="nav-back" id="back-btn">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             Back to Shop
         </a>
     </nav>
 
     <main class="container" id="main-content">
+        <!-- ssr:body-start — ตอน build scripts/prerender.mjs แทนที่ช่วงนี้ด้วยเนื้อหาของแต่ละสายพันธุ์ -->
         <div class="loading-state" id="loading">
             <div class="loading-spinner"></div>
             <p>Loading strain info…</p>
         </div>
-        <div id="strain-content" style="display:none;">
-            <!-- filled by JS -->
-        </div>
+        <div id="strain-content" style="display:none;"></div>
+        <!-- ssr:body-end -->
     </main>
 
     <script type="module" src="/src/strain.js"></script>

@@ -5,6 +5,7 @@ import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getImgbb
 import { isLoggedIn } from './auth.js';
 import { initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
+import { assignSlugs, strainPath, esc, getCardPerfectFor as getPerfectFor, isPremiumProduct } from './catalog.js';
 
 let products = [];
 let cart = [];
@@ -56,26 +57,6 @@ function classifyItem(name, tags = []) {
     return "Hybrid";
 }
 
-function getPerfectFor(aiType, tags = []) {
-    const type = (aiType || '').toLowerCase();
-    const tagStr = tags.join(' ').toLowerCase();
-    if (type.includes('pre-roll') || type.includes('preroll')) return ['SMOOTH', 'CONVENIENT', 'SOCIAL'];
-    if (type === 'sativa') return ['ENERGY', 'CREATIVITY', 'FOCUS'];
-    if (type === 'indica') return ['RELAX', 'SLEEP', 'BODY RELIEF'];
-    if (type === 'hybrid') return ['BALANCE', 'EUPHORIA', 'SOCIAL'];
-    if (tagStr.includes('ตื่นตัว') || tagStr.includes('focus') || tagStr.includes('energetic')) return ['ENERGY', 'CREATIVITY', 'FOCUS'];
-    if (tagStr.includes('ผ่อนคลาย') || tagStr.includes('relax') || tagStr.includes('sleep')) return ['RELAX', 'CHILL', 'BODY RELIEF'];
-    return ['BALANCE', 'EUPHORIA', 'SOCIAL'];
-}
-
-function isPremiumProduct(product) {
-    const hasPremiumTag = product.tags && product.tags.some(t =>
-        ["premium", "พรีเมียม", "luxury", "brand", "branded"].includes(t.toLowerCase())
-    );
-    const highPrice = product.variants && product.variants.some(v => v.price >= 1200);
-    return hasPremiumTag || highPrice;
-}
-
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
@@ -119,91 +100,127 @@ function handleLogoClick() {
     logoClickTimeout = setTimeout(() => { logoClickCount = 0; }, 2000);
 }
 
-function loadProductsFromSheet(callback) {
-    // โหลดรายการสินค้าจาก Google Sheet CSV (สาธารณะ) ด้วย PapaParse
-    // คอลัมน์: name, size, price, note, image, tags, status, stock, sold_count
-    Papa.parse(`${SHEET_CSV_URL}&t=${Date.now()}`, {
-        download: true,
-        complete: (results) => {
-            const data = results.data || [];
-            if (!data || data.length < 2) {
-                showToast(t('store.product.noData'), "error");
-                return;
-            }
+const CATALOG_CACHE_KEY = 'sc_sheet_cache'; // ใช้ร่วมกับหน้า strain (src/strain.js)
+const CATALOG_CACHE_TTL = 5 * 60 * 1000;
+let lastCatalogCsv = null;
 
-            const grouped = {};
-            data.slice(1).forEach(row => {
-                const name = row[0];
-                if (!name || name.trim() === "") return;
-                const groupKey = name.trim().toLowerCase();
+function readCatalogCache() {
+    try {
+        const cached = JSON.parse(sessionStorage.getItem(CATALOG_CACHE_KEY) || 'null');
+        if (cached && Date.now() - cached.ts < CATALOG_CACHE_TTL) return cached.csv;
+    } catch (e) { /* ไม่มี cache */ }
+    return null;
+}
 
-                if (!grouped[groupKey]) {
-                    let tags = [];
-                    const rawTags = row[5] || "";
-                    if (rawTags) tags = rawTags.toString().split(',').map(t => t.trim()).filter(t => t !== '');
-                    
-                    let rawImages = (row[4] || '').toString().split(',').map(img => img.trim()).filter(img => img !== '');
-                    if (rawImages.length === 0) rawImages = [''];
-                    rawImages = rawImages.slice(0, 6);
-                    
-                    const aiType = (row[9] && row[9].toString().trim()) || classifyItem(name, tags);
-                    const isDrinkFromSheet = aiType === 'เครื่องดื่ม';
-                    const n = name.toLowerCase();
-                    let drinkTheme = 'herbal';
-                    if (n.includes('โยเกิร์ต')) drinkTheme = 'yogurt';
-                    else if (n.includes('ผลไม้') || n.includes('ผลไม')) drinkTheme = 'fruit';
-                    else if (n.includes('มิกซ์') || n.includes('mix') || n.includes('เซ็ต') || n.includes('set')) drinkTheme = 'mix';
-
-                    grouped[groupKey] = {
-                        name: name,
-                        size: row[1],
-                        price: parseFloat(row[2]) || 0,
-                        note: row[3] || '',
-                        image: rawImages[0],
-                        images: rawImages,
-                        tags: tags,
-                        status: (row[6] || '').toString().trim().toLowerCase(),
-                        variants: [],
-                        selectedVariantIdx: 0,
-                        totalSold: 0,
-                        aiType: aiType,
-                        isDrink: isDrinkFromSheet,
-                        isDrinkPromotion: isDrinkFromSheet && (n.includes('เซ็ต') || n.includes('set') || n.includes('โปรโม')),
-                        drinkTheme: drinkTheme,
-                        drinkLabel: name.replace(/ธรรมดา|พิเศษ|ออริจินัล|ธรรมชาติ/g, '').trim().split(' ').slice(-1)[0] || 'SC',
-                    };
-                }
-
-                const size = row[1] || 'Standard';
-                const price = parseFloat(row[2]) || 0;
-                const stock = parseInt(row[7]) || 0;
-                const sold = parseInt(row[8]) || 0;
-
-                const existingIdx = grouped[groupKey].variants.findIndex(v => v.size === size);
-                if (existingIdx >= 0) {
-                    grouped[groupKey].variants[existingIdx] = { size, price, stock, sold_count: sold };
-                } else {
-                    grouped[groupKey].variants.push({ size, price, stock, sold_count: sold });
-                }
-                grouped[groupKey].totalSold += sold;
-            });
-
-            const sheetProducts = Object.values(grouped);
-            sheetProducts.sort((a, b) => {
-                const aNew = (a.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
-                const bNew = (b.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
-                return aNew - bNew;
-            });
-            const sheetNames = new Set(sheetProducts.map(product => product.name.trim().toLowerCase()));
-            const localDrinks = DRINK_PRODUCTS.filter(product => !sheetNames.has(product.name.trim().toLowerCase()));
-            products = [...sheetProducts, ...localDrinks];
-            if (callback) callback(products);
-        },
-        error: (err) => {
-            console.error("Fetch Products Error:", err);
-            showToast(t('store.product.loadError'), "error");
-        }
+function fetchCatalogCsv() {
+    // <head> ของ index.html เริ่มดึง CSV ไว้ก่อนแล้ว (window.__catalogCsv) ใช้ได้ครั้งเดียวตอนเปิดหน้า
+    const early = window.__catalogCsv;
+    window.__catalogCsv = null;
+    const download = () => fetch(`${SHEET_CSV_URL}&t=${Date.now()}`).then(r => {
+        if (!r.ok) throw new Error(`csv ${r.status}`);
+        return r.text();
     });
+    return (early ? early.catch(download) : download()).then(csv => {
+        try { sessionStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ ts: Date.now(), csv })); } catch (e) { /* เต็ม/ปิดไว้ */ }
+        return csv;
+    });
+}
+
+function loadProductsFromSheet(callback, { useCache = false } = {}) {
+    // โหลดรายการสินค้าจาก Google Sheet CSV (สาธารณะ)
+    // useCache: แสดงจาก cache ของ session ก่อน (กลับมาจากหน้า strain จะเห็นสินค้าทันที) แล้วดึงของใหม่ตามหลัง
+    let applied = false;
+    const apply = (csv) => {
+        if (applied && csv === lastCatalogCsv) return;
+        if (applyCatalogCsv(csv)) {
+            applied = true;
+            lastCatalogCsv = csv;
+            if (callback) callback(products);
+        }
+    };
+    const cached = useCache ? readCatalogCache() : null;
+    if (cached) apply(cached);
+    fetchCatalogCsv().then(apply).catch(err => {
+        console.error("Fetch Products Error:", err);
+        if (!applied) showToast(t('store.product.loadError'), "error");
+    });
+}
+
+function applyCatalogCsv(csvText) {
+    // คอลัมน์: name, size, price, note, image, tags, status, stock, sold_count, category
+    const data = Papa.parse(csvText, { skipEmptyLines: true }).data || [];
+    if (data.length < 2) {
+        showToast(t('store.product.noData'), "error");
+        return false;
+    }
+
+    const grouped = {};
+    data.slice(1).forEach(row => {
+        const name = row[0];
+        if (!name || name.trim() === "") return;
+        const groupKey = name.trim().toLowerCase();
+
+        if (!grouped[groupKey]) {
+            let tags = [];
+            const rawTags = row[5] || "";
+            if (rawTags) tags = rawTags.toString().split(',').map(t => t.trim()).filter(t => t !== '');
+            
+            let rawImages = (row[4] || '').toString().split(',').map(img => img.trim()).filter(img => img !== '');
+            if (rawImages.length === 0) rawImages = [''];
+            rawImages = rawImages.slice(0, 6);
+            
+            const aiType = (row[9] && row[9].toString().trim()) || classifyItem(name, tags);
+            const isDrinkFromSheet = aiType === 'เครื่องดื่ม';
+            const n = name.toLowerCase();
+            let drinkTheme = 'herbal';
+            if (n.includes('โยเกิร์ต')) drinkTheme = 'yogurt';
+            else if (n.includes('ผลไม้') || n.includes('ผลไม')) drinkTheme = 'fruit';
+            else if (n.includes('มิกซ์') || n.includes('mix') || n.includes('เซ็ต') || n.includes('set')) drinkTheme = 'mix';
+
+            grouped[groupKey] = {
+                name: name,
+                size: row[1],
+                price: parseFloat(row[2]) || 0,
+                note: row[3] || '',
+                image: rawImages[0],
+                images: rawImages,
+                tags: tags,
+                status: (row[6] || '').toString().trim().toLowerCase(),
+                variants: [],
+                selectedVariantIdx: 0,
+                totalSold: 0,
+                aiType: aiType,
+                isDrink: isDrinkFromSheet,
+                isDrinkPromotion: isDrinkFromSheet && (n.includes('เซ็ต') || n.includes('set') || n.includes('โปรโม')),
+                drinkTheme: drinkTheme,
+                drinkLabel: name.replace(/ธรรมดา|พิเศษ|ออริจินัล|ธรรมชาติ/g, '').trim().split(' ').slice(-1)[0] || 'SC',
+            };
+        }
+
+        const size = row[1] || 'Standard';
+        const price = parseFloat(row[2]) || 0;
+        const stock = parseInt(row[7]) || 0;
+        const sold = parseInt(row[8]) || 0;
+
+        const existingIdx = grouped[groupKey].variants.findIndex(v => v.size === size);
+        if (existingIdx >= 0) {
+            grouped[groupKey].variants[existingIdx] = { size, price, stock, sold_count: sold };
+        } else {
+            grouped[groupKey].variants.push({ size, price, stock, sold_count: sold });
+        }
+        grouped[groupKey].totalSold += sold;
+    });
+
+    const sheetProducts = assignSlugs(Object.values(grouped));
+    sheetProducts.sort((a, b) => {
+        const aNew = (a.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
+        const bNew = (b.tags || []).some(t => t.trim().toLowerCase() === 'new') ? 0 : 1;
+        return aNew - bNew;
+    });
+    const sheetNames = new Set(sheetProducts.map(product => product.name.trim().toLowerCase()));
+    const localDrinks = DRINK_PRODUCTS.filter(product => !sheetNames.has(product.name.trim().toLowerCase()));
+    products = [...sheetProducts, ...localDrinks];
+    return true;
 }
 
 function initRevealObserver() {
@@ -276,9 +293,13 @@ function renderProducts(filter = "") {
     try {
         const grid = document.getElementById("productList");
         const resultMeta = document.getElementById("productResultMeta");
-        if (!grid) return; 
+        if (!grid) return;
+        // index.html มีการ์ดสินค้าที่ prerender ไว้ตอน build: เก็บไว้จนกว่าข้อมูลจริงจะมา แล้วสลับโดยไม่เล่นแอนิเมชันซ้ำ
+        const hydrating = grid.dataset.ssr === '1';
+        if (hydrating && products.length === 0) return;
+        delete grid.dataset.ssr;
         grid.innerHTML = "";
-        
+
         let q = "";
         if (typeof filter === "string") q = filter.toLowerCase();
 
@@ -323,14 +344,14 @@ function renderProducts(filter = "") {
             const card = document.createElement("div");
             const pNameEscaped = p.name.replace(/'/g, "\\'");
             const premium = isPremiumProduct(p);
-            card.className = `product-card reveal ${p.isDrink ? 'drink-card' : 'cursor-pointer'} ${p.isDrinkPromotion ? 'drink-promotion-card' : ''} ${premium ? 'premium-card' : ''}`;
+            card.className = `product-card ${hydrating ? '' : 'reveal'} ${p.isDrink ? 'drink-card' : 'cursor-pointer'} ${p.isDrinkPromotion ? 'drink-promotion-card' : ''} ${premium ? 'premium-card' : ''}`;
             card.style.transitionDelay = `${(idx % 4) * 50}ms`;
             card.onclick = (e) => {
                 if(e.target.closest('button') || e.target.closest('a')) return;
                 if(p.isDrink) { window.openProductDetails(p.name); return; }
-                const slug = p.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+                if (!p.slug) { window.openProductDetails(p.name); return; }
                 card.style.transitionDelay = '0ms';
-                window.location.href = `strain.html?s=${encodeURIComponent(slug)}`;
+                window.location.href = strainPath(p.slug);
             };
             const isOutOfStock = p.status === 'หมด' || p.status === 'sold out' || p.status === '0';
 
@@ -384,7 +405,7 @@ function renderProducts(filter = "") {
                 <div class="product-content">
                     <div>
                         <p class="product-type">${p.aiType || 'FLOWER'}</p>
-                        <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${p.name}</h3>
+                        <h3 class="product-name ${premium ? 'text-amber-100' : ''}">${!p.isDrink && p.slug ? `<a href="${strainPath(p.slug)}">${esc(p.name)}</a>` : p.name}</h3>
                         <p class="product-note">${p.note}</p>
                         ${!p.isDrink ? `<p class="perfect-for-strip">Perfect For <span>${getPerfectFor(p.aiType, p.tags).join(' / ')}</span></p>` : ''}
                     </div>
@@ -415,6 +436,7 @@ function renderProducts(filter = "") {
                     </div>
                 </div>
             `;
+            if (hydrating) card.querySelectorAll('.img-fade-in').forEach(img => img.classList.add('img-loaded'));
             grid.appendChild(card);
         });
         
@@ -970,7 +992,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initAnalyticsTracking();
     initSolExperience();
     loadProductsFromSheet(() => {
-        renderProducts();
+        const searchInput = document.getElementById('searchInput');
+        renderProducts(searchInput ? searchInput.value : "");
         const intent = sessionStorage.getItem('sc_add_intent');
         if (intent) {
             sessionStorage.removeItem('sc_add_intent');
@@ -979,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.addToCart(name, variantIdx);
             } catch(e) {}
         }
-    });
+    }, { useCache: true });
 });
 
 document.addEventListener('cf:languagechange', () => {

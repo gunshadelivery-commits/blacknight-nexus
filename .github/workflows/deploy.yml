@@ -54,8 +54,9 @@ jobs:
         run: npm run build
       - name: Add CNAME for custom domain
         run: echo "blacknight69.com" > ./dist/CNAME
+      # sitemap.xml สร้างตอน build จากสินค้าจริงในชีต (scripts/prerender.mjs) จึงไม่ต้อง copy
       - name: Copy static SEO files to dist
-        run: cp sitemap.xml robots.txt llms.txt ./dist/
+        run: cp robots.txt llms.txt ./dist/
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact

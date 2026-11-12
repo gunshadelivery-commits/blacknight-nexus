@@ -12,6 +12,24 @@
 
 ## [Unreleased]
 ### Added
+- [Claude] feat(seo): สร้างหน้าสายพันธุ์แบบ static ตอน build ที่ `/strain/<slug>/` (62 หน้า) — แต่ละหน้ามี title/description/canonical/JSON-LD/เนื้อหาครบใน HTML ตั้งแต่แรก Google เก็บ index ได้โดยไม่ต้องรัน JS (เดิม GSC index ไว้แค่ 1 หน้า เพราะทุกหน้าเป็น `strain.html?s=` ที่ว่างจนกว่า JS จะดึงชีต) · ลิงก์เดิม `strain.html?s=` ยังใช้ได้และชี้ canonical มาที่ URL ใหม่ · สินค้าที่เพิ่มหลัง deploy ล่าสุดใช้ `404.html` แสดงแบบ dynamic ไปก่อน (scripts/prerender.mjs, src/catalog.js, src/strain.js, strain.html, vite.config.js)
+- [Claude] feat(seo): sitemap.xml สร้างอัตโนมัติจากสินค้าจริงในชีตทุกครั้งที่ build — ของเดิมเขียนมือ: 15 จาก 38 ลิงก์ชี้ไปสายพันธุ์ที่ไม่มีแล้ว และสินค้าจริง 40 ตัว (รวมดอกใหม่ทั้งหมด) ไม่อยู่ใน sitemap · ลบ sitemap.xml ที่ root และเลิก copy ใน workflow (scripts/prerender.mjs, .github/workflows/deploy.yml)
+- [Claude] feat(seo): หน้าแรกมีการ์ดสินค้า + ลิงก์ `<a href>` ไปหน้าสายพันธุ์อยู่ใน HTML ตั้งแต่แรก (prerender ตอน build แล้ว main.js สลับเป็นการ์ดจริงเมื่อข้อมูลล่าสุดมา) — เดิมการ์ดใช้ onclick อย่างเดียว Google ไต่ไปหน้าสายพันธุ์ไม่ได้ (scripts/prerender.mjs, src/main.js, src/style.css)
+- [Claude] feat(analytics): ปุ่ม "สั่งซื้อ LINE" ในหน้าสายพันธุ์ส่ง event `contact_line` เข้า GA4 (src/catalog.js, src/strain.js)
+
+### Changed
+- [Claude] perf: เลิกใช้ `cdn.tailwindcss.com` ใน index.html และ accessories.html (สคริปต์ที่บล็อกการแสดงผล + compile CSS ในเบราว์เซอร์ลูกค้า) ใช้ Tailwind ที่ compile ตอน build แทน · ย้าย `@tailwind utilities` ไปท้าย style.css ให้ลำดับ cascade เหมือนตอนใช้ CDN — เทียบ computed style ทุก element ก่อน/หลังแล้วตรงกันทั้งจอคอมและมือถือ (admin/login/register ยังใช้ CDN ตามเดิม) (index.html, accessories.html, src/style.css, tailwind.config.js)
+- [Claude] perf: หน้าแรกเริ่มดึง CSV สินค้าตั้งแต่ `<head>` (เดิมรอ JS โหลดเสร็จ ~1.9 วิ จึงเริ่มดึง) + cache ใน sessionStorage 5 นาทีร่วมกับหน้าสายพันธุ์ กลับจากหน้าสายพันธุ์เห็นสินค้าทันที · รูปสินค้าเริ่มโหลดที่ ~0.1 วิ (เดิม ~4.1 วิ) (index.html, strain.html, src/main.js, src/strain.js)
+- [Claude] perf: Google Fonts โหลดแบบไม่บล็อกการแสดงผล + preconnect · ภาพพื้นหลังเปลี่ยนเป็น WebP 58KB (เดิม JPG 206KB) (index.html, image/bg-cannabis.webp)
+- [Claude] refactor: รวม slug/จัดประเภท/SEO/HTML ของหน้าสายพันธุ์ไว้ที่ src/catalog.js ใช้ร่วมกันทั้งเบราว์เซอร์และตอน build · slug รองรับชื่อไทย และชื่อซ้ำได้ `-2` ต่อท้าย (src/catalog.js, src/main.js, src/strain.js)
+- [Claude] docs: เพิ่มไฟล์ใหม่ในแผนผังไฟล์ของ AGENTS.md + หมายเหตุว่า sitemap สร้างอัตโนมัติ (AGENTS.md)
+
+### Fixed
+- [Claude] fix(catalog): การ์ดสินค้าชื่อไทยกดแล้วขึ้น "Strain not found" (เช่น ใบทริม icc, ใบทริม VICIOUS, บ้องแก้ว…) เพราะหน้าแรกกับหน้าสายพันธุ์สร้าง slug คนละแบบ และสินค้าชื่อไทยล้วน (เครื่องบด, บ้องแก้ว) ไม่มีหน้าของตัวเอง — ใช้ slug ชุดเดียวกันแล้ว (src/catalog.js, src/main.js, src/strain.js)
+- [Claude] fix(strain): รูปสินค้าที่ในชีตใส่เป็นชื่อไฟล์เฉยๆ (เช่น sluricane.jpg) ใช้ path เต็ม · หน้าสายพันธุ์ของอุปกรณ์ไม่เรียกตัวเองว่า "Hybrid cannabis strain" แล้ว · สายพันธุ์ที่ไม่มีแล้วใส่ `noindex` (src/catalog.js, src/strain.js)
+- [Claude] fix(ui): ข้อความ "กำลังอัปเดตข้อมูล..." ค้างโชว์บนสุดของหน้าแรกตลอดเวลา (แถบ pull-to-refresh ไม่มี CSS ซ่อน) — ซ่อนไว้ แสดงเฉพาะตอนดึงข้อมูลใหม่ (src/style.css)
+
+### Added
 - [Claude] feat(seo): เพิ่ม strain pages ทั้งหมด 37 URLs ใน sitemap.xml เพื่อให้ Google index — ใช้ slug pattern `?s=<slug>` ตรงกับที่ strain.js ใช้ (sitemap.xml)
 - [Claude] feat(seo): เพิ่ม keyword "กัญชาส่งด่วน" ใน title/description ของ index.html + strain.html + strain.js — ตาม top query ใน GSC (22 clicks, keyword อันดับ 1)
 - [Claude] fix(seo): แก้ duplicate URL /index.html ใน GSC — เปลี่ยน breadcrumb + links ใน strain.js จาก `index.html` → `/` เพื่อรวม PageRank ไปที่ canonical `/`

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
 import { copyFile, mkdir } from 'node:fs/promises'
+import { prerenderCatalog, strainDevRoutes } from './scripts/prerender.mjs'
 
 const prepareSitesOutput = () => ({
   name: 'prepare-sites-output',
@@ -14,7 +15,7 @@ const prepareSitesOutput = () => ({
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [prepareSitesOutput()],
+  plugins: [prepareSitesOutput(), prerenderCatalog(), strainDevRoutes()],
   // ตั้งค่า Base — ใช้ '/' สำหรับ custom domain (blacknight69.com)
   // หากต้องการกลับไปใช้ GitHub Pages ให้เปลี่ยนเป็น '/blacknight-nexus/'
   base: '/',

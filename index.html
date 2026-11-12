@@ -136,8 +136,26 @@
     </script>
 
     <!-- ฟอนต์แบบเว็บ Apple: เครื่อง Apple ใช้ SF Pro / Sukhumvit Set ของเครื่อง (ฝัง SF Pro ในเว็บไม่ได้ตามลิขสิทธิ์) เครื่องอื่นใช้ Inter + Noto Sans Thai ที่หน้าตาใกล้เคียง -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- โหลดแบบไม่บล็อกการแสดงผล: หน้าเว็บขึ้นด้วยฟอนต์ของเครื่องก่อน แล้วสลับเมื่อฟอนต์มาถึง -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=Noto+Sans+Thai:wght@300..900&display=swap" rel="stylesheet"></noscript>
+    <!-- Tailwind ถูก compile ตอน build ผ่าน src/style.css แล้ว (ไม่ใช้ cdn.tailwindcss.com ซึ่งบล็อกการแสดงผล) -->
+
+    <!-- เริ่มดึงข้อมูลสินค้าทันที ไม่ต้องรอ JS โหลดเสร็จ (src/main.js รับช่วงต่อจาก window.__catalogCsv) -->
+    <link rel="preconnect" href="https://docs.google.com">
+    <link rel="preconnect" href="https://i.ibb.co">
+    <script>
+        (function () {
+            var url = '%VITE_SHEET_CSV_URL%';
+            if (url.indexOf('http') !== 0) return;
+            window.__catalogCsv = fetch(url + '&t=' + Date.now()).then(function (r) {
+                if (!r.ok) throw new Error('csv ' + r.status);
+                return r.text();
+            });
+            window.__catalogCsv.catch(function () {});
+        })();
+    </script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Sukhumvit Set", "Helvetica Neue", "Inter", "Noto Sans Thai", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
@@ -353,7 +371,7 @@
 <body class="sol-shell bg-black min-h-screen text-white">
     <!-- FULL PAGE STATIC BACKGROUND (ภาพกัญชา) -->
     <div id="static-bg" class="fixed inset-0 z-0 pointer-events-none bg-cover bg-center bg-no-repeat"
-        style="background-image: url('/bg-cannabis.jpg');"></div>
+        style="background-image: url('/bg-cannabis.webp');"></div>
     <!-- READABILITY OVERLAY: ไล่สีเขียวเข้ม + vignette ทับภาพให้ตัวหนังสืออ่านง่าย -->
     <div class="ambient-canvas fixed inset-0 z-0 pointer-events-none"
         style="background:

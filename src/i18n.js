@@ -849,6 +849,9 @@ function buildLiteralIndex() {
 
 const literalIndex = buildLiteralIndex();
 
+// ตอน build scripts/i18nBoot.mjs อ่านตารางนี้ไปฝังเฉพาะคำที่แต่ละหน้าใช้
+export { translations };
+
 export function getLanguage() {
     if (currentLanguage) return currentLanguage;
     try {
@@ -877,7 +880,8 @@ function rememberAttributeKey(element, attribute, key) {
 function translateAttribute(element, attribute, explicitKey = '') {
     const stored = attributeKeys.get(element) || {};
     const currentValue = element.getAttribute(attribute);
-    const key = explicitKey || stored[attribute] || literalIndex.get(currentValue);
+    // element.__i18nAttr / node.__i18nKey: key ที่สคริปต์แปลล่วงหน้าใน HTML ฝากไว้ (scripts/i18nBoot.mjs) เพราะข้อความไทยเดิมถูกแทนไปแล้ว
+    const key = explicitKey || stored[attribute] || element.__i18nAttr?.[attribute] || literalIndex.get(currentValue);
     if (!key) return;
     rememberAttributeKey(element, attribute, key);
     const translated = t(key);
@@ -888,7 +892,7 @@ function translateTextNode(node) {
     const raw = node.nodeValue || '';
     const trimmed = raw.trim();
     if (!trimmed) return;
-    const key = textNodeKeys.get(node) || literalIndex.get(trimmed);
+    const key = textNodeKeys.get(node) || node.__i18nKey || literalIndex.get(trimmed);
     if (!key) return;
     textNodeKeys.set(node, key);
     const prefix = raw.slice(0, raw.indexOf(trimmed));

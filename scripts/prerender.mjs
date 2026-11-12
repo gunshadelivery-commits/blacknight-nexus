@@ -12,6 +12,7 @@ import {
     imageKey, optimizedImage,
 } from '../src/catalog.js';
 import { buildProductImages } from './images.mjs';
+import { injectI18nBoot } from './i18nBoot.mjs';
 import { makeT, strainMeta, buildSchema, renderStrainHtml } from '../src/strainView.js';
 
 async function fetchCsv(url, attempts = 3) {
@@ -162,12 +163,20 @@ export function prerenderCatalog() {
                 { loc: `${SITE_URL}/accessories.html`, changefreq: 'daily', priority: '0.9' },
             ];
 
+            // หน้าที่ข้อความใน HTML เป็นไทย: ฝังคำแปลที่หน้านั้นใช้ + สคริปต์แปลทันที (ไม่ต้องซ่อนหน้ารอ JS)
+            for (const page of ['accessories.html', 'login.html', 'register.html']) {
+                const pagePath = resolve(dist, page);
+                await writeFile(pagePath, injectI18nBoot(await readFile(pagePath, 'utf8')));
+            }
+
             const shell = await readFile(resolve(dist, 'strain.html'), 'utf8');
             await writeFile(resolve(dist, '404.html'), shell.replace('content="index, follow"', 'content="noindex"'));
 
             if (!csvUrl) {
                 console.warn('[prerender] ไม่มี VITE_SHEET_CSV_URL — ข้ามการสร้างหน้าสายพันธุ์ (sitemap มีแค่หน้าหลัก)');
                 await writeFile(resolve(dist, 'sitemap.xml'), buildSitemap(basePages, [], today));
+                const plainIndex = resolve(dist, 'index.html');
+                await writeFile(plainIndex, injectI18nBoot(await readFile(plainIndex, 'utf8')));
                 return;
             }
 
@@ -196,7 +205,7 @@ export function prerenderCatalog() {
             const cards = sortForStorefront(products).map((p, i) => staticCard(p, i, built)).join('\n            ');
             const headEnd = '</head>';
             if (!indexHtml.includes(headEnd)) throw new Error('[prerender] ไม่พบ </head> ใน index.html');
-            await writeFile(indexPath, indexHtml
+            await writeFile(indexPath, injectI18nBoot(indexHtml)
                 .replace(headEnd, () => `${imageKeysScript(allImages, built)}\n${headEnd}`)
                 .replace(gridTag, () => `<div id="productList" class="product-grid" data-ssr="1">\n            ${cards}\n            </div>`));
 

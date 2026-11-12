@@ -11,6 +11,9 @@
 ==================================================== -->
 
 ## [Unreleased]
+### Added
+- [Claude] feat(seo): เพิ่ม strain pages ทั้งหมด 37 URLs ใน sitemap.xml เพื่อให้ Google index — ใช้ slug pattern `?s=<slug>` ตรงกับที่ strain.js ใช้ (sitemap.xml)
+
 ### Fixed
 - [Claude] fix(analytics): แก้ GA4 Measurement ID ใน index.html จาก G-70NV9ZCP1L → G-GXVPQ9RHSP ให้ตรงกับ stream จริง + แก้ stream URL ใน GA4 จาก gunshadelivery.github.io → blacknight69.com
 - [Claude] fix(data): แก้บั๊ก strain แสดงราคา/สต็อกผิดเมื่อชื่อสินค้าใน Sheet มี case ต่างกัน (เช่น "Alien Mint" vs "ALIEN MINT") — group ด้วย lowercase key และ dedup variants by size ทำให้ข้อมูล row ใหม่ทับ row เก่าเสมอ (src/main.js, src/strain.js)

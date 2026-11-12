@@ -6,6 +6,11 @@ on:
   push:
     branches: ["main"]
 
+  # Build ใหม่ทุกวัน 03:00 น. (เวลาไทย = 20:00 UTC) ให้หน้าสายพันธุ์ static + sitemap ตามสินค้าล่าสุดในชีต
+  # หมายเหตุ: GitHub ปิด schedule เองถ้า repo ไม่มี commit เกิน 60 วัน — เปิดคืนได้ที่แท็บ Actions
+  schedule:
+    - cron: "0 20 * * *"
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 

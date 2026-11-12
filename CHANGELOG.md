@@ -16,6 +16,7 @@
 - [Claude] feat(seo): sitemap.xml สร้างอัตโนมัติจากสินค้าจริงในชีตทุกครั้งที่ build — ของเดิมเขียนมือ: 15 จาก 38 ลิงก์ชี้ไปสายพันธุ์ที่ไม่มีแล้ว และสินค้าจริง 40 ตัว (รวมดอกใหม่ทั้งหมด) ไม่อยู่ใน sitemap · ลบ sitemap.xml ที่ root และเลิก copy ใน workflow (scripts/prerender.mjs, .github/workflows/deploy.yml)
 - [Claude] feat(seo): หน้าแรกมีการ์ดสินค้า + ลิงก์ `<a href>` ไปหน้าสายพันธุ์อยู่ใน HTML ตั้งแต่แรก (prerender ตอน build แล้ว main.js สลับเป็นการ์ดจริงเมื่อข้อมูลล่าสุดมา) — เดิมการ์ดใช้ onclick อย่างเดียว Google ไต่ไปหน้าสายพันธุ์ไม่ได้ (scripts/prerender.mjs, src/main.js, src/style.css)
 - [Claude] feat(analytics): ปุ่ม "สั่งซื้อ LINE" ในหน้าสายพันธุ์ส่ง event `contact_line` เข้า GA4 (src/catalog.js, src/strain.js)
+- [Claude] ci: build + deploy อัตโนมัติทุกวัน 03:00 น. เวลาไทย (cron `0 20 * * *` UTC) — สินค้าใหม่ในชีตได้หน้า static + เข้า sitemap เองภายใน 1 วันโดยไม่ต้อง push · GitHub จะปิด schedule ถ้า repo ไม่มี commit เกิน 60 วัน (เปิดคืนที่แท็บ Actions) (.github/workflows/deploy.yml)
 
 ### Changed
 - [Claude] perf: เลิกใช้ `cdn.tailwindcss.com` ใน index.html และ accessories.html (สคริปต์ที่บล็อกการแสดงผล + compile CSS ในเบราว์เซอร์ลูกค้า) ใช้ Tailwind ที่ compile ตอน build แทน · ย้าย `@tailwind utilities` ไปท้าย style.css ให้ลำดับ cascade เหมือนตอนใช้ CDN — เทียบ computed style ทุก element ก่อน/หลังแล้วตรงกันทั้งจอคอมและมือถือ (admin/login/register ยังใช้ CDN ตามเดิม) (index.html, accessories.html, src/style.css, tailwind.config.js)

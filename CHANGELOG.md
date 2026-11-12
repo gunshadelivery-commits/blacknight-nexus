@@ -13,6 +13,8 @@
 ## [Unreleased]
 ### Added
 - [Claude] feat(seo): เพิ่ม strain pages ทั้งหมด 37 URLs ใน sitemap.xml เพื่อให้ Google index — ใช้ slug pattern `?s=<slug>` ตรงกับที่ strain.js ใช้ (sitemap.xml)
+- [Claude] feat(seo): เพิ่ม keyword "กัญชาส่งด่วน" ใน title/description ของ index.html + strain.html + strain.js — ตาม top query ใน GSC (22 clicks, keyword อันดับ 1)
+- [Claude] fix(seo): แก้ duplicate URL /index.html ใน GSC — เปลี่ยน breadcrumb + links ใน strain.js จาก `index.html` → `/` เพื่อรวม PageRank ไปที่ canonical `/`
 
 ### Fixed
 - [Claude] fix(analytics): แก้ GA4 Measurement ID ใน index.html จาก G-70NV9ZCP1L → G-GXVPQ9RHSP ให้ตรงกับ stream จริง + แก้ stream URL ใน GA4 จาก gunshadelivery.github.io → blacknight69.com

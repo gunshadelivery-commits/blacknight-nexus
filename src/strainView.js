@@ -216,40 +216,42 @@ export function strainMeta(p) {
     };
 }
 
+// ข้อมูลสินค้าสำหรับ Google (Product snippet) — ใช้เฉพาะข้อมูลจริงจากชีต
+// ไม่ใส่ review / aggregateRating: ร้านไม่มีข้อมูลรีวิวจริง (Google เตือนว่า "ช่องที่ขาดหาย" แต่ไม่บังคับ) ห้ามแต่งขึ้น
 export function buildSchema(p) {
     const prices = p.variants.map(v => v.price).filter(n => n > 0);
     const type = p.aiType || 'Hybrid';
-    return {
-        '@context': 'https://schema.org',
-        '@graph': [
-            {
-                '@type': 'Product',
-                name: p.name.trim(),
-                description: buildEnDescription(p),
-                brand: { '@type': 'Brand', name: 'Siam Cannabis' },
-                image: absoluteImage(p.image),
-                category: type,
-                url: strainUrl(p.slug),
-                offers: {
-                    '@type': 'AggregateOffer',
-                    lowPrice: prices.length ? Math.min(...prices) : 0,
-                    highPrice: prices.length ? Math.max(...prices) : 0,
-                    offerCount: p.variants.length,
-                    priceCurrency: 'THB',
-                    availability: isSoldOut(p) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
-                    seller: { '@id': `${SITE_URL}/#organization` },
-                },
+    const graph = [];
+    // สินค้าที่ยังไม่ได้ใส่ราคาในชีต: ไม่ประกาศ Product เลย ดีกว่าบอก Google ว่าราคา 0 บาท (= แจกฟรี)
+    if (prices.length) {
+        graph.push({
+            '@type': 'Product',
+            name: p.name.trim(),
+            description: buildEnDescription(p),
+            brand: { '@type': 'Brand', name: 'Siam Cannabis' },
+            image: absoluteImage(p.image),
+            category: type,
+            url: strainUrl(p.slug),
+            offers: {
+                '@type': 'AggregateOffer',
+                lowPrice: Math.min(...prices),
+                highPrice: Math.max(...prices),
+                offerCount: prices.length, // นับเฉพาะขนาดที่มีราคา
+                priceCurrency: 'THB',
+                availability: isSoldOut(p) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+                seller: { '@id': `${SITE_URL}/#organization` },
             },
-            {
-                '@type': 'BreadcrumbList',
-                itemListElement: [
-                    { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
-                    { '@type': 'ListItem', position: 2, name: 'Strains', item: `${SITE_URL}/#products` },
-                    { '@type': 'ListItem', position: 3, name: p.name.trim(), item: strainUrl(p.slug) },
-                ],
-            },
+        });
+    }
+    graph.push({
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
+            { '@type': 'ListItem', position: 2, name: 'Strains', item: `${SITE_URL}/#products` },
+            { '@type': 'ListItem', position: 3, name: p.name.trim(), item: strainUrl(p.slug) },
         ],
-    };
+    });
+    return { '@context': 'https://schema.org', '@graph': graph };
 }
 
 // ─── HTML ของหน้าสายพันธุ์ (ใช้ทั้งตอน build และตอนรันในเบราว์เซอร์) ───────────────

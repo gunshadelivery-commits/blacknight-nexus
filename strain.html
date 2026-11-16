@@ -9,6 +9,17 @@
     <link rel="dns-prefetch" href="https://i.ibb.co">
     <script>
         (function () {
+            // ลิงก์เดิม strain.html?s=<slug> (Google และลูกค้าเคยเก็บไว้) → URL ปัจจุบัน /strain/<slug>/ ทันที ไม่ต้องรอข้อมูลสินค้า
+            // สินค้าที่ยังขายอยู่จะได้หน้าที่มี canonical + ข้อมูลครบใน HTML · สินค้าที่เลิกขายแล้วจะได้หน้า 404 จริง
+            // (ไฟล์นี้เป็นโครงของ /strain/<slug>/ และ 404.html ด้วย จึงทำเฉพาะเมื่อ path เป็น strain.html)
+            if (/\/strain\.html$/.test(location.pathname)) {
+                var legacy = '';
+                try { legacy = (new URLSearchParams(location.search).get('s') || '').trim().toLowerCase(); } catch (e) {}
+                if (legacy) {
+                    location.replace('/strain/' + encodeURIComponent(legacy) + '/');
+                    return;
+                }
+            }
             var url = '%VITE_SHEET_CSV_URL%';
             if (url.indexOf('http') !== 0) return;
             try { if (sessionStorage.getItem('sc_sheet_cache')) return; } catch (e) {}
@@ -28,7 +39,6 @@
     <meta property="og:site_name" content="Siam Cannabis Bangkok">
     <meta property="og:image" content="https://blacknight69.com/og-image.jpg">
     <meta property="og:locale" content="en_US">
-    <script type="application/ld+json" id="strain-schema">{"@context":"https://schema.org","@type":"Product","name":"Cannabis Strain","brand":{"@type":"Brand","name":"Siam Cannabis"}}</script>
     <!-- ssr:head-end -->
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico">

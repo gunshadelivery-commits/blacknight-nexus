@@ -9,7 +9,7 @@ import Papa from 'papaparse';
 import { loadEnv } from 'vite';
 import {
     SITE_URL, IMAGE_SIZES, esc, groupProducts, sortForStorefront, strainUrl, isSoldOut, isPremiumProduct, getCardPerfectFor,
-    firstAvailableIndex,
+    firstAvailableIndex, isCatalogCsv,
     imageKey, optimizedImage,
 } from '../src/catalog.js';
 import { buildProductImages } from './images.mjs';
@@ -23,7 +23,7 @@ async function fetchCsv(url, attempts = 3) {
             const res = await fetch(`${url}&t=${Date.now()}`, { signal: AbortSignal.timeout(20000) });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const text = await res.text();
-            if (!text.startsWith('name,')) throw new Error('ไม่ใช่ CSV ของชีต Products');
+            if (!isCatalogCsv(text)) throw new Error('ไม่ใช่ CSV ของชีต Products');
             return text;
         } catch (err) {
             lastError = err;
@@ -174,7 +174,10 @@ export function prerenderCatalog() {
             }
 
             const shell = await readFile(resolve(dist, 'strain.html'), 'utf8');
-            await writeFile(resolve(dist, '404.html'), shell.replace('content="index, follow"', 'content="noindex"'));
+            // 404.html = โครงหน้าสายพันธุ์สำหรับ URL ที่ไม่มีไฟล์ (GitHub Pages ส่งด้วยสถานะ 404) ต้องมี noindex เสมอ
+            const notFoundPage = shell.replace('content="index, follow"', 'content="noindex"');
+            if (notFoundPage === shell) throw new Error('[prerender] ไม่พบ meta robots ใน strain.html — 404.html จะไม่มี noindex');
+            await writeFile(resolve(dist, '404.html'), notFoundPage);
 
             if (!csvUrl) {
                 console.warn('[prerender] ไม่มี VITE_SHEET_CSV_URL — ข้ามการสร้างหน้าสายพันธุ์ (sitemap มีแค่หน้าหลัก)');

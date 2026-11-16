@@ -176,6 +176,12 @@ export function isPremiumProduct(product) {
 // ─── แปลงแถว CSV เป็นสินค้า ─────────────────────────────────────────────────────
 // คอลัมน์ชีต: name, size, price, note, image, tags, status, stock, sold_count, category
 
+// ลิงก์ CSV ของชีตตอบเป็นอย่างอื่นได้ (หน้า error/หน้า login ของ Google เป็น HTML, ไฟล์ว่าง, โดนจำกัดความถี่)
+// ต้องเช็คหัวคอลัมน์ก่อนใช้ทุกครั้ง: ถ้าเอาข้อความพวกนั้นมาอ่านเป็นสินค้า หน้าเว็บจะเข้าใจว่า "ไม่มีสินค้านี้แล้ว"
+export function isCatalogCsv(text) {
+    return typeof text === 'string' && /^\uFEFF?\s*"?name"?\s*,/i.test(text);
+}
+
 export function groupProducts(rows) {
     const grouped = {};
     rows.slice(1).forEach(row => {

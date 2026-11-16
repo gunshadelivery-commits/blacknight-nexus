@@ -5,7 +5,7 @@ import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
 import {
     groupProducts, sortForStorefront, strainPath, esc, jsArg, getCardPerfectFor as getPerfectFor, isPremiumProduct, firstAvailableIndex,
-    IMAGE_SIZES, optimizedImage, parseImageKeys,
+    IMAGE_SIZES, optimizedImage, parseImageKeys, isCatalogCsv,
 } from './catalog.js';
 
 let products = [];
@@ -132,7 +132,7 @@ let lastCatalogCsv = null;
 function readCatalogCache() {
     try {
         const cached = JSON.parse(sessionStorage.getItem(CATALOG_CACHE_KEY) || 'null');
-        if (cached && Date.now() - cached.ts < CATALOG_CACHE_TTL) return cached.csv;
+        if (cached && Date.now() - cached.ts < CATALOG_CACHE_TTL && isCatalogCsv(cached.csv)) return cached.csv;
     } catch (e) { /* ไม่มี cache */ }
     return null;
 }
@@ -145,7 +145,13 @@ function fetchCatalogCsv() {
         if (!r.ok) throw new Error(`csv ${r.status}`);
         return r.text();
     });
-    return (early ? early.catch(download) : download()).then(csv => {
+    // ลิงก์ชีตตอบเป็นหน้า HTML ของ Google ได้ (error / จำกัดความถี่): ไม่ใช่ข้อมูลสินค้า = ถือว่าโหลดไม่สำเร็จ
+    // การ์ดที่ build ใส่ไว้ในหน้า (พร้อมลิงก์ไปหน้าสายพันธุ์) จะคงอยู่ ไม่ถูกแทนด้วยข้อมูลขยะ
+    const onlyCatalog = csv => {
+        if (!isCatalogCsv(csv)) throw new Error('csv invalid');
+        return csv;
+    };
+    return (early ? early.then(onlyCatalog).catch(() => download().then(onlyCatalog)) : download().then(onlyCatalog)).then(csv => {
         try { sessionStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ ts: Date.now(), csv })); } catch (e) { /* เต็ม/ปิดไว้ */ }
         return csv;
     });
@@ -190,7 +196,7 @@ function decorateForStorefront(product) {
 function applyCatalogCsv(csvText) {
     // จัดกลุ่มแถว CSV เป็นสินค้าด้วยตัวเดียวกับหน้าสายพันธุ์และ prerender (src/catalog.js)
     const data = Papa.parse(csvText, { skipEmptyLines: true }).data || [];
-    if (data.length < 2) {
+    if (!isCatalogCsv(csvText) || data.length < 2) {
         showToast(t('store.product.noData'), "error");
         return false;
     }

@@ -18,6 +18,9 @@
 - [Claude] fix(seo): เอา `canonical` ออกจาก login.html / register.html — สองหน้านี้ตั้ง `noindex` โดยตั้งใจ การประกาศ canonical (= "ให้เก็บ URL นี้") พร้อม noindex (= "อย่าเก็บ") เป็นสัญญาณขัดกัน เหลือ noindex อย่างเดียว · เอา JSON-LD `Product` ตัวอย่างที่ไม่มีราคา/รูปออกจากโครง strain.html และ 404.html (ไม่ผ่านเกณฑ์ Product snippet ถ้า Google อ่านเจอ) สคริปต์สร้างให้เองเมื่อรู้ข้อมูลสินค้าจริง · build หยุดถ้า 404.html ไม่ได้ noindex (login.html, register.html, strain.html, src/strain.js, scripts/prerender.mjs)
 - [Claude] fix(seo): JSON-LD สินค้า — `offerCount` นับเฉพาะขนาดที่มีราคา และสินค้าที่ยังไม่ได้ใส่ราคาในชีตจะไม่ประกาศ `Product` (เดิมจะประกาศราคา 0 บาท) · ตอนนี้ทั้ง 62 หน้ามีราคาครบ ค่าที่ออกจึงเหมือนเดิมทุกหน้า เป็นการกันไว้สำหรับแถวที่เพิ่มในชีตภายหลัง · ไม่ใส่ `review` / `aggregateRating` (คำเตือน "ช่องที่ขาดหาย" ใน Search Console เป็นแบบไม่บังคับ ร้านไม่มีข้อมูลรีวิวจริง ห้ามแต่งขึ้น) (src/strainView.js)
 
+### Changed
+- [Claude] feat(catalog): หน้าร้านเรียงสินค้าที่เพิ่มล่าสุดขึ้นบนสุดเสมอ ตามที่ [Human:Ped] สั่ง (16 พ.ย. 2026: "รายการเมนูใหม่ ขึ้นด้านบนเสมอ") — ใช้ตำแหน่งแถวแรกของสินค้าในชีต (สินค้าใหม่ต่อท้ายชีตเสมอ) กลับลำดับ = ใหม่สุดก่อน ทั้งการ์ดที่ build ใส่ไว้และการ์ดจริงจาก CSV ทุกแท็บหมวด · เพิ่มขนาดใหม่ให้สินค้าเดิมไม่ทำให้สินค้านั้นเด้งขึ้น · แท็ก `new` ไม่มีผลกับลำดับแล้ว (เดิมแท็ก new ขึ้นก่อน ทำให้สินค้า Top grade 19 ตัวที่เพิ่ม 16 พ.ย. อยู่ใต้กลุ่ม new 15 ตัว) (src/catalog.js)
+
 ### Added
 - [Claude] chore(seo): `npm run check:seo` ตรวจ `dist/` หลัง build — ทุก URL ใน sitemap มีไฟล์จริง ไม่มี noindex และ canonical ตรงกับตัวเอง · หน้า noindex ไม่อยู่ใน sitemap และไม่มี canonical · JSON-LD `Product` ทุกหน้าผ่านเกณฑ์ Product snippet (ชื่อ, รูปเป็น URL เต็ม, ราคา > 0, สกุลเงิน, availability) · ใส่ `-- --images` เพื่อตรวจว่ารูปโหลดได้จริง (scripts/check-seo.mjs, package.json)
 

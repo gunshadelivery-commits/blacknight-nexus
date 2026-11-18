@@ -31,11 +31,24 @@ export const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "";
 // ============================================================
 
 /**
+ * มือถือ/แท็บเล็ต (มีแอป LINE) หรือคอมพิวเตอร์
+ * ลิงก์ oaMessage (เปิดแชตร้านพร้อมข้อความ) ใช้ได้เฉพาะเครื่องที่มีแอป LINE — เปิดจากคอมพิวเตอร์จะเด้งไปหน้าแรก line.me
+ * ลูกค้าจึงทักร้านไม่ได้ (ตรวจ 18 พ.ย. 2026) · iPad รุ่นใหม่รายงานตัวเป็น Mac แต่มีจอสัมผัส → นับเป็นมือถือ
+ */
+export function isMobileDevice() {
+    if (typeof navigator === 'undefined') return true;
+    const ua = navigator.userAgent || '';
+    return /Android|iPhone|iPad|iPod|Mobile|Line\//i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+/**
  * สร้าง LINE OA Message URL
+ * บนคอมพิวเตอร์ใช้หน้าเพิ่มเพื่อนของร้านแทน (มี QR ให้สแกนด้วยมือถือ) เพราะแนบข้อความไม่ได้อยู่แล้ว
  * @param {string} message - ข้อความที่จะส่ง
  * @returns {string} LINE URL scheme
  */
 export function buildLineUrl(message) {
+    if (LINE_OA_ID && !isMobileDevice()) return getLineOaUrl();
     if (LINE_OA_ID) {
         // ใช้รูปแบบ oaMessage เพื่อให้ทักแชทร้านได้โดยตรง และ encode @ เป็น %40
         const encodedId = encodeURIComponent(LINE_OA_ID);
@@ -54,6 +67,17 @@ export function getLineOaUrl() {
         return `https://line.me/R/ti/p/${encodedId}`;
     }
     return "https://line.me";
+}
+
+/**
+ * ลิงก์ LINE ที่ฝังใน HTML ตั้งแต่ตอน build (หน้าสายพันธุ์ที่ prerender ไว้) สร้างแบบมือถือเสมอ
+ * บนคอมพิวเตอร์ให้เปลี่ยนเป็นหน้าเพิ่มเพื่อนของร้าน
+ */
+export function fixLineLinksForDesktop(root = document) {
+    if (!LINE_OA_ID || isMobileDevice()) return;
+    root.querySelectorAll('a[href*="line.me/R/oaMessage/"], a[href*="line.me/R/msg/text/"]').forEach(a => {
+        a.href = getLineOaUrl();
+    });
 }
 
 /**

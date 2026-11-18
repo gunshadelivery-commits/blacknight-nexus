@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { SHEET_CSV_URL, buildLineUrl } from './config.js';
+import { SHEET_CSV_URL, buildLineUrl, fixLineLinksForDesktop } from './config.js';
 import { buildAnalyticsItem, initAnalyticsTracking, trackEvent } from './analytics.js';
 import { groupProducts, findBySlug, optimizedImage, parseImageKeys, firstAvailableIndex, isSoldOut, isCatalogCsv, strainPath } from './catalog.js';
 import {
@@ -126,6 +126,7 @@ function render(p, allProducts) {
     document.getElementById('strain-content').style.display = 'block';
     updateBackLabel(t);
     watchCta();
+    fixLineLinksForDesktop();
 }
 
 window.selectVariant = (idx) => {
@@ -223,6 +224,8 @@ trackView(currentProduct);
 // ยืนยันอายุ 20+ เหมือนหน้าแรก (ลูกค้าจาก Google เข้าหน้านี้โดยตรง) และเปิดใช้ปุ่มสลับภาษาใน nav
 initAgeGate();
 updateBackLabel(makeT(getLang()));
+// ลิงก์ LINE ในหน้าที่ build ไว้เป็นแบบมือถือ: บนคอมพิวเตอร์เปลี่ยนเป็นหน้าเพิ่มเพื่อนร้าน (ดู src/config.js)
+fixLineLinksForDesktop();
 // สลับภาษา: วาดหน้าใหม่ด้วยภาษาที่เลือก
 document.addEventListener('cf:languagechange', () => {
     if (currentProduct && catalog.length) render(currentProduct, catalog);

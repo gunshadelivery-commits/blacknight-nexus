@@ -174,10 +174,10 @@ function renderBulkTable() {
     }
     body.innerHTML = bulkRows.map((r, i) => `
         <tr>
-            <td class="px-4 py-2 font-bold text-slate-700">${bulkEsc(r.name)}</td>
-            <td class="px-4 py-2 text-slate-500 text-xs">${bulkEsc(r.size || 'Standard')}</td>
-            <td class="px-4 py-2"><input type="number" step="any" min="0" data-i="${i}" class="bulk-price w-32 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none" value="${r.price}"></td>
-            <td class="px-4 py-2"><input type="number" min="0" data-i="${i}" class="bulk-stock w-32 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none" value="${r.stock}"></td>
+            <td class="bulk-name px-4 py-2 font-bold text-slate-700">${bulkEsc(r.name)}</td>
+            <td class="bulk-size px-4 py-2 text-slate-500 text-xs">${bulkEsc(r.size || 'Standard')}</td>
+            <td class="bulk-field px-4 py-2" data-label="${esc(t('common.price'))} (฿)"><input type="number" step="any" min="0" data-i="${i}" class="bulk-price w-32 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none" value="${r.price}"></td>
+            <td class="bulk-field px-4 py-2" data-label="${esc(t('common.stock'))}"><input type="number" min="0" data-i="${i}" class="bulk-stock w-32 border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 outline-none" value="${r.stock}"></td>
         </tr>`).join('');
 }
 
@@ -751,19 +751,19 @@ function renderOrdersTable() {
 
         return `
             <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-50">
-                <td class="px-6 py-4 w-[180px] text-[11px] font-mono text-slate-400 whitespace-nowrap">${esc(dateStr)}</td>
-                <td class="px-6 py-4">
+                <td class="order-date px-6 py-4 w-[180px] text-[11px] font-mono text-slate-400 whitespace-nowrap">${esc(dateStr)}</td>
+                <td class="order-customer px-6 py-4">
                     <div class="flex flex-col">
                         <span class="font-bold text-slate-700 text-sm">${esc(displayIdentity)}</span>
                         ${phoneStr && phoneStr !== displayIdentity ? `<span class="text-[11px] font-mono text-slate-500">${esc(phoneStr)}</span>` : ''}
                         <div class="flex items-center gap-1">
-                            <span class="text-[10px] text-slate-400 truncate max-w-[200px]" title="${esc(addressText)}">${esc(addressText)}</span>
+                            <span class="order-address text-[10px] text-slate-400 truncate max-w-[200px]" title="${esc(addressText)}">${esc(addressText)}</span>
                         </div>
                         ${orderItems.length ? `
-                        <ul class="mt-2 flex flex-wrap gap-1.5">
+                        <ul class="order-items mt-2 flex flex-wrap gap-1.5">
                             ${orderItems.map((item, ii) => `
                             <li class="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] font-bold text-emerald-800">
-                                ${esc(item.name)}${item.size ? ` <span class="font-medium text-emerald-600">${esc(item.size)}</span>` : ''}${item.qty ? ` <span class="font-mono">×${item.qty}</span>` : ''}
+                                <span class="order-item-text">${esc(item.name)}${item.size ? ` <span class="font-medium text-emerald-600">${esc(item.size)}</span>` : ''}${item.qty ? ` <span class="font-mono">×${item.qty}</span>` : ''}</span>
                                 ${item.qty && suppliers !== null ? `
                                 <button type="button" onclick="window.editOrderItemSupplier(${vi}, ${ii})"
                                         class="block mt-0.5 text-[10px] font-medium ${supplierOf(item.name) ? 'text-slate-600' : 'text-slate-400'} hover:text-emerald-700 hover:underline text-left">
@@ -773,11 +773,11 @@ function renderOrdersTable() {
                         </ul>` : ''}
                     </div>
                 </td>
-                <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">
+                <td class="order-total px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right" data-label="${esc(t('admin.orders.total'))}">
                     ${total.toLocaleString()} ฿
                     ${shippingFee ? `<div class="text-[9px] text-slate-400 font-normal">${t('admin.orders.shipping')} ${esc(shippingFee)}</div>` : ''}
                 </td>
-                <td class="px-6 py-4 w-[120px] text-center">
+                <td class="order-status px-6 py-4 w-[120px] text-center">
                     <div class="flex flex-col items-center gap-1">
                         <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight whitespace-nowrap ${isConfirmed ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}">
                             ${esc(displayStatus)}
@@ -787,7 +787,7 @@ function renderOrdersTable() {
                         </span>
                     </div>
                 </td>
-                <td class="px-6 py-4 w-[250px] text-right">
+                <td class="order-actions px-6 py-4 w-[250px] text-right">
                     <div class="flex justify-end gap-2 flex-wrap">
                         <button onclick="window.printLabel(${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition active:scale-95 shadow-md">
@@ -1089,21 +1089,21 @@ function renderProductsTable() {
     Object.values(grouped).forEach((p, gi) => {
         const outOfStock = p.totalStock <= 0 || ['หมด','0','sold out'].includes(p.status?.toLowerCase());
         body.innerHTML += `<tr>
-            <td class="px-6 py-3"><img src="${esc((p.image || '').toString().split(',')[0].trim())}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-lg bg-slate-100" onerror="this.style.visibility='hidden'"></td>
-            <td class="px-6 py-3 font-bold">${esc(p.name)}</td>
-            <td class="px-6 py-3">
+            <td class="prod-img px-6 py-3"><img src="${esc((p.image || '').toString().split(',')[0].trim())}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-lg bg-slate-100" onerror="this.style.visibility='hidden'"></td>
+            <td class="prod-name px-6 py-3 font-bold">${esc(p.name)}</td>
+            <td class="prod-supplier px-6 py-3">
                 <button type="button" onclick="editSupplierAt(${gi})" ${suppliers === null ? 'disabled' : ''}
                         class="text-xs text-left ${supplierOf(p.name) ? 'font-bold text-slate-700' : 'text-slate-400'} hover:text-emerald-700 hover:underline disabled:no-underline disabled:cursor-not-allowed">
                     ${supplierOf(p.name) ? esc(supplierOf(p.name)) : (suppliers === null ? '—' : t('admin.supplier.add'))}
                 </button>
             </td>
-            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">${esc(p.category || 'N/A')}</span></td>
-            <td class="px-6 py-3 text-slate-500 text-xs">${esc(p.sizes.join(', '))}</td>
-            <td class="px-6 py-3 font-bold text-emerald-600">${p.minPrice.toLocaleString()} ฿ +</td>
-            <td class="px-6 py-3 font-bold ${p.totalStock < 5 ? 'text-red-500' : 'text-slate-600'}">${p.totalStock}</td>
-            <td class="px-6 py-3 text-slate-400 font-bold">${p.totalSold}</td>
-            <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${outOfStock ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${outOfStock ? t('admin.products.out') : t('admin.products.available')}</span></td>
-            <td class="px-6 py-3 text-right">
+            <td class="prod-cat px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">${esc(p.category || 'N/A')}</span></td>
+            <td class="prod-sizes px-6 py-3 text-slate-500 text-xs">${esc(p.sizes.join(', '))}</td>
+            <td class="prod-stat prod-price px-6 py-3 font-bold text-emerald-600" data-label="${esc(t('admin.products.startPrice'))}">${p.minPrice.toLocaleString()} ฿ +</td>
+            <td class="prod-stat prod-stock px-6 py-3 font-bold ${p.totalStock < 5 ? 'text-red-500' : 'text-slate-600'}" data-label="${esc(t('admin.products.totalStock'))}">${p.totalStock}</td>
+            <td class="prod-stat prod-sold px-6 py-3 text-slate-400 font-bold" data-label="${esc(t('common.sold'))}">${p.totalSold}</td>
+            <td class="prod-status px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${outOfStock ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${outOfStock ? t('admin.products.out') : t('admin.products.available')}</span></td>
+            <td class="prod-actions px-6 py-3 text-right">
                 <button onclick="editProductAt(${gi})" class="p-2 text-slate-400 hover:text-emerald-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 </button>
@@ -1341,18 +1341,18 @@ function renderPromptpayTable() {
 
     promptpayList.forEach((pp, idx) => {
         tbody.innerHTML += `<tr class="hover:bg-slate-50 transition">
-            <td class="px-6 py-4">
+            <td class="pp-qr px-6 py-4">
                 ${pp.qrImage ? `<img src="${esc(pp.qrImage)}" alt="" class="w-12 h-12 object-cover rounded-lg shadow-sm border border-slate-100">` : '<div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center"><span class="text-xs text-slate-400">ไม่มี</span></div>'}
             </td>
-            <td class="px-6 py-4 font-bold text-slate-800">${esc(pp.name)}</td>
-            <td class="px-6 py-4 text-slate-600">${esc(pp.bank)}</td>
-            <td class="px-6 py-4 font-mono text-sm text-slate-600">${esc(pp.number)}</td>
-            <td class="px-6 py-4">
+            <td class="pp-name px-6 py-4 font-bold text-slate-800">${esc(pp.name)}</td>
+            <td class="pp-bank px-6 py-4 text-slate-600">${esc(pp.bank)}</td>
+            <td class="pp-number px-6 py-4 font-mono text-sm text-slate-600">${esc(pp.number)}</td>
+            <td class="pp-status px-6 py-4">
                 <span class="px-3 py-1 rounded-full text-[10px] font-bold ${pp.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
                     ${pp.status === 'active' ? t('admin.promptpay.active') : t('admin.promptpay.inactive')}
                 </span>
             </td>
-            <td class="px-6 py-4 text-right flex gap-2 justify-end">
+            <td class="pp-actions px-6 py-4 text-right flex gap-2 justify-end">
                 <button onclick="editPromptpay(${idx})" class="p-2 text-slate-400 hover:text-blue-600 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 </button>

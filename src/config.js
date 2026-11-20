@@ -18,6 +18,10 @@ export const GAS_URL = import.meta.env.VITE_GAS_URL || "";
 // --- LINE OA ID - from environment ---
 export const LINE_OA_ID = import.meta.env.VITE_LINE_OA_ID || "";
 
+// --- WhatsApp ของร้าน (ช่องทางเสริมสำหรับลูกค้าต่างชาติที่ไม่มี LINE) ---
+// เบอร์เดียวกับเบอร์โทรร้านที่ประกาศบนเว็บอยู่แล้ว (080 572 0186) ในรูปแบบสากล ไม่มี + และไม่มี 0 นำหน้า
+export const WHATSAPP_NUMBER = "66805720186";
+
 // --- ImgBB API Key - from environment (NEVER hardcode!) ---
 export const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "";
 
@@ -67,6 +71,15 @@ export function getLineOaUrl() {
         return `https://line.me/R/ti/p/${encodedId}`;
     }
     return "https://line.me";
+}
+
+/**
+ * ลิงก์เปิดแชต WhatsApp ของร้าน (ใช้ได้ทั้งมือถือและคอมพิวเตอร์) พร้อมข้อความถ้ามี
+ * @param {string} [message]
+ */
+export function buildWhatsAppUrl(message = "") {
+    const base = `https://wa.me/${WHATSAPP_NUMBER}`;
+    return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
 /**

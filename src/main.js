@@ -1,6 +1,6 @@
 import './style.css';
 import Papa from 'papaparse';
-import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getLineOaUrl } from './config.js';
+import { SHEET_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, buildLineUrl, getLineOaUrl, buildWhatsAppUrl } from './config.js';
 import { getLanguage, initI18n, t } from './i18n.js';
 import { buildAnalyticsItem, buildCartItems, initAnalyticsTracking, trackEvent } from './analytics.js';
 import {
@@ -52,6 +52,7 @@ const cardImage = src => optimizedImage(src, IMAGE_SIZES.card, builtImages);
 const fullImage = src => optimizedImage(src, IMAGE_SIZES.full, builtImages);
 let currentCategory = "All";
 let currentLineUrl = "";
+let currentWhatsAppUrl = "";
 // จ่ายเงินตอนรับสินค้าเท่านั้น (ไม่มีโอนล่วงหน้า/แนบสลิปแล้ว) · ค่าบริการจัดส่งจริง 50–80 บาทตามระยะทาง ไม่เกิน 100
 // เว็บบวกค่าเริ่มต้นไว้ก่อน ร้านแจ้งยอดสุดท้ายตอนยืนยันออเดอร์ทาง LINE
 const SERVICE_FEE = 50;
@@ -790,11 +791,21 @@ ${itemsDetail}
 💰 ยอดรวมประมาณ: ${finalTotal.toLocaleString()} บาท
 (รอร้านยืนยันยอดสุดท้ายและเวลาจัดส่ง)`;
 
+        // ภาษาไทย: พาไป LINE อัตโนมัติเหมือนเดิม · ภาษาอื่น: ลูกค้าต่างชาติมักไม่มี LINE จึงให้เลือก LINE หรือ WhatsApp เอง
+        const autoLine = getLanguage() === 'th';
+        const successDesc = document.getElementById('successDescription');
+        if (successDesc) {
+            const descKey = autoLine ? 'store.success.description' : 'store.success.choose';
+            successDesc.dataset.i18n = descKey;
+            successDesc.textContent = t(descKey);
+        }
+
         document.getElementById('finalOrderTotal').textContent = finalTotal.toLocaleString() + " ฿";
         document.getElementById('successModal').classList.remove('hidden');
         document.body.classList.add('overlay-open');
 
         currentLineUrl = buildLineUrl(lineMsg);
+        currentWhatsAppUrl = buildWhatsAppUrl(lineMsg);
 
         // ส่งเฉพาะยอดและรายการสินค้า — ห้ามใส่ชื่อ เบอร์ อีเมล ที่อยู่ลูกค้า
         trackEvent('purchase', {
@@ -820,7 +831,7 @@ ${itemsDetail}
         })).catch(() => {});
 
         setTimeout(() => {
-            if (!currentLineUrl) return;
+            if (!autoLine || !currentLineUrl) return;
             trackEvent('contact_line', { placement: 'order_success_auto' });
             window.location.href = currentLineUrl;
         }, 3000);
@@ -914,6 +925,12 @@ window.redirectToLine = () => {
         trackEvent('contact_line', { placement: 'order_success_button' });
         window.location.href = currentLineUrl;
     } else window.location.reload();
+};
+window.redirectToWhatsApp = () => {
+    if (!currentWhatsAppUrl) return window.location.reload();
+    trackEvent('contact_whatsapp', { placement: 'order_success_button' });
+    // เปิดแท็บใหม่เพื่อให้หน้ายืนยันออเดอร์ยังอยู่ · ถ้าเบราว์เซอร์บล็อกแท็บใหม่ ให้ไปในแท็บเดิม
+    if (!window.open(currentWhatsAppUrl, '_blank', 'noopener')) window.location.href = currentWhatsAppUrl;
 };
 
 document.addEventListener('DOMContentLoaded', () => {

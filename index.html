@@ -671,7 +671,7 @@
                         ตรวจสอบข้อมูลร้านล่าสุดหรือโทรสอบถามได้จากช่องทางทางการ
                     </p>
 
-                    <div class="mt-7 flex flex-col sm:flex-row gap-3">
+                    <div class="mt-7 flex flex-col sm:flex-row sm:flex-wrap gap-3">
                         <a href="https://share.google/iw4lgBYnWe6j4LN2o" target="_blank" rel="noopener noreferrer"
                            data-analytics-event="business_profile_click" data-analytics-placement="business_profile"
                            class="primary-action justify-center">
@@ -680,6 +680,10 @@
                         <a href="tel:+66805720186" class="secondary-action justify-center"
                            data-analytics-event="contact_phone" data-analytics-placement="business_profile_cta">
                             <span data-i18n="store.profile.callCta">โทร 080 572 0186</span>
+                        </a>
+                        <a href="https://wa.me/66805720186" target="_blank" rel="noopener" class="secondary-action justify-center"
+                           data-analytics-event="contact_whatsapp" data-analytics-placement="business_profile_cta">
+                            <span data-i18n="store.contact.whatsapp">คุยกับร้านทาง WhatsApp</span>
                         </a>
                     </div>
                     <p class="mt-4 text-[11px] text-white/60" data-i18n="store.profile.source">ข้อมูลอ้างอิงจาก Google Business Profile ของร้าน</p>
@@ -734,6 +738,8 @@
                 <div class="site-footer-contact">
                     <a id="footerLineLink" href="#" target="_blank" rel="noopener"
                        data-analytics-event="contact_line" data-analytics-placement="footer" data-i18n="store.hero.line">คุยกับร้านทาง LINE</a>
+                    <a href="https://wa.me/66805720186" target="_blank" rel="noopener"
+                       data-analytics-event="contact_whatsapp" data-analytics-placement="footer" data-i18n="store.contact.whatsapp">คุยกับร้านทาง WhatsApp</a>
                     <a href="tel:+66805720186" data-analytics-event="contact_phone" data-analytics-placement="footer" data-i18n="store.profile.callCta">โทร 080 572 0186</a>
                 </div>
             </div>
@@ -819,7 +825,7 @@
             class="glass-card rounded-[3rem] p-8 w-full max-w-sm text-center shadow-2xl animate-in zoom-in duration-500 border border-white/10">
             <div class="text-7xl mb-6 scale-up-center">🥳</div>
             <h2 id="successTitle" class="text-3xl font-extrabold text-white mb-2">สั่งซื้อสำเร็จ!</h2>
-            <p class="text-white/70 mb-8 px-4 text-sm" data-i18n="store.success.description">กำลังพาคุณไป LINE เพื่อยืนยันออเดอร์กับร้าน...</p>
+            <p id="successDescription" class="text-white/70 mb-8 px-4 text-sm" data-i18n="store.success.description">กำลังพาคุณไป LINE เพื่อยืนยันออเดอร์กับร้าน...</p>
             <div class="bg-white/10 p-4 rounded-2xl mb-8 flex flex-col justify-center items-center gap-1">
                 <span class="text-white/70 font-bold" data-i18n="store.success.total">ยอดจ่ายตอนรับของ (ประมาณ):</span>
                 <span id="finalOrderTotal" class="text-2xl font-black text-white whitespace-nowrap">0 ฿</span>
@@ -827,6 +833,8 @@
             <div class="flex flex-col gap-3">
                 <button onclick="window.redirectToLine()"
                     class="w-full bg-white text-black py-4 rounded-2xl font-bold text-lg shadow-xl hover:bg-white/90 transition" data-i18n="store.success.line">ยืนยันออเดอร์ทาง LINE</button>
+                <button onclick="window.redirectToWhatsApp()"
+                    class="w-full bg-white/10 text-white py-4 rounded-2xl font-bold text-lg border border-white/25 hover:bg-white/20 transition" data-i18n="store.success.whatsapp">ยืนยันออเดอร์ทาง WhatsApp</button>
                 <button onclick="location.reload()"
                     class="w-full bg-white/10 text-white py-3 rounded-2xl font-bold text-sm hover:bg-white/20 transition">กลับไปหน้าแรก</button>
             </div>

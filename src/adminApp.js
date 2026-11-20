@@ -625,6 +625,16 @@ function orderKeyFields(order) {
     };
 }
 
+// คอลัมน์ "รายการ" ของออเดอร์เก็บเป็นข้อความเดียว: "ชื่อสินค้า [ขนาด] xจำนวน, ..." (ดู submitOrder ใน src/main.js)
+// แยกเป็นชิ้นเพื่อแสดงในตาราง · ข้อความรูปแบบอื่น (ออเดอร์เก่า/กรอกมือ) แสดงทั้งก้อนตามเดิม
+function parseOrderItems(text) {
+    const source = (text || "").toString().trim();
+    if (!source) return [];
+    const items = [...source.matchAll(/\s*(.+?)\s*\[([^\]]*)\]\s*x(\d+)\s*(?:,|$)/g)]
+        .map(m => ({ name: m[1].trim(), size: m[2].trim(), qty: parseInt(m[3], 10) }));
+    return items.length ? items : [{ name: source, size: "", qty: 0 }];
+}
+
 function renderOrdersTable() {
     const body = document.getElementById('orderTableBody');
     const sortedOrders = [...rawOrders].reverse();
@@ -647,9 +657,11 @@ function renderOrdersTable() {
             if (targets.includes("สลิป") || targets.includes("slip")) return order[keys[7]];
             if (targets.includes("แผนที่") || targets.includes("map")) return order[keys[4]];
             if (targets.includes("ที่อยู่") || targets.includes("address")) return order[keys[3]];
+            if (targets.includes("รายการ") || targets.includes("items")) return order[keys[5]];
             return "";
         };
 
+        const orderItems = parseOrderItems(getVal(["รายการ", "items"]));
         const rawStatus = (getVal(["สถานะ", "status"]) || "").toString().trim();
         const slip = (getVal(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
         const payMethod = (getVal(["วิธีชำระเงิน", "paymentMethod", "payment"]) || "").toString().trim();
@@ -687,6 +699,13 @@ function renderOrdersTable() {
                         <div class="flex items-center gap-1">
                             <span class="text-[10px] text-slate-400 truncate max-w-[200px]" title="${esc(addressText)}">${esc(addressText)}</span>
                         </div>
+                        ${orderItems.length ? `
+                        <ul class="mt-2 flex flex-wrap gap-1.5">
+                            ${orderItems.map(item => `
+                            <li class="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] font-bold text-emerald-800">
+                                ${esc(item.name)}${item.size ? ` <span class="font-medium text-emerald-600">${esc(item.size)}</span>` : ''}${item.qty ? ` <span class="font-mono">×${item.qty}</span>` : ''}
+                            </li>`).join('')}
+                        </ul>` : ''}
                     </div>
                 </td>
                 <td class="px-6 py-4 w-[120px] font-bold text-slate-700 font-mono text-sm text-right">

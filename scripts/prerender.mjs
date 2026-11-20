@@ -14,6 +14,7 @@ import {
 } from '../src/catalog.js';
 import { buildProductImages } from './images.mjs';
 import { injectI18nBoot } from './i18nBoot.mjs';
+import { translations } from '../src/i18n.js';
 import { makeT, strainMeta, buildSchema, renderStrainHtml, pickRelated } from '../src/strainView.js';
 
 async function fetchCsv(url, attempts = 3) {
@@ -147,6 +148,28 @@ export function strainDevRoutes() {
     };
 }
 
+// FAQPage JSON-LD ของหน้าแรก: สร้างจากคีย์ store.faq.* ที่หน้านั้นใช้จริง ข้อความจึงตรงกับที่ลูกค้าเห็นเสมอ
+function faqJsonLd(html) {
+    const th = translations.th;
+    const numbers = [...html.matchAll(/data-i18n="store\.faq\.q(\d+)"/g)].map(m => m[1]);
+    const mainEntity = numbers
+        .filter(n => th[`store.faq.q${n}`] && th[`store.faq.a${n}`])
+        .map(n => ({
+            '@type': 'Question',
+            name: th[`store.faq.q${n}`],
+            acceptedAnswer: { '@type': 'Answer', text: th[`store.faq.a${n}`] },
+        }));
+    if (!mainEntity.length) return '';
+    const data = { '@context': 'https://schema.org', '@type': 'FAQPage', '@id': `${SITE_URL}/#faq`, inLanguage: 'th', mainEntity };
+    return `<script type="application/ld+json" id="faq-schema">${jsonForScript(data)}</script>`;
+}
+
+// แทรกก่อน </head> ของหน้าแรก (ใช้ทั้งกรณีมีและไม่มีข้อมูลชีต)
+function withFaqSchema(indexHtml) {
+    const tag = faqJsonLd(indexHtml);
+    return tag ? indexHtml.replace('</head>', () => `${tag}\n</head>`) : indexHtml;
+}
+
 export function prerenderCatalog() {
     let mode = 'production';
     let root = process.cwd();
@@ -183,7 +206,7 @@ export function prerenderCatalog() {
                 console.warn('[prerender] ไม่มี VITE_SHEET_CSV_URL — ข้ามการสร้างหน้าสายพันธุ์ (sitemap มีแค่หน้าหลัก)');
                 await writeFile(resolve(dist, 'sitemap.xml'), buildSitemap(basePages, [], today));
                 const plainIndex = resolve(dist, 'index.html');
-                await writeFile(plainIndex, injectI18nBoot(await readFile(plainIndex, 'utf8')));
+                await writeFile(plainIndex, withFaqSchema(injectI18nBoot(await readFile(plainIndex, 'utf8'))));
                 return;
             }
 
@@ -215,7 +238,7 @@ export function prerenderCatalog() {
             const cards = sortForStorefront(products).map((p, i) => staticCard(p, i, built)).join('\n            ');
             const headEnd = '</head>';
             if (!indexHtml.includes(headEnd)) throw new Error('[prerender] ไม่พบ </head> ใน index.html');
-            await writeFile(indexPath, injectI18nBoot(indexHtml)
+            await writeFile(indexPath, withFaqSchema(injectI18nBoot(indexHtml))
                 .replace(headEnd, () => `${imageKeysScript(allImages, built)}\n${headEnd}`)
                 .replace(gridTag, () => `<div id="productList" class="product-grid" data-ssr="1">\n            ${cards}\n            </div>`));
 

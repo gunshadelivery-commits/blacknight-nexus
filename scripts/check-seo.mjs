@@ -93,6 +93,22 @@ function checkStructuredData(page, html, images) {
     return nodes;
 }
 
+// FAQPage ต้องตรงกับข้อความที่ลูกค้าเห็นในหน้า (Google ถือว่าผิดกฎถ้า markup มีเนื้อหาที่หน้าไม่มี)
+function checkFaq(page, html) {
+    const faq = jsonLdNodes(page, html).find(node => node['@type'] === 'FAQPage');
+    const visibleQuestions = (html.match(/<details class="faq-item"/g) || []).length;
+    if (!faq) { if (visibleQuestions) fail(page, 'มีส่วนคำถามที่พบบ่อยแต่ไม่มี FAQPage JSON-LD'); return; }
+    const entries = Array.isArray(faq.mainEntity) ? faq.mainEntity : [];
+    if (entries.length !== visibleQuestions) fail(page, `FAQPage มี ${entries.length} ข้อ แต่หน้าแสดง ${visibleQuestions} ข้อ`);
+    const text = unescapeHtml(html);
+    for (const entry of entries) {
+        const question = entry?.name || '';
+        const answer = entry?.acceptedAnswer?.text || '';
+        if (!question || !answer) fail(page, 'FAQPage มีข้อที่ไม่มีคำถามหรือคำตอบ');
+        else if (!text.includes(`>${question}<`) || !text.includes(`>${answer}<`)) fail(page, `FAQPage ไม่ตรงกับข้อความในหน้า: ${question}`);
+    }
+}
+
 // URL ใน sitemap → ไฟล์ใน dist
 function fileForUrl(loc) {
     const path = decodeURIComponent(new URL(loc).pathname);
@@ -149,6 +165,7 @@ async function main() {
         if (!await exists(file)) continue;
         const html = await readFile(file, 'utf8');
         checkStructuredData(`/${name}`, html, images);
+        if (name === 'index.html') checkFaq(`/${name}`, html);
         if (/noindex/i.test(robotsOf(html))) {
             if (locs.includes(`${SITE}/${name}`)) fail(`/${name}`, 'มี noindex แต่อยู่ใน sitemap');
             if (canonicalOf(html)) fail(`/${name}`, 'มี noindex พร้อม canonical (สัญญาณขัดกัน)');

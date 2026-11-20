@@ -333,7 +333,13 @@ async function loadData() {
             body: withAdminKey({ action: "getOrders" })
         });
         const rows = await res.json();
-        if (!Array.isArray(rows) || rows.length < 2) { rawOrders = []; processSales(); return; }
+        if (!Array.isArray(rows) || rows.length < 2) {
+            rawOrders = []; processSales();
+            // ชีตออเดอร์ว่าง (ร้านใหม่) ก็ต้องโหลดผู้จำหน่าย ไม่งั้นช่องผู้จำหน่ายและปุ่มนำเข้าใช้ไม่ได้จนกว่าจะมีออเดอร์แรก
+            // ถ้า GAS ตอบเป็น error (ไม่ใช่ array) ไม่ต้องยิงซ้ำ
+            if (Array.isArray(rows)) loadSuppliers();
+            return;
+        }
         // แปลงเป็น object ต่อแถวแบบเดียวกับที่ PapaParse (header: true) เคยให้
         const headers = [];
         rows[0].forEach((h) => {

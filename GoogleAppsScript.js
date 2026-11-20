@@ -4,9 +4,10 @@
  */
 
 const GAS_VERSION = "V30-SUPPLIERS";
-// TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
-// (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
-const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
+// ID ของ Google Sheet สินค้าของร้าน — ไฟล์เดียวกับที่หน้าร้านอ่าน CSV (ไม่ใช่ความลับ: ลิงก์ CSV ของไฟล์นี้อยู่ในหน้าเว็บอยู่แล้ว)
+// ⚠️ ห้ามเปลี่ยนเป็นค่าตัวอย่าง: ถ้า ID ผิด สคริปต์เปิดชีตไม่ได้ ออเดอร์ใหม่ ข้อมูลบัญชี และการแก้สินค้าจะล้มทั้งหมด
+// (21 พ.ย. 2026: วางไฟล์นี้ทับตอนอัปเป็น V30 ขณะบรรทัดนี้ยังเป็นค่าตัวอย่าง ทำให้หลังบ้านเปิดชีตไม่ได้)
+const SPREADSHEET_ID = "1zaN3MOjndWwdiEB-sg958vihAy4V797YlzhC5o_E7sE";
 // ชื่อแท็บ (sheet tab) — ต้องตรงกับชื่อแท็บในไฟล์ Google Sheet ของคุณเป๊ะ
 const SHEET_PRODUCTS = "Products";
 const SHEET_ORDERS = "Orders";

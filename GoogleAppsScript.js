@@ -15,7 +15,8 @@ const SHEET_BANK = "BankAccounts";
 const SHEET_USERS = "Users";
 
 // --- อีเมลแจ้งเตือนออเดอร์ใหม่ (ใส่หลายอีเมลได้ คั่นด้วย ,) ---
-const NOTIFY_EMAIL = "ped.siraphob@gmail.com";
+// ค่านี้ต้องตรงกับที่ใช้จริงใน Apps Script ของร้าน: วางไฟล์นี้ทับแล้วอีเมลแจ้งออเดอร์จะไปตามบรรทัดนี้ทันที
+const NOTIFY_EMAIL = "gunshadelivery@gmail.com";
 const SHOP_NAME = "Siam Cannabis อ่อนนุช";
 
 function getSS() {

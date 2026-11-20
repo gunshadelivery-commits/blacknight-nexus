@@ -811,7 +811,7 @@ function renderOrdersTable() {
                                 class="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
                             ${t('admin.orders.ship')}
                         </button>` : ''}
-                        ${!isDone ? `
+                        ${!isDone && status !== 'รอดำเนินการ' && status !== 'เก็บเงินปลายทาง' ? `
                         <button onclick="window.updateDelivered(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 text-white text-xs font-bold rounded-xl hover:bg-emerald-800 transition active:scale-95 shadow-md shadow-emerald-100">
                             ${t('admin.orders.complete')}

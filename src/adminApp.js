@@ -935,10 +935,7 @@ function renderOrdersTable() {
                         <a href="${slipHref}" target="_blank" rel="noopener noreferrer"
                            class="flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition active:scale-95 shadow-sm">
                             ${t('admin.orders.slip')}
-                        </a>` : `
-                        <span class="flex items-center gap-1.5 px-3 py-2 bg-slate-50 text-slate-300 text-xs font-bold rounded-xl border border-slate-100 cursor-not-allowed" title="${esc(slip || '-')}">
-                            ${t('admin.orders.slip')}
-                        </span>`}
+                        </a>` : '' /* ไม่มีลิงก์สลิป = ไม่แสดงปุ่ม (หน้าร้านไม่มีช่องแนบสลิปแล้ว สลิปมาทาง LINE) */}
                         ${isPending || isInTransit ? `
                         <button onclick="window.updateConfirm(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">

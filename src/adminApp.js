@@ -814,6 +814,8 @@ function orderKeyFields(order) {
 
 // สถานะสุดท้ายของออเดอร์: ลูกค้าได้รับสินค้าและจ่ายเงินแล้ว (GAS updateStatus รับข้อความสถานะอะไรก็ได้ ไม่ต้องแก้ฝั่งนั้น)
 const ORDER_DONE = "จัดส่งสำเร็จ";
+// ออเดอร์ที่ยกเลิก: ไม่ถูกนับทั้งในยอดขายและยอดที่รอรับ (processSales นับเฉพาะ "ชำระเงินแล้ว"/"จัดส่งสำเร็จ" และ "รอดำเนินการ")
+const ORDER_CANCELLED = "ยกเลิก";
 
 // คอลัมน์ "รายการ" ของออเดอร์เก็บเป็นข้อความเดียว: "ชื่อสินค้า [ขนาด] xจำนวน, ..." (ดู submitOrder ใน src/main.js)
 // แยกเป็นชิ้นเพื่อแสดงในตาราง · ข้อความรูปแบบอื่น (ออเดอร์เก่า/กรอกมือ) แสดงทั้งก้อนตามเดิม
@@ -862,6 +864,9 @@ function renderOrdersTable() {
         if (rawStatus === "เก็บเงินปลายทาง" || rawStatus === "COD" || rawStatus === "") status = "รอดำเนินการ";
         const isDone = status === ORDER_DONE;
         const isConfirmed = status === "ชำระเงินแล้ว" || isDone;
+        const isCancelled = status === ORDER_CANCELLED;
+        const isPending = status === 'รอดำเนินการ' || status === 'เก็บเงินปลายทาง';
+        const isInTransit = status === 'อยู่ระหว่างจัดส่ง';
 
         let phoneStr = (getVal(["เบอร์โทร", "phone"]) || "").toString().trim();
         if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
@@ -876,7 +881,8 @@ function renderOrdersTable() {
             'รอดำเนินการ': t('admin.orders.pending'),
             'ชำระเงินแล้ว': t('admin.orders.paid'),
             'อยู่ระหว่างจัดส่ง': t('admin.orders.inTransit'),
-            [ORDER_DONE]: t('admin.orders.delivered')
+            [ORDER_DONE]: t('admin.orders.delivered'),
+            [ORDER_CANCELLED]: t('admin.orders.cancelled')
         }[status] || status;
         const displayPayment = isCOD ? t('admin.orders.cod') : t('admin.orders.transfer');
         const slipHref = safeHref(slip);
@@ -911,7 +917,7 @@ function renderOrdersTable() {
                 </td>
                 <td class="order-status px-6 py-4 w-[120px] text-center">
                     <div class="flex flex-col items-center gap-1">
-                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight whitespace-nowrap ${isConfirmed ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}">
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-tight whitespace-nowrap ${isCancelled ? 'bg-red-50 text-red-600 border border-red-100' : isConfirmed ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}">
                             ${esc(displayStatus)}
                         </span>
                         <span class="text-[9px] font-bold ${isCOD ? 'text-blue-500' : 'text-slate-400'} uppercase tracking-tighter">
@@ -933,20 +939,25 @@ function renderOrdersTable() {
                         <span class="flex items-center gap-1.5 px-3 py-2 bg-slate-50 text-slate-300 text-xs font-bold rounded-xl border border-slate-100 cursor-not-allowed" title="${esc(slip || '-')}">
                             ${t('admin.orders.slip')}
                         </span>`}
-                        ${status === 'รอดำเนินการ' || status === 'เก็บเงินปลายทาง' ? `
+                        ${isPending || isInTransit ? `
                         <button onclick="window.updateConfirm(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
                             ${t('admin.orders.receive')}
                         </button>` : ''}
-                        ${status !== 'อยู่ระหว่างจัดส่ง' && !isDone ? `
+                        ${!isInTransit && !isDone && !isCancelled ? `
                         <button onclick="window.updateStatusToTransit(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
                             ${t('admin.orders.ship')}
                         </button>` : ''}
-                        ${!isDone && status !== 'รอดำเนินการ' && status !== 'เก็บเงินปลายทาง' ? `
+                        ${!isDone && !isPending && !isCancelled ? `
                         <button onclick="window.updateDelivered(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 text-white text-xs font-bold rounded-xl hover:bg-emerald-800 transition active:scale-95 shadow-md shadow-emerald-100">
                             ${t('admin.orders.complete')}
+                        </button>` : ''}
+                        ${!isCancelled ? `
+                        <button onclick="window.updateCancelled(this, ${vi})"
+                                class="flex items-center gap-1.5 px-3 py-2 bg-white text-red-600 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-50 transition active:scale-95">
+                            ${t('admin.orders.cancel')}
                         </button>` : ''}
                     </div>
                 </td>
@@ -1030,6 +1041,11 @@ function updateConfirm(btn, vi) {
 window.updateDelivered = function(btn, vi) {
     return changeOrderStatus(btn, vi, ORDER_DONE, "ยืนยันส่งเรียบร้อย",
         (name) => `คุณ ${name} ได้รับสินค้าและชำระเงินเรียบร้อยแล้ว ใช่หรือไม่?`);
+};
+
+window.updateCancelled = function(btn, vi) {
+    return changeOrderStatus(btn, vi, ORDER_CANCELLED, "ยกเลิกออเดอร์",
+        (name) => `ต้องการยกเลิกออเดอร์ของคุณ ${name} ใช่หรือไม่? ออเดอร์ที่ยกเลิกจะไม่ถูกนับในยอดขาย`);
 };
 
 window.editOrderItemSupplier = function(vi, itemIndex) {

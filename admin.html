@@ -519,6 +519,7 @@
 
         .admin-shell #productModal > div,
         .admin-shell #promptpayModal > div,
+        .admin-shell #supplierImportModal > div,
         .admin-shell #confirmModal > div {
             border: 1px solid rgba(35,88,54,0.12);
             box-shadow: 0 36px 100px rgba(0,0,0,0.35);
@@ -600,8 +601,8 @@
             .admin-metric-card .metric-detail { font-size: 11px; }
 
             /* --- แถบปุ่มเหนือ/ใต้ตาราง --- */
-            .admin-toolbar { width: 100%; }
-            .admin-toolbar > button { flex: 1 1 0; justify-content: center; padding-left: 10px; padding-right: 10px; }
+            .admin-shell .admin-toolbar { width: 100%; flex-wrap: wrap; }
+            .admin-toolbar > button { flex: 1 1 140px; justify-content: center; padding-left: 10px; padding-right: 10px; }
             .admin-quick-apply > select { flex: 1 1 100%; }
             .admin-quick-apply > input { flex: 1 1 0; width: auto; min-width: 0; }
             .admin-shell button[onclick="loadData()"] { padding: 0 12px; font-size: 13px; }
@@ -755,11 +756,14 @@
 
             /* --- หน้าต่างเพิ่ม/แก้สินค้า และ PromptPay --- */
             .admin-shell #productModal,
-            .admin-shell #promptpayModal { padding: 10px; }
+            .admin-shell #promptpayModal,
+            .admin-shell #supplierImportModal { padding: 10px; }
             .admin-shell #productModal > div,
-            .admin-shell #promptpayModal > div { max-height: 92dvh; }
+            .admin-shell #promptpayModal > div,
+            .admin-shell #supplierImportModal > div { max-height: 92dvh; }
             .admin-shell #productModal > div > div,
-            .admin-shell #promptpayModal > div > div { padding: 16px; }
+            .admin-shell #promptpayModal > div > div,
+            .admin-shell #supplierImportModal > div > div { padding: 16px; }
             #productForm > .grid { grid-template-columns: 1fr; }
             .admin-shell .variant-row {
                 display: grid;
@@ -948,6 +952,10 @@
                             </path>
                         </svg>
                         ลบสินค้าทั้งหมด
+                    </button>
+                    <button onclick="toggleSupplierImport(true)"
+                        class="px-4 py-2 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition active:scale-95 flex items-center gap-2 border border-slate-200">
+                        🏪 นำเข้าผู้จำหน่าย
                     </button>
                     <button onclick="toggleProductModal(true, 'add', 'item')"
                         class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition active:scale-95 flex items-center gap-2">
@@ -1273,6 +1281,37 @@
                 <button id="saveProductBtn" onclick="saveProduct()"
                     class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2">
                     บันทึกการแก้ไข
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- นำเข้าผู้จำหน่ายหลายสินค้า (เห็นเฉพาะแอดมิน · ข้อมูลไปเก็บใน Script Properties ไม่อยู่ในชีตหรือไฟล์เว็บ) -->
+    <div id="supplierImportModal"
+        class="fixed inset-0 z-[110] bg-black/50 hidden backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-lg">นำเข้าผู้จำหน่าย</h3>
+                <button onclick="toggleSupplierImport(false)" class="p-2 hover:bg-slate-200 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <p class="text-sm text-slate-500">วางรายการ บรรทัดละ 1 สินค้า ในรูปแบบ <b class="text-slate-700">ชื่อสินค้า | ผู้จำหน่าย</b> ชื่อสินค้าต้องตรงกับในร้าน บรรทัดที่ไม่ตรงจะไม่ถูกบันทึก ลูกค้ามองไม่เห็นข้อมูลนี้</p>
+                <textarea id="supplierImportText" rows="8" oninput="resetSupplierImportPreview()"
+                    class="w-full border rounded-xl px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="ชื่อสินค้า | ผู้จำหน่าย"></textarea>
+                <button type="button" onclick="previewSupplierImport()"
+                    class="w-full py-3 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition">ตรวจรายการ</button>
+                <div id="supplierImportPreview" class="hidden space-y-3 text-sm"></div>
+            </div>
+            <div class="p-6 border-t bg-slate-50">
+                <button id="supplierImportSaveBtn" onclick="saveSupplierImport()" disabled
+                    class="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                    บันทึก
                 </button>
             </div>
         </div>

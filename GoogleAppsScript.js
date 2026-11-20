@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V30-SUPPLIERS";
+const GAS_VERSION = "V31-SUPPLIER-MAIL";
 // ID ของ Google Sheet สินค้าของร้าน — ไฟล์เดียวกับที่หน้าร้านอ่าน CSV (ไม่ใช่ความลับ: ลิงก์ CSV ของไฟล์นี้อยู่ในหน้าเว็บอยู่แล้ว)
 // ⚠️ ห้ามเปลี่ยนเป็นค่าตัวอย่าง: ถ้า ID ผิด สคริปต์เปิดชีตไม่ได้ ออเดอร์ใหม่ ข้อมูลบัญชี และการแก้สินค้าจะล้มทั้งหมด
 // (21 พ.ย. 2026: วางไฟล์นี้ทับตอนอัปเป็น V30 ขณะบรรทัดนี้ยังเป็นค่าตัวอย่าง ทำให้หลังบ้านเปิดชีตไม่ได้)
@@ -259,6 +259,23 @@ function doPost(e) {
       return sendResponse({ result: "success" });
     }
 
+    // V31: บันทึกผู้จำหน่ายหลายสินค้าในคำสั่งเดียว (ปุ่ม "นำเข้าผู้จำหน่าย" ในหน้า admin)
+    // items: [{ name, supplier }] · supplier ว่าง = ลบของสินค้านั้น
+    if (action === "setSuppliers") {
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (!items.length) return sendResponse({ error: "NO_ITEMS" });
+      const props = PropertiesService.getScriptProperties();
+      let saved = 0, removed = 0;
+      items.forEach(it => {
+        const key = supplierKey_(it && it.name);
+        if (key === SUPPLIER_PREFIX) return;
+        const value = String((it && it.supplier) || "").trim().slice(0, 120);
+        if (value) { props.setProperty(key, value); saved++; }
+        else { props.deleteProperty(key); removed++; }
+      });
+      return sendResponse({ result: "success", saved: saved, removed: removed });
+    }
+
     // ===== แก้ราคา/สต๊อกหลายแถวในคำสั่งเดียว (หน้า "ราคา / สต๊อก") =====
     // แก้ในแถวเดิม ไม่ลบ-เขียนใหม่ · items: [{ name, size, price, stock }]
     if (action === "bulkUpdate") {
@@ -485,11 +502,22 @@ function notifyNewOrder(data) {
     ? data.total.toLocaleString()
     : data.total;
 
+  // V31: ต่อท้ายชื่อผู้จำหน่ายของสินค้าแต่ละตัว จะได้รู้ทันทีว่าต้องไปรับของร้านไหน
+  // ⚠️ ใส่เฉพาะอีเมลฉบับนี้ (ส่งเข้า NOTIFY_EMAIL ของร้าน) ห้ามใส่ในใบยืนยันของลูกค้า (sendCustomerConfirmation / buildItemsHtml)
+  let supplierProps = {};
+  try { supplierProps = PropertiesService.getScriptProperties().getProperties(); } catch (e) { supplierProps = {}; }
+  const supplierHtml_ = name => {
+    const s = supplierProps[supplierKey_(name)];
+    return s
+      ? ' <span style="color:#0a7a3f;font-weight:bold;">— 🏪 ' + h_(s) + '</span>'
+      : ' <span style="color:#b45309;">— 🏪 ยังไม่ระบุผู้จำหน่าย</span>';
+  };
+
   // รองรับทั้งรายการแบบ string และ itemsArray
   let itemsHtml = "";
   if (Array.isArray(data.itemsArray) && data.itemsArray.length) {
     itemsHtml = data.itemsArray
-      .map(i => "<li>" + h_(i.name) + " [" + h_(i.size || "-") + "] x" + h_(i.qty) + "</li>")
+      .map(i => "<li>" + h_(i.name) + " [" + h_(i.size || "-") + "] x" + h_(i.qty) + supplierHtml_(i.name) + "</li>")
       .join("");
     itemsHtml = "<ul>" + itemsHtml + "</ul>";
   } else {

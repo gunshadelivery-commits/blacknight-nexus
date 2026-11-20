@@ -405,6 +405,126 @@ async function editSupplierFor(productName) {
     }
 }
 
+// --- นำเข้าผู้จำหน่ายหลายสินค้าในครั้งเดียว ---
+// รายชื่อผู้จำหน่ายห้ามอยู่ใน repo หรือไฟล์ JS (เว็บและ repo เปิดสาธารณะ) เจ้าของจึงวางข้อความเองในหน้านี้
+// รูปแบบบรรทัดละ 1 สินค้า: "ชื่อสินค้า | ผู้จำหน่าย" (คั่นด้วย | หรือ Tab) · บรรทัดว่างและบรรทัดที่ขึ้นต้นด้วย # ถูกข้าม
+// บันทึกเฉพาะบรรทัดที่ชื่อตรงกับสินค้าในร้าน บรรทัดที่ไม่ตรงจะแสดงให้เห็นและไม่ถูกส่ง
+let supplierImportItems = []; // ผ่านการตรวจแล้ว รอบันทึก: [{ name, supplier }]
+
+function resetSupplierImportPreview() {
+    supplierImportItems = [];
+    const preview = document.getElementById('supplierImportPreview');
+    preview.classList.add('hidden');
+    preview.innerHTML = "";
+    const btn = document.getElementById('supplierImportSaveBtn');
+    btn.disabled = true;
+    btn.textContent = "บันทึก";
+}
+
+function toggleSupplierImport(show) {
+    if (show && suppliers === null) {
+        showToast("ต้องอัปเดต Apps Script เป็น V30 ก่อน จึงจะบันทึกผู้จำหน่ายได้", "error");
+        return;
+    }
+    if (!show) {
+        document.getElementById('supplierImportText').value = "";
+        resetSupplierImportPreview();
+    }
+    document.getElementById('supplierImportModal').classList.toggle('hidden', !show);
+}
+
+function previewSupplierImport() {
+    resetSupplierImportPreview();
+    if (!productGroupNames.length) return showToast("ยังโหลดรายการสินค้าไม่เสร็จ ลองใหม่อีกครั้ง", "error");
+
+    // ชื่อสินค้าในร้านตาม key เดียวกับที่ GAS ใช้เก็บ (ตัดช่องว่างหัวท้าย + ตัวพิมพ์เล็ก)
+    const byKey = {};
+    productGroupNames.forEach(n => { (byKey[supplierKey(n)] = byKey[supplierKey(n)] || []).push(n); });
+
+    const ok = [], bad = [], seen = {};
+    let unchanged = 0;
+    document.getElementById('supplierImportText').value.split(/\r?\n/).forEach((raw, idx) => {
+        const line = raw.trim();
+        if (!line || line.startsWith('#')) return;
+        const fail = (reason) => { bad.push({ no: idx + 1, line, reason }); };
+        const m = line.match(/^(.*?)\s*[|\t]\s*(.*)$/);
+        if (!m) return fail("ไม่มีเครื่องหมาย | คั่นระหว่างชื่อสินค้ากับผู้จำหน่าย");
+        const key = supplierKey(m[1]);
+        const supplier = m[2].trim();
+        if (!key) return fail("ไม่มีชื่อสินค้า");
+        if (!supplier) return fail("ไม่ได้ระบุผู้จำหน่าย");
+        if (!byKey[key]) return fail("ไม่พบสินค้าชื่อนี้ในร้าน");
+        if (seen[key] !== undefined) {
+            if (seen[key] !== supplier) fail("ซ้ำกับบรรทัดก่อนหน้า แต่ผู้จำหน่ายไม่ตรงกัน");
+            return;
+        }
+        seen[key] = supplier;
+        const prev = supplierOf(key);
+        if (prev === supplier) { unchanged++; return; }
+        ok.push({ name: byKey[key][0], supplier, prev, sameKey: byKey[key].length > 1 ? byKey[key] : null });
+    });
+
+    supplierImportItems = ok.map(o => ({ name: o.name, supplier: o.supplier }));
+    const preview = document.getElementById('supplierImportPreview');
+    preview.innerHTML = `
+        <p class="font-bold text-slate-700">พร้อมบันทึก ${ok.length} รายการ${unchanged ? ` · เหมือนเดิมอยู่แล้ว ${unchanged}` : ''}${bad.length ? ` · <span class="text-red-600">มีปัญหา ${bad.length} บรรทัด (จะไม่ถูกบันทึก)</span>` : ''}</p>
+        ${bad.length ? `<ul class="space-y-1">${bad.map(b => `
+            <li class="px-3 py-2 rounded-xl bg-red-50 border border-red-100 text-red-700 text-xs">บรรทัด ${b.no}: ${esc(b.line)}<br><b>${esc(b.reason)}</b></li>`).join('')}</ul>` : ''}
+        ${ok.length ? `<ul class="space-y-1">${ok.map(o => `
+            <li class="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-xs">
+                <b class="text-slate-800">${esc(o.name)}</b> → <b class="text-emerald-700">${esc(o.supplier)}</b>
+                ${o.prev ? `<span class="text-slate-500"> (เดิม: ${esc(o.prev)})</span>` : ''}
+                ${o.sameKey ? `<br><span class="text-amber-700">⚠️ มีสินค้า ${o.sameKey.length} ตัวใช้ชื่อนี้ (${esc(o.sameKey.map(n => `"${n}"`).join(', '))}) จะได้ผู้จำหน่ายเดียวกันทุกตัว</span>` : ''}
+            </li>`).join('')}</ul>` : ''}`;
+    preview.classList.remove('hidden');
+    const btn = document.getElementById('supplierImportSaveBtn');
+    btn.disabled = !ok.length;
+    btn.textContent = ok.length ? `บันทึก ${ok.length} รายการ` : "บันทึก";
+}
+
+async function saveSupplierImport() {
+    const items = supplierImportItems.slice();
+    if (!items.length || suppliers === null) return;
+    if (!(await customConfirm("บันทึกผู้จำหน่าย", `ยืนยันบันทึกผู้จำหน่ายของสินค้า ${items.length} รายการ?`, ""))) return;
+    const btn = document.getElementById('supplierImportSaveBtn');
+    btn.disabled = true;
+    btn.textContent = "กำลังบันทึก...";
+    const post = async (payload) => {
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: withAdminKey(payload)
+        });
+        return res.json();
+    };
+    const done = [];
+    try {
+        // GAS V31+: ส่งทั้งชุดในคำสั่งเดียว · V30 ไม่รู้จักคำสั่งนี้ จึงถอยไปใช้ setSupplier ทีละสินค้า
+        const j = await post({ action: "setSuppliers", items });
+        if (j.result === "success") done.push(...items);
+        else if (/UNKNOWN_ACTION/.test(j.error || "")) {
+            for (let i = 0; i < items.length; i++) {
+                btn.textContent = `กำลังบันทึก ${i + 1}/${items.length}...`;
+                const r = await post({ action: "setSupplier", name: items[i].name, supplier: items[i].supplier });
+                if (r.result !== "success") throw new Error(r.error || "save failed");
+                done.push(items[i]);
+            }
+        } else throw new Error(j.error || "save failed");
+    } catch (err) {
+        console.error("supplier import failed:", err);
+        showToast(`บันทึกได้ ${done.length}/${items.length} รายการ: ${err.message}`, "error");
+    }
+    done.forEach(it => { suppliers[supplierKey(it.name)] = it.supplier; });
+    renderOrdersTable();
+    renderProductsTable();
+    if (done.length === items.length) {
+        showToast(`บันทึกผู้จำหน่าย ${done.length} รายการแล้ว`, "success");
+        toggleSupplierImport(false);
+    } else {
+        previewSupplierImport(); // เหลือเฉพาะรายการที่ยังไม่ได้บันทึก กดบันทึกซ้ำได้
+    }
+}
+
 function applyLocalOrderUpdates() {
     try {
         const stored = JSON.parse(localStorage.getItem('localOrderUpdates') || '{}');
@@ -462,7 +582,11 @@ function applyLocalOrderUpdates() {
 const FAKE_SALES = {
     enabled: true,
     startDate: new Date(2026, 0, 1),  // วันเริ่มนับ (ปี, เดือน0-11, วัน)
-    baseDaily: 1700,                  // ยอดหลอกต่อวันโดยประมาณ (บาท) → วันนี้ราว 2-3 พัน
+    // วันสุดท้ายที่มียอดเสริม — หลังวันนี้นับเฉพาะออเดอร์จริงในชีต (เจ้าของสั่ง 21 พ.ย. 2026: เริ่มนับยอดจริง)
+    // ตั้งไว้ที่ 30 วันก่อนวันสั่ง เพราะการ์ด "ยอดขายเดือนนี้" นับย้อนหลัง 30 วัน: วันนี้/สัปดาห์/เดือน/กราฟ จึงเหลือแต่ยอดจริงทันที
+    // ยอดเสริมของช่วงก่อนหน้ายังอยู่ใน "รวมทั้งหมด" · ลบบรรทัดนี้ = กลับไปเสริมทุกวันเหมือนเดิม
+    endDate: new Date(2026, 9, 21),
+    baseDaily: 1700,                 // ยอดหลอกต่อวันโดยประมาณ (บาท) → วันนี้ราว 2-3 พัน
     dailyGrowth: 4,                   // เทรนด์ขาขึ้น: บวกเพิ่มเฉลี่ยต่อวัน (ค่อยๆ ขยับ)
     variancePct: 0.25,                // ความผันผวนรายวัน ±25%
     avgTicket: 480,                   // ยอดเฉลี่ย/ออเดอร์ (ใช้ประมาณจำนวนออเดอร์หลอก)
@@ -484,6 +608,7 @@ function fakeDailyAmount(date) {
     if (!FAKE_SALES.enabled) return 0;
     const n = _fakeDayNum(date);
     if (n < 0) return 0;
+    if (FAKE_SALES.endDate && n > _fakeDayNum(FAKE_SALES.endDate)) return 0;
     const trend = FAKE_SALES.baseDaily + n * FAKE_SALES.dailyGrowth;
     const r = _seededRand(n);
     const amt = trend * (1 + (r * 2 - 1) * FAKE_SALES.variancePct);
@@ -492,6 +617,7 @@ function fakeDailyAmount(date) {
 function fakeDailyCount(date) {
     if (!FAKE_SALES.enabled) return 0;
     const amt = fakeDailyAmount(date);
+    if (!amt) return 0; // วันที่ไม่มียอดเสริม ต้องไม่มีจำนวนออเดอร์เสริมด้วย (เดิม Math.max(1, …) คืน 1 เสมอ)
     const r = _seededRand(_fakeDayNum(date) + 99999);
     const ticket = FAKE_SALES.avgTicket * (0.8 + r * 0.4);
     return Math.max(1, Math.round(amt / ticket));
@@ -1589,6 +1715,10 @@ document.addEventListener('cf:languagechange', () => {
 
 // === EXPOSE GLOBALS ===
 window.checkPass = checkPass;
+window.toggleSupplierImport = toggleSupplierImport;
+window.previewSupplierImport = previewSupplierImport;
+window.resetSupplierImportPreview = resetSupplierImportPreview;
+window.saveSupplierImport = saveSupplierImport;
 window.logout = logout;
 window.switchTab = switchTab;
 window.loadData = loadData;

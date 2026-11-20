@@ -390,6 +390,9 @@
 
         .admin-shell main { max-width: 1400px; }
 
+        /* หัวข้อของแท็บสินค้า/ราคา/PromptPay อยู่บนแถบพื้นเขียวเข้มด้านบนของหน้า (ทุกขนาดจอ) ตัวหนังสือสีเข้มเดิมอ่านไม่ออก */
+        .admin-shell main > div > h2.text-slate-800 { color: #f5fff8; }
+
         .admin-overview-intro {
             display: flex;
             align-items: flex-end;
@@ -597,8 +600,6 @@
             .admin-metric-card .metric-detail { font-size: 11px; }
 
             /* --- แถบปุ่มเหนือ/ใต้ตาราง --- */
-            /* หัวข้อของแท็บสินค้า/ราคา/PromptPay อยู่บนแถบพื้นเขียวเข้มด้านบน ตัวหนังสือสีเข้มเดิมอ่านไม่ออก */
-            .admin-shell main > div > h2.text-slate-800 { color: #f5fff8; }
             .admin-toolbar { width: 100%; }
             .admin-toolbar > button { flex: 1 1 0; justify-content: center; padding-left: 10px; padding-right: 10px; }
             .admin-quick-apply > select { flex: 1 1 100%; }

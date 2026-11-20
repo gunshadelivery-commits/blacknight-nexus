@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V29-MAIL-I18N";
+const GAS_VERSION = "V30-SUPPLIERS";
 // TODO(ตั้งค่า): เปลี่ยนเป็น ID ของ Google Sheet ร้านคุณเอง
 // (ดู ID ได้จาก URL ชีต: docs.google.com/spreadsheets/d/<<< SPREADSHEET_ID >>>/edit)
 const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
@@ -66,6 +66,14 @@ function generateToken() {
 // ไม่อยู่ในโค้ด ไม่อยู่ใน repo ไม่ถูก build ลงไฟล์ JS ที่ลูกค้าโหลด
 // คำสั่งที่ไม่อยู่ในลิสต์นี้ = ต้องมีรหัสเสมอ (ของใหม่ที่เพิ่มทีหลังจึงถูกปิดไว้ก่อนโดยอัตโนมัติ)
 const PUBLIC_ACTIONS = ["checkVersion", "getProducts", "getBank", "register", "login", "log"];
+
+// ===== ผู้จำหน่ายของสินค้า (เห็นเฉพาะแอดมิน) =====
+// เก็บใน Script Properties ทีละสินค้า (key = "supplier:<ชื่อสินค้าตัวพิมพ์เล็ก>") ไม่เก็บในชีต
+// เพราะชีต Products เปิดสาธารณะ และไฟล์ส่วนตัวอาจยังไม่ได้ตั้ง PRIVATE_SHEET_ID — Script Properties ไม่มีทางหลุดไปกับการแชร์ไฟล์
+const SUPPLIER_PREFIX = "supplier:";
+function supplierKey_(name) {
+  return SUPPLIER_PREFIX + String(name || "").trim().toLowerCase();
+}
 
 function isAuthorized_(action, key) {
   if (PUBLIC_ACTIONS.indexOf(action) !== -1) return true;
@@ -218,7 +226,34 @@ function doPost(e) {
       } else {
         sheet.getRange(sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
       }
+      // เปลี่ยนชื่อสินค้า → ย้ายผู้จำหน่ายตามไปชื่อใหม่
+      const oldKey = supplierKey_(targetName);
+      const newKey = supplierKey_(data.name);
+      if (oldKey !== newKey) {
+        const props = PropertiesService.getScriptProperties();
+        const supplier = props.getProperty(oldKey);
+        if (supplier) { props.setProperty(newKey, supplier); props.deleteProperty(oldKey); }
+      }
       SpreadsheetApp.flush();
+      return sendResponse({ result: "success" });
+    }
+
+    // ===== ผู้จำหน่าย (ไม่อยู่ใน PUBLIC_ACTIONS จึงต้องมี ADMIN_KEY) =====
+    if (action === "getSuppliers") {
+      const all = PropertiesService.getScriptProperties().getProperties();
+      const suppliers = {};
+      Object.keys(all).forEach(k => {
+        if (k.indexOf(SUPPLIER_PREFIX) === 0) suppliers[k.slice(SUPPLIER_PREFIX.length)] = all[k];
+      });
+      return sendResponse({ suppliers: suppliers });
+    }
+
+    if (action === "setSupplier") {
+      const key = supplierKey_(data.name);
+      if (key === SUPPLIER_PREFIX) return sendResponse({ error: "NO_NAME" });
+      const value = String(data.supplier || "").trim().slice(0, 120);
+      const props = PropertiesService.getScriptProperties();
+      if (value) props.setProperty(key, value); else props.deleteProperty(key);
       return sendResponse({ result: "success" });
     }
 

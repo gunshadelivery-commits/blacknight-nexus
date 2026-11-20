@@ -704,6 +704,8 @@
                     <button onclick="loadData()"
                         class="text-xs font-bold text-emerald-600 hover:underline">รีเฟรช</button>
                 </div>
+                <!-- แสดงเมื่อ Apps Script ยังเป็นรุ่นก่อน V30 (ยังไม่มีคำสั่งผู้จำหน่าย) -->
+                <p id="supplierNotice" class="hidden px-6 py-3 text-xs text-amber-700 bg-amber-50 border-b border-amber-100" data-i18n="admin.supplier.notice">ช่องผู้จำหน่ายจะใช้ได้หลังอัปเดต Apps Script เป็น V30 (ดูขั้นตอนใน SETUP_BACKEND.md)</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-50 text-slate-400">
@@ -759,6 +761,7 @@
                             <tr>
                                 <th class="px-6 py-4">รูปภาพ</th>
                                 <th class="px-6 py-4">ชื่อสินค้า</th>
+                                <th class="px-6 py-4" data-i18n="admin.supplier.column">ผู้จำหน่าย (เห็นเฉพาะแอดมิน)</th>
                                 <th class="px-6 py-4">หมวดหมู่</th>
                                 <th class="px-6 py-4">ขนาดที่มี</th>
                                 <th class="px-6 py-4">ราคาเริ่มต้น</th>

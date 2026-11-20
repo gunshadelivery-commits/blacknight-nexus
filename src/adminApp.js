@@ -347,6 +347,62 @@ async function loadData() {
         applyLocalOrderUpdates();
         processSales();
     } catch (err) { console.error("โหลดออเดอร์ไม่สำเร็จ:", err); }
+    loadSuppliers();
+}
+
+// --- ผู้จำหน่าย (เห็นเฉพาะแอดมิน) ---
+// เก็บใน Script Properties ของ Apps Script ไม่อยู่ในชีตใดเลย: ชีตสินค้าเปิดสาธารณะ จึงห้ามเก็บชื่อผู้จำหน่ายไว้ที่นั่น
+// suppliers = null หมายถึง Apps Script ยังเป็นรุ่นก่อน V30 (ยังไม่มีคำสั่ง getSuppliers)
+let suppliers = null;
+const supplierKey = (name) => (name || "").toString().trim().toLowerCase();
+const supplierOf = (name) => (suppliers && suppliers[supplierKey(name)]) || "";
+
+async function loadSuppliers() {
+    if (!GAS_URL || !sessionStorage.getItem('adminKey')) return;
+    try {
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: withAdminKey({ action: "getSuppliers" })
+        });
+        const j = await res.json();
+        suppliers = (j && j.suppliers && typeof j.suppliers === 'object') ? j.suppliers : null;
+    } catch (err) {
+        console.error("โหลดผู้จำหน่ายไม่สำเร็จ:", err);
+        suppliers = null;
+    }
+    document.getElementById('supplierNotice')?.classList.toggle('hidden', suppliers !== null);
+    renderOrdersTable();
+    renderProductsTable();
+}
+
+async function editSupplierFor(productName) {
+    const name = (productName || "").toString().trim();
+    if (!name) return;
+    if (suppliers === null) {
+        showToast("ต้องอัปเดต Apps Script เป็น V30 ก่อน จึงจะบันทึกผู้จำหน่ายได้", "error");
+        return;
+    }
+    const current = supplierOf(name);
+    const value = prompt(`ผู้จำหน่ายของ "${name}" (เว้นว่างเพื่อลบ):`, current);
+    if (value === null || value.trim() === current) return;
+    try {
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: withAdminKey({ action: "setSupplier", name, supplier: value.trim() })
+        });
+        const j = await res.json();
+        if (j.result !== "success") throw new Error(j.error || "save failed");
+        if (value.trim()) suppliers[supplierKey(name)] = value.trim();
+        else delete suppliers[supplierKey(name)];
+        showToast("บันทึกผู้จำหน่ายแล้ว", "success");
+        renderOrdersTable();
+        renderProductsTable();
+    } catch (err) {
+        console.error("setSupplier failed:", err);
+        showToast("บันทึกผู้จำหน่ายไม่สำเร็จ: " + err.message, "error");
+    }
 }
 
 function applyLocalOrderUpdates() {
@@ -365,9 +421,8 @@ function applyLocalOrderUpdates() {
                 if(targets.includes("สลิป")) return o[keys[7]];
                 return "";
             };
-            const name = (getV(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").toString().trim();
-            const slip = (getV(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
-            const key = name + "|" + slip;
+            const fields = orderKeyFields(o); // ต้องได้ key เดียวกับที่ updateLocalOrderStatus บันทึกไว้
+            const key = fields.name + "|" + fields.slip;
             
             if (stored[key]) {
                 // If it's been over 15 mins, discard the cache
@@ -381,7 +436,7 @@ function applyLocalOrderUpdates() {
                 const csvStatus = (o[statusKey] || "").toString().trim();
                 
                 // If CSV caught up to our local state (or surpassed it), clear cache
-                if (csvStatus === stored[key].status || (csvStatus === "อยู่ระหว่างจัดส่ง" && stored[key].status === "ชำระเงินแล้ว")) {
+                if (csvStatus === stored[key].status || csvStatus === ORDER_DONE || (csvStatus === "อยู่ระหว่างจัดส่ง" && stored[key].status === "ชำระเงินแล้ว")) {
                     delete stored[key];
                     changed = true;
                 } else {
@@ -522,8 +577,8 @@ function processSales() {
         }
         const items = getVal(["รายการสินค้า", "items", "รายการ"]);
 
-        // นับสถิติ (เฉพาะที่ชำระเงินแล้ว)
-        if (status === "ชำระเงินแล้ว") {
+        // นับสถิติ: ชำระเงินแล้ว หรือส่งเรียบร้อยแล้ว (เก็บเงินปลายทาง = ได้เงินตอนส่งถึง)
+        if (status === "ชำระเงินแล้ว" || status === ORDER_DONE) {
             totalLife += total;
             if (orderDate >= oneMonthAgo) { totalMonth += total; countMonth++; }
             if (orderDate >= oneWeekAgo) { totalWeek += total; countWeek++; }
@@ -625,6 +680,9 @@ function orderKeyFields(order) {
     };
 }
 
+// สถานะสุดท้ายของออเดอร์: ลูกค้าได้รับสินค้าและจ่ายเงินแล้ว (GAS updateStatus รับข้อความสถานะอะไรก็ได้ ไม่ต้องแก้ฝั่งนั้น)
+const ORDER_DONE = "จัดส่งสำเร็จ";
+
 // คอลัมน์ "รายการ" ของออเดอร์เก็บเป็นข้อความเดียว: "ชื่อสินค้า [ขนาด] xจำนวน, ..." (ดู submitOrder ใน src/main.js)
 // แยกเป็นชิ้นเพื่อแสดงในตาราง · ข้อความรูปแบบอื่น (ออเดอร์เก่า/กรอกมือ) แสดงทั้งก้อนตามเดิม
 function parseOrderItems(text) {
@@ -670,7 +728,8 @@ function renderOrdersTable() {
         // Handle shifted columns where status holds payment method
         let status = rawStatus;
         if (rawStatus === "เก็บเงินปลายทาง" || rawStatus === "COD" || rawStatus === "") status = "รอดำเนินการ";
-        const isConfirmed = status === "ชำระเงินแล้ว";
+        const isDone = status === ORDER_DONE;
+        const isConfirmed = status === "ชำระเงินแล้ว" || isDone;
 
         let phoneStr = (getVal(["เบอร์โทร", "phone"]) || "").toString().trim();
         if (phoneStr.length === 9 && !phoneStr.startsWith("0")) phoneStr = "0" + phoneStr;
@@ -684,7 +743,8 @@ function renderOrdersTable() {
         const displayStatus = {
             'รอดำเนินการ': t('admin.orders.pending'),
             'ชำระเงินแล้ว': t('admin.orders.paid'),
-            'อยู่ระหว่างจัดส่ง': t('admin.orders.inTransit')
+            'อยู่ระหว่างจัดส่ง': t('admin.orders.inTransit'),
+            [ORDER_DONE]: t('admin.orders.delivered')
         }[status] || status;
         const displayPayment = isCOD ? t('admin.orders.cod') : t('admin.orders.transfer');
         const slipHref = safeHref(slip);
@@ -701,9 +761,14 @@ function renderOrdersTable() {
                         </div>
                         ${orderItems.length ? `
                         <ul class="mt-2 flex flex-wrap gap-1.5">
-                            ${orderItems.map(item => `
+                            ${orderItems.map((item, ii) => `
                             <li class="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] font-bold text-emerald-800">
                                 ${esc(item.name)}${item.size ? ` <span class="font-medium text-emerald-600">${esc(item.size)}</span>` : ''}${item.qty ? ` <span class="font-mono">×${item.qty}</span>` : ''}
+                                ${item.qty && suppliers !== null ? `
+                                <button type="button" onclick="window.editOrderItemSupplier(${vi}, ${ii})"
+                                        class="block mt-0.5 text-[10px] font-medium ${supplierOf(item.name) ? 'text-slate-600' : 'text-slate-400'} hover:text-emerald-700 hover:underline text-left">
+                                    ${supplierOf(item.name) ? `${t('admin.supplier.label')}: ${esc(supplierOf(item.name))}` : t('admin.supplier.add')}
+                                </button>` : ''}
                             </li>`).join('')}
                         </ul>` : ''}
                     </div>
@@ -741,10 +806,15 @@ function renderOrdersTable() {
                                 class="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition active:scale-95 shadow-md shadow-emerald-100">
                             ${t('admin.orders.receive')}
                         </button>` : ''}
-                        ${status !== 'อยู่ระหว่างจัดส่ง' ? `
+                        ${status !== 'อยู่ระหว่างจัดส่ง' && !isDone ? `
                         <button onclick="window.updateStatusToTransit(this, ${vi})"
                                 class="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition active:scale-95 shadow-md shadow-blue-100">
                             ${t('admin.orders.ship')}
+                        </button>` : ''}
+                        ${!isDone ? `
+                        <button onclick="window.updateDelivered(this, ${vi})"
+                                class="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 text-white text-xs font-bold rounded-xl hover:bg-emerald-800 transition active:scale-95 shadow-md shadow-emerald-100">
+                            ${t('admin.orders.complete')}
                         </button>` : ''}
                     </div>
                 </td>
@@ -825,6 +895,22 @@ function updateConfirm(btn, vi) {
         (name) => `ต้องการยืนยันการรับเงินของคุณ ${name} ใช่หรือไม่?`);
 }
 
+window.updateDelivered = function(btn, vi) {
+    return changeOrderStatus(btn, vi, ORDER_DONE, "ยืนยันส่งเรียบร้อย",
+        (name) => `คุณ ${name} ได้รับสินค้าและชำระเงินเรียบร้อยแล้ว ใช่หรือไม่?`);
+};
+
+window.editOrderItemSupplier = function(vi, itemIndex) {
+    const order = visibleOrders[vi];
+    if (!order) return;
+    const keys = Object.keys(order);
+    const itemsKey = keys.find(k => ["รายการ", "items"].some(x => k.toLowerCase().includes(x))) || keys[5];
+    const item = parseOrderItems(order[itemsKey])[itemIndex];
+    if (item) editSupplierFor(item.name);
+};
+
+window.editSupplierAt = (i) => productGroupNames[i] !== undefined && editSupplierFor(productGroupNames[i]);
+
 window.updateStatusToTransit = function(btn, vi) {
     const tracking = prompt("กรุณากรอกเลขพัสดุ / หมายเหตุการจัดส่ง (ถ้ามี):", "");
     if (tracking === null) return; // Cancelled
@@ -834,19 +920,11 @@ window.updateStatusToTransit = function(btn, vi) {
 
 function updateLocalOrderStatus(name, slip, newStatus) {
     if (!rawOrders) return;
+    // ใช้ orderKeyFields ตัวเดียวกับตอนส่งไป GAS: หัวคอลัมน์สลิปในชีตคือ "สลิป" ซึ่งการค้นด้วยคำว่า "ลิงก์สลิป"/"slip" หาไม่เจอ
+    // แถวจึงไม่อัปเดตทันที ปุ่มค้าง "กำลังอัปเดต..." จนตารางโหลดใหม่ใน 5 วินาที
     const orderIndex = rawOrders.findIndex(o => {
-        const keys = Object.keys(o);
-        const getV = targets => {
-            for(let t of targets){if(o[t]!==undefined) return o[t];}
-            const f = keys.find(k=>targets.some(x=>k.toLowerCase().includes(x.toLowerCase())));
-            if(f) return o[f];
-            if(targets.includes("ชื่อ")) return o[keys[1]];
-            if(targets.includes("สลิป")) return o[keys[7]];
-            return "";
-        };
-        const oName = (getV(["ชื่อลูกค้า", "ชื่อ", "name"]) || "").toString().trim();
-        const oSlip = (getV(["ลิงก์สลิป", "slipUrl", "slip"]) || "").toString().trim();
-        return oName === name && oSlip === slip;
+        const fields = orderKeyFields(o);
+        return fields.name === name && fields.slip === slip;
     });
     
     if (orderIndex > -1) {
@@ -1013,6 +1091,12 @@ function renderProductsTable() {
         body.innerHTML += `<tr>
             <td class="px-6 py-3"><img src="${esc((p.image || '').toString().split(',')[0].trim())}" alt="" loading="lazy" class="w-10 h-10 object-cover rounded-lg bg-slate-100" onerror="this.style.visibility='hidden'"></td>
             <td class="px-6 py-3 font-bold">${esc(p.name)}</td>
+            <td class="px-6 py-3">
+                <button type="button" onclick="editSupplierAt(${gi})" ${suppliers === null ? 'disabled' : ''}
+                        class="text-xs text-left ${supplierOf(p.name) ? 'font-bold text-slate-700' : 'text-slate-400'} hover:text-emerald-700 hover:underline disabled:no-underline disabled:cursor-not-allowed">
+                    ${supplierOf(p.name) ? esc(supplierOf(p.name)) : (suppliers === null ? '—' : t('admin.supplier.add'))}
+                </button>
+            </td>
             <td class="px-6 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">${esc(p.category || 'N/A')}</span></td>
             <td class="px-6 py-3 text-slate-500 text-xs">${esc(p.sizes.join(', '))}</td>
             <td class="px-6 py-3 font-bold text-emerald-600">${p.minPrice.toLocaleString()} ฿ +</td>

@@ -412,11 +412,8 @@
                     <button type="button" data-language-option="zh" data-i18n-title="language.chinese" lang="zh">中文</button>
                     <button type="button" data-language-option="ko" data-i18n-title="language.korean" lang="ko">한국</button>
                 </div>
-                <!-- User Auth Area -->
-                <div id="authArea" class="text-xs font-bold flex items-center gap-3">
-                    <a href="login.html"
-                        class="login-link hidden sm:block" data-i18n="store.nav.login">เข้าสู่ระบบ</a>
-                </div>
+                <!-- User Auth Area: ว่างสำหรับผู้ที่ยังไม่ล็อกอิน (ลิงก์สมาชิกอยู่ใน footer ไม่ให้แย่งสายตาจากตะกร้า) -->
+                <div id="authArea" class="text-xs font-bold flex items-center gap-3"></div>
 
                 <button id="cartBtn" onclick="toggleCart()" class="cart-nav-button relative" aria-label="เปิดตะกร้าสินค้า" data-i18n-aria="store.cart.open">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -732,6 +729,7 @@
                     <a href="#how-to-order" data-i18n="store.footer.howTo">วิธีสั่งซื้อและพื้นที่จัดส่ง</a>
                     <a href="#faq" data-i18n="store.footer.faq">คำถามที่พบบ่อย</a>
                     <a href="#business-profile" data-i18n="store.nav.profile">ข้อมูลร้าน</a>
+                    <a id="footerMemberLink" href="/login.html" data-i18n="store.footer.member">เข้าสู่ระบบ / สมัครสมาชิก</a>
                 </nav>
                 <div class="site-footer-contact">
                     <a id="footerLineLink" href="#" target="_blank" rel="noopener"
@@ -995,11 +993,8 @@
                 const custNameEl = document.getElementById('custName');
                 if (custNameEl && user.name) custNameEl.value = user.name;
 
-            } else {
-                authArea.innerHTML = `
-                    <a href="login.html" class="login-link hidden sm:block" data-i18n="store.nav.login">เข้าสู่ระบบ</a>
-                `;
-                applyTranslations(authArea);
+                // ล็อกอินแล้ว: ไม่ต้องชวนเข้าสู่ระบบซ้ำใน footer
+                document.getElementById('footerMemberLink')?.remove();
             }
         });
     </script>

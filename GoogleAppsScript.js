@@ -3,7 +3,7 @@
  * 🚀 ปรับปรุง: เพิ่มระบบ Register/Login ผ่าน Sheet "Users"
  */
 
-const GAS_VERSION = "V31-SUPPLIER-MAIL";
+const GAS_VERSION = "V32-INSIGHTS";
 // ID ของ Google Sheet สินค้าของร้าน — ไฟล์เดียวกับที่หน้าร้านอ่าน CSV (ไม่ใช่ความลับ: ลิงก์ CSV ของไฟล์นี้อยู่ในหน้าเว็บอยู่แล้ว)
 // ⚠️ ห้ามเปลี่ยนเป็นค่าตัวอย่าง: ถ้า ID ผิด สคริปต์เปิดชีตไม่ได้ ออเดอร์ใหม่ ข้อมูลบัญชี และการแก้สินค้าจะล้มทั้งหมด
 // (21 พ.ย. 2026: วางไฟล์นี้ทับตอนอัปเป็น V30 ขณะบรรทัดนี้ยังเป็นค่าตัวอย่าง ทำให้หลังบ้านเปิดชีตไม่ได้)
@@ -121,6 +121,9 @@ function doPost(e) {
 
     // ใช้ตรวจรหัสแอดมินตอนล็อกอิน (ผ่าน isAuthorized_ มาแล้ว = รหัสถูก)
     if (action === "verifyAdmin") return sendResponse({ result: "success" });
+
+    // V32: สถิติผู้เข้าชมหน้าร้านจาก GA4 (แท็บ Insight) — ไม่อยู่ใน PUBLIC_ACTIONS จึงต้องมี ADMIN_KEY
+    if (action === "getInsights") return sendResponse(getInsights_(data.range, data.fresh === true));
 
     // ===== REGISTER =====
     if (action === "register") {
@@ -416,6 +419,169 @@ function doPost(e) {
   } catch (err) {
     return sendResponse({ error: "GAS doPost Error: " + err.toString() });
   }
+}
+
+// ============================================================
+// V32: INSIGHT — สถิติผู้เข้าชมหน้าร้านจาก Google Analytics (GA4)
+// ต้องทำ 2 อย่างก่อนใช้ได้ (ขั้นตอนใน SETUP_BACKEND.md หัวข้อ V32):
+//   1) บัญชี Google ที่รัน Apps Script นี้ต้องเป็น "ผู้มีสิทธิ์อ่าน" (Viewer) ใน GA4 property ของเว็บ
+//   2) เปิด advanced service "Google Analytics Data API" ใน Apps Script (เมนู Services → Add a service)
+// ยังไม่ทำ = คำสั่ง getInsights ตอบ error ที่บอกสาเหตุ คำสั่งอื่นทั้งหมดทำงานตามเดิม
+// ============================================================
+// เลข property ของ GA4 (ไม่ใช่ความลับ ใช้ดึงข้อมูลไม่ได้ถ้าไม่มีสิทธิ์ในบัญชี) · เปลี่ยนได้ที่ Script Properties → GA4_PROPERTY_ID
+const GA4_PROPERTY_ID = "542623522";
+const INSIGHT_CACHE_SECONDS = 600;        // จำผลไว้ 10 นาที กันชนโควตาของ GA4
+const INSIGHT_TIMEZONE = "Asia/Bangkok";  // ใช้เรียงวันในกราฟให้ตรงกับเวลาร้าน
+// ช่วงเวลาที่หน้า admin เลือกได้ · cur = ช่วงที่ดู, prev = ช่วงก่อนหน้าที่ยาวเท่ากัน (ไว้เทียบ), chart = ช่วงของกราฟรายวัน
+const INSIGHT_RANGES = {
+  "today": { cur: ["today", "today"],    prev: ["yesterday", "yesterday"],  chart: ["6daysAgo", "today"],  chartDays: 7 },
+  "7d":    { cur: ["6daysAgo", "today"],  prev: ["13daysAgo", "7daysAgo"],   chart: ["6daysAgo", "today"],  chartDays: 7 },
+  "28d":   { cur: ["27daysAgo", "today"], prev: ["55daysAgo", "28daysAgo"],  chart: ["27daysAgo", "today"], chartDays: 28 }
+};
+// นับเฉพาะ event ของเส้นทางซื้อและปุ่มติดต่อ — event ทดสอบเก่า (probe_*) และ event อื่นจึงไม่ถูกนับ
+const INSIGHT_EVENTS = ["view_item", "add_to_cart", "begin_checkout", "purchase", "contact_line", "contact_whatsapp"];
+
+function insightNum_(v) {
+  const n = Number(v);
+  return isFinite(n) ? n : 0;
+}
+
+/** แปลง error ของ GA4/Apps Script เป็นรหัสที่หน้า admin ใช้เลือกข้อความแนะนำ */
+function insightErrorCode_(msg) {
+  if (/Required permissions|permission to call|Authorization is required|authentication scopes|SCOPE_INSUFFICIENT/i.test(msg)) return "INSIGHTS_NEEDS_AUTH";
+  if (/has not been used in project|SERVICE_DISABLED|accessNotConfigured|it is disabled/i.test(msg)) return "INSIGHTS_SERVICE_OFF";
+  if (/PERMISSION_DENIED|does not have access|sufficient permissions|\b403\b/i.test(msg)) return "INSIGHTS_NO_ACCESS";
+  if (/RESOURCE_EXHAUSTED|quota|\b429\b/i.test(msg)) return "INSIGHTS_QUOTA";
+  return "INSIGHTS_FAILED";
+}
+
+function getInsights_(range, fresh) {
+  const key = INSIGHT_RANGES[range] ? range : "7d";
+  const cfg = INSIGHT_RANGES[key];
+  // ยังไม่เปิด advanced service = ไม่มีตัวแปร AnalyticsData เลย (typeof ไม่โยน error)
+  if (typeof AnalyticsData === "undefined") return { error: "INSIGHTS_SERVICE_OFF" };
+
+  let propertyId = GA4_PROPERTY_ID;
+  try {
+    propertyId = PropertiesService.getScriptProperties().getProperty("GA4_PROPERTY_ID") || GA4_PROPERTY_ID;
+  } catch (e) {}
+  propertyId = String(propertyId).replace(/\D/g, "");
+  const property = "properties/" + propertyId;
+
+  const cacheKey = "insights:v32:" + propertyId + ":" + key;
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (e) {}
+  if (cache && !fresh) {
+    try {
+      const hit = cache.get(cacheKey);
+      if (hit) { const cached = JSON.parse(hit); cached.cached = true; return cached; }
+    } catch (e) {}
+  }
+
+  try {
+    const dr = p => [{ startDate: p[0], endDate: p[1] }];
+    const totalMetrics = [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }];
+    // batchRunReports รับได้สูงสุด 5 รายงานต่อครั้ง · แต่ละรายงานใช้ช่วงวันเดียว
+    const batch = AnalyticsData.Properties.batchRunReports({
+      requests: [
+        { dateRanges: dr(cfg.cur), metrics: totalMetrics },
+        { dateRanges: dr(cfg.prev), metrics: totalMetrics },
+        { dateRanges: dr(cfg.chart), dimensions: [{ name: "date" }], metrics: totalMetrics },
+        {
+          dateRanges: dr(cfg.cur),
+          dimensions: [{ name: "eventName" }],
+          metrics: [{ name: "eventCount" }, { name: "activeUsers" }],
+          dimensionFilter: { filter: { fieldName: "eventName", inListFilter: { values: INSIGHT_EVENTS } } }
+        },
+        { dateRanges: dr(cfg.cur), dimensions: [{ name: "sessionDefaultChannelGroup" }], metrics: [{ name: "sessions" }, { name: "activeUsers" }] }
+      ]
+    }, property);
+    const reports = (batch && batch.reports) || [];
+    const rowsOf = i => (reports[i] && reports[i].rows) || [];
+    const dim = (row, i) => String((row.dimensionValues && row.dimensionValues[i] && row.dimensionValues[i].value) || "");
+    const met = (row, i) => insightNum_(row.metricValues && row.metricValues[i] && row.metricValues[i].value);
+    const totalsOf = i => {
+      const r = rowsOf(i)[0];
+      return r ? { users: met(r, 0), sessions: met(r, 1), views: met(r, 2) } : { users: 0, sessions: 0, views: 0 };
+    };
+
+    // กราฟรายวัน: GA4 ไม่ส่งแถวของวันที่ไม่มีคนเข้า จึงเติม 0 ให้ครบทุกวัน
+    const byDate = {};
+    rowsOf(2).forEach(r => { byDate[dim(r, 0)] = { users: met(r, 0), sessions: met(r, 1), views: met(r, 2) }; });
+    const daily = [];
+    const now = new Date();
+    for (let i = cfg.chartDays - 1; i >= 0; i--) {
+      const d = Utilities.formatDate(new Date(now.getTime() - i * 86400000), INSIGHT_TIMEZONE, "yyyyMMdd");
+      const v = byDate[d] || { users: 0, sessions: 0, views: 0 };
+      daily.push({ date: d, users: v.users, sessions: v.sessions, views: v.views });
+    }
+
+    const events = {};
+    INSIGHT_EVENTS.forEach(n => { events[n] = { count: 0, users: 0 }; });
+    rowsOf(3).forEach(r => {
+      const n = dim(r, 0);
+      if (events[n]) events[n] = { count: met(r, 0), users: met(r, 1) };
+    });
+
+    const channels = rowsOf(4)
+      .map(r => ({ channel: dim(r, 0), sessions: met(r, 0), users: met(r, 1) }))
+      .filter(c => c.sessions > 0 || c.users > 0)
+      .sort((a, b) => b.sessions - a.sessions)
+      .slice(0, 10);
+
+    const out = {
+      result: "success",
+      range: key,
+      generatedAt: new Date().toISOString(),
+      cached: false,
+      totals: totalsOf(0),
+      previous: totalsOf(1),
+      daily: daily,
+      events: events,
+      channels: channels,
+      items: null
+    };
+
+    // สินค้าที่ถูกดู/ใส่ตะกร้ามากสุด — แยกเรียกต่างหาก ถ้าส่วนนี้พลาด ตัวเลขส่วนอื่นยังแสดงได้
+    try {
+      const rep = AnalyticsData.Properties.runReport({
+        dateRanges: dr(cfg.cur),
+        dimensions: [{ name: "itemName" }],
+        metrics: [{ name: "itemsViewed" }, { name: "itemsAddedToCart" }]
+      }, property);
+      const list = ((rep && rep.rows) || [])
+        .map(r => ({ name: dim(r, 0), viewed: met(r, 0), carted: met(r, 1) }))
+        .filter(x => x.name && x.name !== "(not set)");
+      const top = field => list.filter(x => x[field] > 0)
+        .sort((a, b) => b[field] - a[field])
+        .slice(0, 10)
+        .map(x => ({ name: x.name, count: x[field] }));
+      out.items = { viewed: top("viewed"), carted: top("carted") };
+    } catch (itemErr) {
+      out.itemsError = String((itemErr && itemErr.message) || itemErr).slice(0, 300);
+    }
+
+    if (cache) {
+      try { cache.put(cacheKey, JSON.stringify(out), INSIGHT_CACHE_SECONDS); } catch (e) {}
+    }
+    return out;
+  } catch (err) {
+    const msg = String((err && err.message) || err);
+    return { error: insightErrorCode_(msg), detail: msg.slice(0, 300) };
+  }
+}
+
+/**
+ * ▶️ ทดสอบ/ขออนุญาตอ่านสถิติ GA4 (V32)
+ * เลือกฟังก์ชันนี้ใน editor แล้วกด Run หนึ่งครั้งหลังเปิด service "Google Analytics Data API"
+ * - ครั้งแรกจะมีหน้าต่างขออนุญาต ให้กดอนุญาตจนจบ
+ * - สำเร็จ = ใน Execution log มีบรรทัด "ผู้เข้าชม 7 วัน: ..." · ไม่สำเร็จ = มีรหัส error บอกสาเหตุ
+ */
+function testInsights() {
+  const r = getInsights_("7d", true);
+  if (r.error) { Logger.log("ยังดึงสถิติไม่ได้: " + r.error + (r.detail ? " — " + r.detail : "")); return; }
+  Logger.log("ผู้เข้าชม 7 วัน: " + r.totals.users + " คน · เข้าชม " + r.totals.sessions + " ครั้ง · ดูหน้า " + r.totals.views + " หน้า");
+  if (r.itemsError) Logger.log("ส่วนสินค้ายังดึงไม่ได้: " + r.itemsError);
 }
 
 // ค่าที่มาจากหน้าร้านสาธารณะ (ชื่อ/ที่อยู่/อีเมล) ถ้าขึ้นต้นด้วย = + - @ ชีตจะตีเป็นสูตร

@@ -977,6 +977,18 @@ function buildLiteralIndex() {
 
 const literalIndex = buildLiteralIndex();
 
+// คำแปลเฉพาะหน้า (เช่น แท็บ Insight ของ admin): หน้านั้นลงทะเบียนเองตอนโหลด ข้อความจึงไม่ไปเพิ่มน้ำหนักไฟล์ที่หน้าร้านโหลด
+// extra = { th: {key: ข้อความ}, en: {...} } · ข้อความไทยที่ซ้ำกับของเดิม key เดิมยังชนะในการจับคู่จากตัวข้อความ (ของเดิมไม่เปลี่ยน)
+export function registerTranslations(extra = {}) {
+    Object.entries(extra).forEach(([language, entries]) => {
+        if (translations[language]) Object.assign(translations[language], entries);
+    });
+    Object.entries(extra.th || {}).forEach(([key, value]) => {
+        if (typeof value === 'string' && !value.includes('{{') && !value.includes('<') && !literalIndex.has(value)) literalIndex.set(value, key);
+    });
+    if (initialized) applyTranslations(document);
+}
+
 // ตอน build scripts/i18nBoot.mjs อ่านตารางนี้ไปฝังเฉพาะคำที่แต่ละหน้าใช้
 export { translations };
 

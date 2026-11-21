@@ -53,6 +53,7 @@
 |------|--------|
 | `index.html` / `src/main.js` | หน้าร้านลูกค้า (storefront) |
 | `admin.html` / `src/adminApp.js` | หลังบ้าน (ยอดขาย, จัดการสินค้า, ปรับราคา/สต๊อก, promptpay) |
+| `src/insightText.js` | ข้อความไทย/อังกฤษของแท็บ Insight ในหลังบ้าน (key `admin.insight.*`) — ลงทะเบียนผ่าน `registerTranslations()` ใน `src/i18n.js` ตอนหน้า admin โหลด จึงไม่ถูกรวมในไฟล์ที่หน้าร้านโหลด |
 | `strain.html` / `src/strain.js` | หน้าสายพันธุ์ (โครงเดียวใช้ทั้งหน้า static `/strain/<slug>/` และลิงก์เดิม `strain.html?s=`) |
 | `src/catalog.js` | ตรรกะสินค้าที่ใช้ร่วมกันทั้งหน้าร้าน หน้าสายพันธุ์ และตอน build: จัดกลุ่มแถว CSV เป็นสินค้า, slug, จัดประเภท, `esc()`/`jsArg()` (ต้องรันใน Node ได้ ห้ามแตะ DOM/`import.meta.env`) |
 | `src/strainView.js` | ของเฉพาะหน้าสายพันธุ์: ข้อความ 4 ภาษา, SEO meta/JSON-LD, HTML ของหน้า (ใช้ทั้งเบราว์เซอร์และตอน build · ข้อจำกัดเดียวกับ catalog.js) |

@@ -103,6 +103,8 @@
             --admin-muted: #708078;
             --admin-green: #20bd68;
             --admin-mint: #a8ffc6;
+            /* ความสูงแถบพื้นเขียวเข้มด้านบน: ต้องคลุมหัวเว็บ + หัวข้อของแท็บ (ตัวหนังสือสีอ่อน) */
+            --admin-band: 245px;
         }
 
         html { scroll-behavior: smooth; }
@@ -112,7 +114,7 @@
             background:
                 radial-gradient(900px circle at 8% -10%, rgba(50, 220, 117, 0.16), transparent 58%),
                 radial-gradient(700px circle at 95% 5%, rgba(132, 255, 181, 0.08), transparent 52%),
-                linear-gradient(180deg, #07120c 0 245px, #edf2ed 245px 100%);
+                linear-gradient(180deg, #07120c 0 var(--admin-band), #edf2ed var(--admin-band) 100%);
         }
 
         body.admin-shell::before {
@@ -561,6 +563,8 @@
         .insight-bar > i { display: block; height: 100%; min-width: 3px; border-radius: 999px; background: linear-gradient(90deg, #20bd68, #7fe6a8); }
 
         @media (max-width: 1100px) {
+            /* เมนูตกลงมาเป็นแถวที่ 2 หัวเว็บสูงขึ้น: ขยายแถบเขียวเข้มตาม ไม่งั้นป้าย "ข้อมูลจาก ..." มุมขวาตกบนพื้นสีอ่อนจนอ่านไม่ออก */
+            :root { --admin-band: 310px; }
             .admin-header-inner { grid-template-columns: auto auto; }
             .admin-tabs {
                 grid-column: 1 / -1;
@@ -583,6 +587,7 @@
             /* 5 แท็บต้องพอดีจอ 360px ไม่ต้องเลื่อนเมนูไปด้านข้าง */
             .admin-tabs { gap: 2px; padding: 4px; }
             .admin-tab { padding: 0 6px; }
+            @media (max-width: 400px) { .admin-tab { padding: 0 4px; } } /* ชื่อแท็บภาษาอังกฤษยาวกว่า */
             .admin-tab-icon { display: none; }
             .admin-store-link { display: none; }
             .admin-logout { white-space: nowrap; padding-left: 10px; padding-right: 10px; }

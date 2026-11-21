@@ -6,7 +6,8 @@ import { SHEET_CSV_URL as PRODUCTS_CSV_URL, GAS_URL, SHOP_NAME, SHOP_VERSION, ge
 // เก็บใน sessionStorage: ปิดแท็บแล้วหลุดเอง และไม่ถูกฝังในไฟล์ JS ที่ลูกค้าโหลด
 const withAdminKey = (payload) =>
     JSON.stringify({ ...payload, adminKey: sessionStorage.getItem('adminKey') || '' });
-import { getLanguage, initI18n, t } from './i18n.js';
+import { getLanguage, initI18n, registerTranslations, t } from './i18n.js';
+import { INSIGHT_TEXT } from './insightText.js';
 
 // ข้อความจากชีต/ลูกค้าต้องผ่าน esc() ก่อนใส่ลง innerHTML เสมอ
 // ออเดอร์มาจากหน้าร้านสาธารณะ ใครก็พิมพ์ HTML/สคริปต์มาในช่องชื่อหรือที่อยู่ได้ และหน้านี้ถือรหัสแอดมินอยู่
@@ -797,101 +798,45 @@ function renderTop(counts) {
 // INSIGHT — สถิติผู้เข้าชมหน้าร้านจาก Google Analytics (GAS คำสั่ง getInsights, V32+)
 // ตัวเลขในแท็บนี้มาจาก GA4 ล้วนๆ: ห้ามบวก FAKE_SALES หรือตัวเลขประมาณใดๆ เข้าไป
 // ข้อความจาก GA4 (ชื่อสินค้า ชื่อช่องทาง ข้อความ error) ต้องผ่าน esc() ก่อนใส่ innerHTML
+// ข้อความไทย/อังกฤษของแท็บนี้อยู่ใน src/insightText.js (key ขึ้นต้นด้วย admin.insight.)
 // ============================================================
+registerTranslations(INSIGHT_TEXT);
+const ti = (key, vars) => t('admin.insight.' + key, vars);
 let insightRange = '7d';
 let insightChart = null;
 let insightSeq = 0;            // กันผลของช่วงเวลาเก่ามาทับ เมื่อกดเปลี่ยนช่วงเร็วๆ
+let insightShown = null;       // สิ่งที่แสดงอยู่ตอนนี้ { data } หรือ { code, detail } ไว้วาดใหม่ตอนสลับภาษา
 const insightMemo = {};        // range -> { at, data } จำผลไว้ในหน้า จะได้ไม่ยิง GAS ทุกครั้งที่สลับแท็บ
 const INSIGHT_MEMO_MS = 5 * 60 * 1000;
-const INSIGHT_COMPARE = { today: 'เทียบกับเมื่อวาน', '7d': 'เทียบกับ 7 วันก่อนหน้า', '28d': 'เทียบกับ 28 วันก่อนหน้า' };
-const INSIGHT_FUNNEL = [
-    ['view_item', 'ดูสินค้า'],
-    ['add_to_cart', 'ใส่ตะกร้า'],
-    ['begin_checkout', 'เริ่มสั่งซื้อ'],
-    ['purchase', 'สั่งซื้อสำเร็จ'],
-];
-// ชื่อช่องทางของ Google Analytics → คำที่เจ้าของร้านเข้าใจ (ชื่อที่ไม่อยู่ในนี้แสดงตามที่ Google ส่งมา)
-const INSIGHT_CHANNELS = {
-    'Direct': 'เข้าเว็บตรง (พิมพ์ชื่อเว็บ / กดจากที่บันทึกไว้)',
-    'Organic Search': 'ค้นหาจาก Google',
-    'Organic Social': 'โซเชียล (Facebook, IG, TikTok ฯลฯ)',
-    'Organic Video': 'วิดีโอ (YouTube ฯลฯ)',
-    'Organic Shopping': 'เว็บช้อปปิ้ง',
-    'Referral': 'ลิงก์จากเว็บอื่น',
-    'Email': 'อีเมล',
-    'Paid Search': 'โฆษณาบน Google',
-    'Paid Social': 'โฆษณาบนโซเชียล',
-    'Paid Video': 'โฆษณาวิดีโอ',
-    'Display': 'โฆษณาแบนเนอร์',
-    'Affiliates': 'ตัวแทนแนะนำ',
-    'Unassigned': 'ระบุช่องทางไม่ได้',
-    '(not set)': 'ระบุช่องทางไม่ได้',
-};
-// ข้อความเมื่อยังดึงสถิติไม่ได้: บอกว่าต้องทำอะไรต่อ แทนหน้าว่างหรือ error ดิบ
+const INSIGHT_RANGES = ['today', '7d', '28d'];
+const INSIGHT_FUNNEL = ['view_item', 'add_to_cart', 'begin_checkout', 'purchase'];
+// เมื่อยังดึงสถิติไม่ได้: รหัส → ขั้นตอนที่ต้องทำ (ข้อความอยู่ที่ key help.<รหัส>.title/.text และ step.<ชื่อ>)
 const INSIGHT_HELP = {
-    OLD_GAS: {
-        title: 'ต้องอัปเดต Apps Script เป็น V32 ก่อน',
-        text: 'หลังบ้าน (Apps Script) ยังเป็นรุ่นเก่าที่ไม่มีคำสั่งดึงสถิติ ส่วนอื่นของหลังบ้านใช้ได้ตามปกติ',
-        steps: [
-            'เปิด Apps Script ของร้าน วางโค้ดจากไฟล์ GoogleAppsScript.js รุ่นล่าสุดทับของเดิม แล้วกดบันทึก',
-            'เมนู Services ด้านซ้าย กด Add a service เลือก Google Analytics Data API แล้วกด Add',
-            'เลือกฟังก์ชัน testInsights แล้วกด Run หนึ่งครั้ง กดอนุญาตสิทธิ์จนจบ',
-            'Deploy → Manage deployments → แก้ไข → Version: New version → Deploy',
-        ],
-    },
-    INSIGHTS_SERVICE_OFF: {
-        title: 'ยังไม่ได้เปิดบริการ Google Analytics ใน Apps Script',
-        text: 'Apps Script เป็น V32 แล้ว แต่ยังไม่ได้เปิดบริการที่ใช้อ่านสถิติ',
-        steps: [
-            'เปิด Apps Script ของร้าน เมนู Services ด้านซ้าย กด Add a service',
-            'เลือก Google Analytics Data API แล้วกด Add',
-            'เลือกฟังก์ชัน testInsights แล้วกด Run หนึ่งครั้ง กดอนุญาตสิทธิ์จนจบ',
-            'Deploy → Manage deployments → แก้ไข → Version: New version → Deploy',
-        ],
-    },
-    INSIGHTS_NEEDS_AUTH: {
-        title: 'ต้องกดอนุญาตสิทธิ์ใน Apps Script หนึ่งครั้ง',
-        text: 'Apps Script ยังไม่ได้รับอนุญาตให้อ่านสถิติจาก Google Analytics',
-        steps: [
-            'เปิด Apps Script ของร้าน เลือกฟังก์ชัน testInsights แล้วกด Run',
-            'มีหน้าต่างขออนุญาตขึ้นมา ให้กดอนุญาตจนจบ',
-            'Deploy → Manage deployments → แก้ไข → Version: New version → Deploy',
-        ],
-    },
-    INSIGHTS_NO_ACCESS: {
-        title: 'บัญชีของ Apps Script ยังไม่มีสิทธิ์ดู Google Analytics ของเว็บ',
-        text: 'ต้องเพิ่มบัญชี Google ที่ใช้รัน Apps Script ของร้านเป็นผู้ดูใน Google Analytics ก่อน',
-        steps: [
-            'เปิด Google Analytics ด้วยบัญชีที่เป็นเจ้าของสถิติเว็บ blacknight69.com',
-            'ไปที่ ผู้ดูแลระบบ (Admin) → การจัดการสิทธิ์เข้าถึงพร็อพเพอร์ตี้ (Property access management)',
-            'กด + → เพิ่มผู้ใช้ ใส่อีเมลบัญชีที่ใช้รัน Apps Script ของร้าน เลือกบทบาท ผู้มีสิทธิ์อ่าน (Viewer) แล้วกดเพิ่ม',
-            'กลับมาหน้านี้แล้วกดรีเฟรช',
-        ],
-    },
-    INSIGHTS_QUOTA: {
-        title: 'ดึงสถิติบ่อยเกินไป',
-        text: 'Google จำกัดจำนวนครั้งที่ดึงสถิติต่อชั่วโมง รอสักครู่แล้วกดรีเฟรชอีกครั้ง',
-    },
-    UNAUTHORIZED: {
-        title: 'ต้องเข้าสู่ระบบใหม่',
-        text: 'รหัสหลังบ้านที่จำไว้ใช้ไม่ได้แล้ว กดออกจากระบบแล้วเข้าใหม่อีกครั้ง',
-    },
-    NETWORK: {
-        title: 'โหลดสถิติไม่สำเร็จ',
-        text: 'ติดต่อหลังบ้านไม่ได้ ตรวจอินเทอร์เน็ตแล้วกดรีเฟรชอีกครั้ง',
-    },
-    INSIGHTS_FAILED: {
-        title: 'โหลดสถิติไม่สำเร็จ',
-        text: 'Google Analytics ตอบกลับมาไม่ถูกต้อง ลองกดรีเฟรชอีกครั้ง ถ้ายังไม่ได้ให้ส่งข้อความด้านล่างให้ผู้ดูแลระบบ',
-    },
+    OLD_GAS: ['paste', 'addService', 'runTest', 'deploy'],
+    INSIGHTS_SERVICE_OFF: ['openServices', 'pickService', 'runTest', 'deploy'],
+    INSIGHTS_NEEDS_AUTH: ['runTestOpen', 'approve', 'deploy'],
+    INSIGHTS_NO_ACCESS: ['gaOpen', 'gaAdmin', 'gaAdd', 'gaBack'],
+    INSIGHTS_QUOTA: [],
+    UNAUTHORIZED: [],
+    NETWORK: [],
+    INSIGHTS_FAILED: [],
 };
+const insightLocale = () => (getLanguage() === 'th' ? 'th-TH' : 'en-US');
 const insightNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const insightFmt = (v) => insightNum(v).toLocaleString('en-US');
 const insightPct = (part, whole) => (whole > 0 ? Math.min(100, (insightNum(part) / whole) * 100) : 0);
 const insightPctText = (p) => (p < 10 ? p.toFixed(1).replace(/\.0$/, '') : Math.round(p).toString()) + '%'; // ต่ำกว่า 10% แสดงทศนิยม 1 ตำแหน่ง
+// ชื่อช่องทางของ Google Analytics → คำที่เจ้าของร้านเข้าใจ (ชื่อที่ไม่มีคำแปลแสดงตามที่ Google ส่งมา)
+function insightChannelName(channel) {
+    const name = (channel || '').toString();
+    if (!name) return ti('channel.Unassigned');
+    const key = 'admin.insight.channel.' + name;
+    const label = t(key);
+    return label === key ? name : label;
+}
 
 function setInsightRange(range) {
-    if (!INSIGHT_COMPARE[range]) return;
+    if (!INSIGHT_RANGES.includes(range)) return;
     insightRange = range;
     loadInsights();
 }
@@ -911,19 +856,21 @@ function showInsightNotice(code, detail) {
     box.classList.remove('hidden');
     if (code === 'loading') {
         setInsightState('loading');
-        box.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">กำลังโหลดสถิติ...</p>`;
+        box.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${esc(ti('loading'))}</p>`;
         return;
     }
     setInsightState('error');
-    const help = INSIGHT_HELP[code] || INSIGHT_HELP.INSIGHTS_FAILED;
-    const showDetail = detail && !INSIGHT_HELP[code]?.steps && code !== 'INSIGHTS_QUOTA';
+    insightShown = { code, detail };
+    const known = INSIGHT_HELP[code] ? code : 'INSIGHTS_FAILED';
+    const steps = INSIGHT_HELP[known];
+    const showDetail = detail && !steps.length && known !== 'INSIGHTS_QUOTA';
     box.innerHTML = `
-        <p class="text-xs font-bold text-amber-600">ยังดูสถิติไม่ได้</p>
-        <h3 class="font-bold text-slate-800 text-lg mt-1">${esc(help.title)}</h3>
-        <p class="text-sm text-slate-500 mt-2 leading-relaxed">${esc(help.text)}</p>
-        ${help.steps ? `<ol class="insight-notice-steps text-sm text-slate-700 leading-relaxed">${help.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
-        <p class="text-xs text-slate-400 mt-4">ขั้นตอนแบบละเอียดอยู่ในไฟล์ SETUP_BACKEND.md หัวข้อ V32</p>` : ''}
-        ${showDetail ? `<p class="text-xs text-slate-400 mt-4 break-words">รายละเอียด: ${esc(detail)}</p>` : ''}`;
+        <p class="text-xs font-bold text-amber-600">${esc(ti('notReady'))}</p>
+        <h3 class="font-bold text-slate-800 text-lg mt-1">${esc(ti(`help.${known}.title`))}</h3>
+        <p class="text-sm text-slate-500 mt-2 leading-relaxed">${esc(ti(`help.${known}.text`))}</p>
+        ${steps.length ? `<ol class="insight-notice-steps text-sm text-slate-700 leading-relaxed">${steps.map(s => `<li>${esc(ti('step.' + s))}</li>`).join('')}</ol>
+        <p class="text-xs text-slate-400 mt-4">${esc(ti('setupDoc'))}</p>` : ''}
+        ${showDetail ? `<p class="text-xs text-slate-400 mt-4 break-words">${esc(ti('detail', { detail }))}</p>` : ''}`;
 }
 
 async function loadInsights(force = false) {
@@ -964,28 +911,29 @@ async function loadInsights(force = false) {
 
 // ตัวเลขเทียบช่วงก่อนหน้า เช่น "▲ 20% เทียบกับ 7 วันก่อนหน้า"
 function insightDeltaText(cur, prev, range) {
-    const label = INSIGHT_COMPARE[range] || '';
-    if (!(prev > 0)) return cur > 0 ? `ช่วงก่อนหน้าเป็น 0` : `— ${label}`;
+    const label = ti('compare.' + range);
+    if (!(prev > 0)) return cur > 0 ? ti('delta.prevZero') : ti('delta.none', { label });
     const change = ((cur - prev) / prev) * 100;
-    if (Math.abs(change) < 0.5) return `เท่าเดิม ${label}`;
-    return `${change > 0 ? '▲' : '▼'} ${Math.abs(Math.round(change)).toLocaleString('en-US')}% ${label}`;
+    if (Math.abs(change) < 0.5) return ti('delta.same', { label });
+    return ti(change > 0 ? 'delta.up' : 'delta.down', { pct: Math.abs(Math.round(change)).toLocaleString('en-US'), label });
 }
 
 function renderInsights(d) {
-    const range = INSIGHT_COMPARE[d.range] ? d.range : insightRange;
+    const range = INSIGHT_RANGES.includes(d.range) ? d.range : insightRange;
     const totals = d.totals || {}, prev = d.previous || {}, events = d.events || {};
     const ev = (name) => events[name] || {};
     const users = insightNum(totals.users);
     const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
 
     setInsightState('ready');
+    insightShown = { data: d };
     const box = document.getElementById('insightNotice');
     const nothing = !users && !insightNum(totals.sessions) && !insightNum(totals.views);
     box.classList.toggle('hidden', !nothing);
-    if (nothing) box.innerHTML = `<p class="text-sm text-slate-500 text-center py-2">ยังไม่มีคนเข้าชมหน้าร้านในช่วงเวลานี้</p>`;
+    if (nothing) box.innerHTML = `<p class="text-sm text-slate-500 text-center py-2">${esc(ti('noVisits'))}</p>`;
 
     const at = new Date(d.generatedAt);
-    setText('insightUpdated', isNaN(at) ? '' : `อัปเดตเมื่อ ${at.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`);
+    setText('insightUpdated', isNaN(at) ? '' : ti('updated', { time: at.toLocaleTimeString(insightLocale(), { hour: '2-digit', minute: '2-digit' }) }));
 
     // --- การ์ดตัวเลข ---
     [['Users', 'users'], ['Sessions', 'sessions'], ['Views', 'views']].forEach(([id, key]) => {
@@ -994,16 +942,14 @@ function renderInsights(d) {
     });
     const buyers = insightNum(ev('purchase').users);
     setText('insightPurchases', insightFmt(ev('purchase').count));
-    setText('insightPurchasesRate', users > 0
-        ? `คนสั่งซื้อคิดเป็น ${insightPctText(insightPct(buyers, users))} ของผู้เข้าชม`
-        : '—');
+    setText('insightPurchasesRate', users > 0 ? ti('purchaseRate', { pct: insightPctText(insightPct(buyers, users)) }) : '—');
 
     // --- กราฟรายวัน ---
     const daily = Array.isArray(d.daily) ? d.daily : [];
-    setText('insightChartNote', `${daily.length} วันล่าสุด`);
+    setText('insightChartNote', ti('chart.note', { days: daily.length }));
     const labels = daily.map(x => {
         const m = /^(\d{4})(\d{2})(\d{2})$/.exec((x.date || '').toString());
-        return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '';
+        return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(insightLocale(), { day: 'numeric', month: 'short' }) : '';
     });
     const canvas = document.getElementById('insightChart');
     if (insightChart) insightChart.destroy();
@@ -1012,8 +958,8 @@ function renderInsights(d) {
         data: {
             labels,
             datasets: [
-                { label: 'ผู้เข้าชม (คน)', data: daily.map(x => insightNum(x.users)), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 },
-                { label: 'เข้าชม (ครั้ง)', data: daily.map(x => insightNum(x.sessions)), borderColor: '#94a3b8', borderDash: [4, 4], borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 },
+                { label: ti('card.users'), data: daily.map(x => insightNum(x.users)), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 },
+                { label: ti('card.sessions'), data: daily.map(x => insightNum(x.sessions)), borderColor: '#94a3b8', borderDash: [4, 4], borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 },
             ]
         },
         options: {
@@ -1024,17 +970,17 @@ function renderInsights(d) {
     });
 
     // --- เส้นทางการสั่งซื้อ: คิดเป็น % ของผู้เข้าชมทั้งหมด (ไม่เกิน 100% เสมอ) ---
-    const steps = [{ label: 'เข้าชมหน้าร้าน', people: users, times: null }]
-        .concat(INSIGHT_FUNNEL.map(([name, label]) => ({ label, people: insightNum(ev(name).users), times: insightNum(ev(name).count) })));
+    const steps = [{ label: ti('funnel.visit'), people: users, times: null }]
+        .concat(INSIGHT_FUNNEL.map(name => ({ label: ti('funnel.' + name), people: insightNum(ev(name).users), times: insightNum(ev(name).count) })));
     document.getElementById('insightFunnel').innerHTML = steps.map((s, i) => {
         const p = i === 0 ? (users > 0 ? 100 : 0) : insightPct(s.people, users);
         return `<div>
             <div class="flex items-baseline justify-between gap-3">
                 <span class="text-sm font-bold text-slate-700">${i + 1}. ${esc(s.label)}</span>
-                <span class="text-sm font-bold text-slate-800 whitespace-nowrap">${insightFmt(s.people)} คน <span class="text-emerald-600">· ${insightPctText(p)}</span></span>
+                <span class="text-sm font-bold text-slate-800 whitespace-nowrap">${esc(ti('people', { count: insightFmt(s.people) }))} <span class="text-emerald-600">· ${insightPctText(p)}</span></span>
             </div>
             <div class="insight-bar mt-2"><i style="width:${p.toFixed(1)}%"></i></div>
-            ${s.times === null ? '' : `<p class="text-xs text-slate-400 mt-1">รวม ${insightFmt(s.times)} ครั้ง</p>`}
+            ${s.times === null ? '' : `<p class="text-xs text-slate-400 mt-1">${esc(ti('times', { count: insightFmt(s.times) }))}</p>`}
         </div>`;
     }).join('');
 
@@ -1045,9 +991,9 @@ function renderInsights(d) {
             <td class="px-4 md:px-6 py-3 font-bold text-slate-700">${esc(it.name)}</td>
             <td class="ins-count px-4 md:px-6 py-3 text-right font-bold text-emerald-600" data-label="${esc(label)}">${insightFmt(it.count)}</td>
         </tr>`).join('')
-        : `<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">${d.items ? 'ยังไม่มีข้อมูลในช่วงเวลานี้' : 'ยังดึงข้อมูลสินค้าไม่ได้ ลองกดรีเฟรชอีกครั้ง'}</td></tr>`;
-    document.getElementById('insightViewedBody').innerHTML = itemRows(d.items && d.items.viewed, 'ถูกดู (ครั้ง)');
-    document.getElementById('insightCartedBody').innerHTML = itemRows(d.items && d.items.carted, 'ใส่ตะกร้า (ชิ้น)');
+        : `<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">${esc(ti(d.items ? 'table.empty' : 'table.itemsFail'))}</td></tr>`;
+    document.getElementById('insightViewedBody').innerHTML = itemRows(d.items && d.items.viewed, ti('col.viewed'));
+    document.getElementById('insightCartedBody').innerHTML = itemRows(d.items && d.items.carted, ti('col.carted'));
     if (d.itemsError) console.error("Insight items:", d.itemsError);
 
     // --- ช่องทางที่มา ---
@@ -1055,17 +1001,24 @@ function renderInsights(d) {
     const channelTotal = channels.reduce((sum, c) => sum + insightNum(c.sessions), 0);
     document.getElementById('insightChannelBody').innerHTML = channels.length
         ? channels.map(c => `<tr>
-            <td class="px-4 md:px-6 py-3 font-bold text-slate-700">${esc(INSIGHT_CHANNELS[c.channel] || c.channel || 'ระบุช่องทางไม่ได้')}</td>
-            <td class="ins-count px-4 md:px-6 py-3 text-right font-bold text-slate-800" data-label="เข้าชม (ครั้ง)">${insightFmt(c.sessions)}</td>
-            <td class="ins-count px-4 md:px-6 py-3 text-right font-bold text-emerald-600" data-label="สัดส่วน">${insightPctText(insightPct(c.sessions, channelTotal))}</td>
+            <td class="px-4 md:px-6 py-3 font-bold text-slate-700">${esc(insightChannelName(c.channel))}</td>
+            <td class="ins-count px-4 md:px-6 py-3 text-right font-bold text-slate-800" data-label="${esc(ti('card.sessions'))}">${insightFmt(c.sessions)}</td>
+            <td class="ins-count px-4 md:px-6 py-3 text-right font-bold text-emerald-600" data-label="${esc(ti('col.share'))}">${insightPctText(insightPct(c.sessions, channelTotal))}</td>
         </tr>`).join('')
-        : `<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">ยังไม่มีข้อมูลในช่วงเวลานี้</td></tr>`;
+        : `<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400">${esc(ti('table.empty'))}</td></tr>`;
 
     // --- ปุ่มติดต่อ ---
     setText('insightLine', insightFmt(ev('contact_line').count));
-    setText('insightLineUsers', `จาก ${insightFmt(ev('contact_line').users)} คน`);
+    setText('insightLineUsers', ti('fromPeople', { count: insightFmt(ev('contact_line').users) }));
     setText('insightWhatsapp', insightFmt(ev('contact_whatsapp').count));
-    setText('insightWhatsappUsers', `จาก ${insightFmt(ev('contact_whatsapp').users)} คน`);
+    setText('insightWhatsappUsers', ti('fromPeople', { count: insightFmt(ev('contact_whatsapp').users) }));
+}
+
+// สลับภาษา: วาดสิ่งที่แสดงอยู่ใหม่ด้วยภาษาใหม่ (ไม่ยิง GAS ซ้ำ)
+function rerenderInsights() {
+    if (!insightShown) return;
+    if (insightShown.data) renderInsights(insightShown.data);
+    else showInsightNotice(insightShown.code, insightShown.detail);
 }
 
 // ออเดอร์ที่แสดงอยู่ในตารางตอนนี้ ปุ่มในแถวอ้างถึงด้วย index ของ array นี้
@@ -2006,6 +1959,7 @@ document.addEventListener('cf:languagechange', () => {
     if (rawProducts.length) renderProductsTable();
     if (bulkRows.length) renderBulkTable();
     renderPromptpayTable();
+    rerenderInsights();
 });
 
 // === EXPOSE GLOBALS ===

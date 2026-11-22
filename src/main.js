@@ -437,6 +437,16 @@ function trackSearch(term) {
     searchTrackTimer = setTimeout(() => trackEvent('search', { search_term: q.slice(0, 60) }), 1500);
 }
 
+// ลิงก์จากภายนอกเปิดตรงหมวดได้ เช่น /?cat=Sativa#products (ปุ่มริชเมนูใน LINE OA ใช้ลิงก์แบบนี้)
+// รับเฉพาะหมวดที่มีแท็บอยู่จริง ค่าอื่นถือว่าไม่ได้ระบุ
+const URL_CATEGORIES = { sativa: 'Sativa', hybrid: 'Hybrid', indica: 'Indica', 'pre-roll': 'Pre-roll' };
+
+function applyCategoryFromUrl() {
+    const requested = (new URLSearchParams(window.location.search).get('cat') || '').trim().toLowerCase();
+    const category = URL_CATEGORIES[requested];
+    if (category) switchCategory(category);
+}
+
 function switchCategory(cat) {
     currentCategory = cat;
     trackEvent('select_content', { content_type: 'category', content_id: cat });
@@ -938,6 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAnalyticsTracking();
     initSolExperience();
     updateCartUI();
+    applyCategoryFromUrl();
     loadProductsFromSheet(() => {
         const searchInput = document.getElementById('searchInput');
         renderProducts(searchInput ? searchInput.value : "");

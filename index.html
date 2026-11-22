@@ -93,6 +93,12 @@
         "image": "https://blacknight69.com/og-image.jpg",
         "priceRange": "฿฿",
         "paymentAccepted": "Cash",
+        "openingHoursSpecification": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "09:00",
+          "closes": "23:59"
+        },
         "address": {
           "@type": "PostalAddress",
           "streetAddress": "Sukhumvit Soi 77 (On Nut)",
@@ -402,7 +408,7 @@
             <div class="hidden lg:flex items-center gap-7 text-[15px] font-medium text-white/70">
                 <a href="#products" class="nav-link" data-i18n="store.nav.catalog">สายพันธุ์</a>
                 <a href="#business-profile" class="nav-link" data-i18n="store.nav.profile">ข้อมูลร้าน</a>
-                <span class="open-status"><span class="status-dot"></span> <span data-i18n="store.nav.open">เริ่มรับออเดอร์ 09:00</span></span>
+                <span class="open-status"><span class="status-dot"></span> <span data-i18n="store.nav.open">เปิดทุกวัน 09:00–24:00</span></span>
             </div>
 
             <div class="flex items-center gap-2 sm:gap-3">
@@ -638,8 +644,8 @@
                 <p data-i18n="store.faq.a5">เลือกสินค้าและขนาดในหน้าร้าน เพิ่มลงตะกร้า แล้วกรอกชื่อ เบอร์โทร และที่อยู่จัดส่ง ร้านจะยืนยันออเดอร์กับคุณทาง LINE หรือจะทัก LINE ร้านเพื่อสั่งโดยตรงก็ได้</p>
             </details>
             <details class="faq-item">
-                <summary data-analytics-event="faq_open" data-analytics-placement="q6"><h3 data-i18n="store.faq.q6">ร้านเริ่มรับออเดอร์กี่โมง?</h3></summary>
-                <p data-i18n="store.faq.a6">เริ่มรับออเดอร์ 09:00 น. เวลาทำการล่าสุดดูได้ที่ Google Business Profile ของร้าน หรือทัก LINE สอบถามได้</p>
+                <summary data-analytics-event="faq_open" data-analytics-placement="q6"><h3 data-i18n="store.faq.q6">ร้านเปิดกี่โมงถึงกี่โมง?</h3></summary>
+                <p data-i18n="store.faq.a6">เปิดรับออเดอร์ทุกวัน เวลา 09:00–24:00 น. (ถึงเที่ยงคืน)</p>
             </details>
             <details class="faq-item">
                 <summary data-analytics-event="faq_open" data-analytics-placement="q7"><h3 data-i18n="store.faq.q7">ต้องอายุเท่าไหร่จึงสั่งได้?</h3></summary>
@@ -698,8 +704,8 @@
                         </div>
                         <div class="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
                             <span class="text-xl">◷</span>
-                            <p class="mt-4 text-[10px] font-bold tracking-[0.14em] text-white/60 uppercase" data-i18n="store.profile.hoursLabel">เวลาเริ่มบริการ</p>
-                            <p class="mt-1 text-sm font-bold text-white" data-i18n="store.profile.hoursValue">เริ่มรับออเดอร์ 09:00</p>
+                            <p class="mt-4 text-[10px] font-bold tracking-[0.14em] text-white/60 uppercase" data-i18n="store.profile.hoursLabel">เวลาทำการ</p>
+                            <p class="mt-1 text-sm font-bold text-white" data-i18n="store.profile.hoursValue">ทุกวัน 09:00–24:00 น.</p>
                         </div>
                         <div class="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
                             <span class="text-xl">☎</span>

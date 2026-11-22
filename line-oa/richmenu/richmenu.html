@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=Noto+Sans+Thai:wght@500;700;800&display=block" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 2500px; height: 1686px; overflow: hidden; }
+  body {
+    background: #041a0f;
+    font-family: "Inter", "Noto Sans Thai", "Leelawadee UI", sans-serif;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+  .cell {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 40px;
+    border: 3px solid #041a0f;
+  }
+  .mood { background: #0e3a24; }
+  .mood.s { background: #12432a; }
+  .mood.i { background: #0b3120; }
+  .info { background: #072416; }
+  svg { width: 250px; height: 250px; stroke: #8fffb7; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .info svg { width: 190px; height: 190px; stroke: #7be0a4; }
+  .th { color: #ffffff; font-weight: 800; font-size: 104px; line-height: 1.25; margin-top: 44px; }
+  .en { color: #8fffb7; font-weight: 700; font-size: 78px; letter-spacing: 0.02em; margin-top: 10px; }
+  .info .th { font-size: 96px; margin-top: 36px; }
+  .info .en { font-size: 62px; color: #7be0a4; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="cell mood s">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/></svg>
+    <div class="th">สดใส &amp; โฟกัส</div>
+    <div class="en">Sativa</div>
+  </div>
+  <div class="cell mood">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 9l4.65 -4.65"/><path d="M12 14.3l7.37 -7.37"/><path d="M12 19.6l8.85 -8.85"/></svg>
+    <div class="th">สมดุล &amp; ลื่นไหล</div>
+    <div class="en">Hybrid</div>
+  </div>
+  <div class="cell mood i">
+    <svg viewBox="0 0 24 24"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/><path d="M17 4a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2"/></svg>
+    <div class="th">นิ่ง &amp; ผ่อนคลาย</div>
+    <div class="en">Indica</div>
+  </div>
+  <div class="cell info">
+    <svg viewBox="0 0 24 24"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"/></svg>
+    <div class="th">ค่าส่ง</div>
+    <div class="en">Delivery</div>
+  </div>
+  <div class="cell info">
+    <svg viewBox="0 0 24 24"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 14l2 2l4 -4"/></svg>
+    <div class="th">วิธีสั่ง</div>
+    <div class="en">How to order</div>
+  </div>
+  <div class="cell info">
+    <svg viewBox="0 0 24 24"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
+    <div class="th">คุยกับแอดมิน</div>
+    <div class="en">Chat with us</div>
+  </div>
+</body>
+</html>

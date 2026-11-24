@@ -155,7 +155,7 @@ function describeKindTh(type = '') {
 // ─── SEO ─────────────────────────────────────────────────────────────────────
 
 function absoluteImage(image) {
-    if (!image) return `${SITE_URL}/og-image.jpg`;
+    if (!image) return `${SITE_URL}/og-image.jpg?v=2`;
     if (/^https?:\/\//i.test(image)) return image;
     return `${SITE_URL}/${image.replace(/^\/+/, '')}`;
 }
